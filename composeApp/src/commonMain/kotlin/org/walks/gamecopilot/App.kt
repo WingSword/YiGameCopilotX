@@ -4,7 +4,6 @@ import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -16,7 +15,6 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.layout.wrapContentSize
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.shape.CircleShape
@@ -29,13 +27,11 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.IconButtonColors
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -49,7 +45,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -57,13 +52,18 @@ import androidx.lifecycle.viewmodel.CreationExtras
 import androidx.lifecycle.viewmodel.MutableCreationExtras
 import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
+import androidx.navigation.compose.NavHost
+import androidx.navigation.compose.composable
+import androidx.navigation.compose.rememberNavController
 import com.yi.yigamecopilot.android.theme.MorandiColorList
 import org.walks.gamecopilot.theme.WeUITheme
 import org.jetbrains.compose.ui.tooling.preview.Preview
 import org.walks.gamecopilot.intent.GameIntent
 import org.walks.gamecopilot.ui.badge.WeBadge
 import org.walks.gamecopilot.ui.button.ButtonType
+import org.walks.gamecopilot.ui.button.CommonButton
 import org.walks.gamecopilot.ui.button.WeButton
+import org.walks.gamecopilot.ui.input.CommonTextField
 import org.walks.gamecopilot.ui.picker.WeSingleColumnPicker
 
 @Composable
@@ -89,6 +89,7 @@ fun App() {
 fun AppView(viewmodel: MainViewmodel) {
     val snackState = remember { mutableStateOf(SnackbarHostState()) }
     val playerNum = viewmodel.playerNumber.collectAsState()
+
     Scaffold(
         topBar = {
             CenterAlignedTopAppBar(
@@ -163,17 +164,27 @@ fun AppView(viewmodel: MainViewmodel) {
                 horizontalAlignment = Alignment.CenterHorizontally,
                 verticalArrangement = Arrangement.Center
             ) {
-                StartView(viewmodel)
-
-
+                NavigationHost(viewmodel)
             }
         }
     }
-
 }
 
 @Composable
-fun StartView(viewmodel: MainViewmodel) {
+fun NavigationHost(viewmodel: MainViewmodel){
+    val navi= rememberNavController()
+    NavHost(navi, startDestination = "start") {
+        composable("start") {
+            StartPage(viewmodel)
+        }
+        composable("room") {
+            RoomPage()
+        }
+    }
+}
+
+@Composable
+fun StartPage(viewmodel: MainViewmodel) {
     val scope = rememberCoroutineScope()
     var showNumberPicker by remember { mutableStateOf(false) }
 
@@ -240,54 +251,12 @@ fun StartView(viewmodel: MainViewmodel) {
 }
 
 @Composable
-fun RoomView() {
+fun RoomPage() {
 
 }
 
-@Composable
-fun CommonTextField(
-    value: String,
-    onValueChange: (String) -> Unit,
-    label: String = ""
-) {
-    OutlinedTextField(
-        value = value,
-        onValueChange = onValueChange,
-        singleLine = true,
-        label = { Text(label) },
-        modifier = Modifier.width(200.dp),
-        shape = MaterialTheme.shapes.large,
-        textStyle = TextStyle(
-            fontSize = 16.sp,
-            textAlign = TextAlign.Center
-        ),
-        colors = TextFieldDefaults.colors(
-            focusedTextColor = MaterialTheme.colorScheme.primary,
-            unfocusedTextColor = MaterialTheme.colorScheme.tertiary,
 
-            )
-    )
-}
 
-@Composable
-fun CommonButton(
-    text: String,
-    backColor: Color = MaterialTheme.colorScheme.primary,
-    onClick: (() -> Unit)? = null
-) {
-    val shape = MaterialTheme.shapes.large
-    Box(
-        modifier = Modifier.wrapContentSize()
-            .background(color = backColor, shape = shape)
-            .border(width = 1.dp, color = Color.Black, shape = shape)
-            .padding(16.dp)
-            .clickable(onClick = {
-                onClick?.invoke()
-            })
-    ) {
-        Text(text = text, fontSize = 16.sp)
-    }
-}
 
 @OptIn(ExperimentalFoundationApi::class)
 @Composable

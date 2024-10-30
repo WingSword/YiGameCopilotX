@@ -17,11 +17,13 @@ kotlin = "2.0.20"
 kotlinx-coroutines = "1.8.1"
 ktor = "2.3.12"
 logback = "1.5.7"
+navigationComposeVersion = "2.8.0-alpha10"
 places = "4.0.0"
 
 [libraries]
 io-ktor-ktor-client-android11 = { module = "io.ktor:ktor-client-android", version.ref = "ktor" }
 io-ktor-ktor-client-darwin5 = { module = "io.ktor:ktor-client-darwin", version.ref = "ktor" }
+jetbrains-navigation-compose = { module = "org.jetbrains.androidx.navigation:navigation-compose", version.ref = "navigationComposeVersion" }
 kotlin-test = { module = "org.jetbrains.kotlin:kotlin-test", version.ref = "kotlin" }
 kotlin-test-junit = { module = "org.jetbrains.kotlin:kotlin-test-junit", version.ref = "kotlin" }
 junit = { group = "junit", name = "junit", version.ref = "junit" }
