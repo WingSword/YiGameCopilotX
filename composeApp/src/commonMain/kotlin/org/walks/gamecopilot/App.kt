@@ -72,9 +72,11 @@ import org.walks.gamecopilot.ui.button.ButtonType
 import org.walks.gamecopilot.ui.button.CircleButton
 import org.walks.gamecopilot.ui.button.CommonButton
 import org.walks.gamecopilot.ui.button.WeButton
-import org.walks.gamecopilot.ui.home.ModeSelectList
+import org.walks.gamecopilot.ui.page.home.ModeSelectList
+import org.walks.gamecopilot.ui.page.home.StartPage
 import org.walks.gamecopilot.ui.input.CommonTextField
 import org.walks.gamecopilot.ui.input.HalfRadioTextField
+import org.walks.gamecopilot.ui.page.room.RoomPage
 import org.walks.gamecopilot.ui.picker.WeSingleColumnPicker
 
 @Composable
@@ -100,7 +102,6 @@ fun App() {
 fun AppView(viewmodel: MainViewmodel) {
     val snackState = remember { mutableStateOf(SnackbarHostState()) }
     val playerNum = viewmodel.playerNumber.collectAsState()
-
     Scaffold(
         topBar = {
             CenterAlignedTopAppBar(
@@ -196,113 +197,6 @@ fun NavigationHost(viewmodel: MainViewmodel) {
     }
 }
 
-@Composable
-fun StartPage(viewmodel: MainViewmodel) {
-
-    var showNumberPicker by remember { mutableStateOf(false) }
-
-    var roomName by remember { mutableStateOf("") }
-    var roomKey by remember { mutableStateOf("") }
-    val numberList = listOf("4", "5", "6", "7", "8", "9", "10")
-    val gameMode = viewmodel.startedGameMode.collectAsState()
-    val playerNum = viewmodel.playerNumber.collectAsState()
-
-
-    Column {
-        ModeSelectList(mutableListOf("谁是卧底1", "谁是卧底2", "谁是卧底3")) {
-            viewmodel.handleIntent(GameIntent.updateGameMode(1))
-        }
-        Spacer(Modifier.height(16.dp))
-        AnimatedVisibility(gameMode.value == 1) {
-            Column(
-                verticalArrangement = Arrangement.spacedBy(16.dp),
-                modifier = Modifier.scrollable(
-                    state = rememberScrollState(),
-                    orientation = Orientation.Vertical
-                )
-            ) {
-                Text(
-                    "创建/加入房间",
-                    style = MaterialTheme.typography.bodyLarge,
-                    color = Color.Black
-                )
-                Card(
-                    modifier = Modifier.fillMaxWidth()
-                        .shadow(10.dp, shape = RoundedCornerShape(32.dp))
-                        .clip(RoundedCornerShape(32.dp)),
-                    colors = CardDefaults.cardColors(containerColor = Color(0xFF8EC3CB))
-                ) {
-                    Column(
-                        modifier = Modifier.padding(end = 16.dp, top = 16.dp, bottom = 16.dp)
-                            .fillMaxWidth(),
-                        verticalArrangement = Arrangement.spacedBy(16.dp),
-                        horizontalAlignment = Alignment.CenterHorizontally
-                    ) {
-                        HalfRadioTextField(
-                            value = roomName,
-                            label = "房间名称",
-                            onValueChange = { roomName = it })
-                        HalfRadioTextField(
-                            value = roomKey,
-                            label = "房间密钥",
-                            onValueChange = { roomKey = it })
-
-                        Row(
-                            modifier = Modifier.height(68.dp).fillMaxWidth(),
-                            horizontalArrangement = Arrangement.End
-                        ) {
-                            CircleButton("创建房间 ", onClick = {
-                                viewmodel.handleIntent(
-                                    GameIntent.CreateAGameRoom(
-                                        roomName,
-                                        roomKey,
-                                    )
-                                )
-                            })
-                            Spacer(Modifier.width(16.dp))
-                            CircleButton("加入房间 ", backColor = Color(0xFFFFB333), onClick = {
-                                GameIntent.JoinToAGameRoom(roomName, roomKey)
-                            })
-                        }
-
-                    }
-                }
-            }
-        }
-    }
-    AnimatedVisibility(gameMode.value > 1) {
-        CommonButton("选择游玩人数 " + numberList[playerNum.value], onClick = {
-            showNumberPicker = true
-        })
-    }
-
-    AnimatedVisibility(gameMode.value == 1) {
-        val gameStateList = viewmodel.gameEntity.collectAsState().value.timeEntityList
-        if (gameStateList.isNotEmpty()) {
-            GreetingView(
-                gameStateList.last().spyNum,
-                gameStateList.last().gameWord
-            )
-        }
-    }
-
-    WeSingleColumnPicker(
-        visible = showNumberPicker,
-        title = "选择游玩人数",
-        range = numberList,
-        onCancel = { showNumberPicker = false },
-        onChange = { viewmodel.handleIntent(GameIntent.updatePlayerNum(it)) },
-        value = playerNum.value
-    )
-}
-
-
-@Composable
-fun RoomPage() {
-    Box {
-
-    }
-}
 
 
 @OptIn(ExperimentalFoundationApi::class)
