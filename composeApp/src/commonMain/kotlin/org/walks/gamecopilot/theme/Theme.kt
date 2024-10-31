@@ -10,12 +10,9 @@ import androidx.compose.material3.darkColorScheme
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
-import androidx.compose.runtime.SideEffect
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.toArgb
 
-import androidx.compose.ui.text.PlatformTextStyle
 import androidx.compose.ui.text.TextStyle
 
 import com.yi.yigamecopilot.android.theme.BackgroundColorDark
@@ -31,7 +28,6 @@ import com.yi.yigamecopilot.android.theme.FontSecondaryColorLight
 import com.yi.yigamecopilot.android.theme.OnBackgroundColorDark
 import com.yi.yigamecopilot.android.theme.OnBackgroundColorLight
 import com.yi.yigamecopilot.android.theme.PrimaryColor
-import com.yi.yigamecopilot.android.theme.Typography
 
 private val DarkColorScheme = darkColorScheme(
     primary = PrimaryColor,
@@ -59,6 +55,7 @@ private val LightColorScheme = lightColorScheme(
     outline = BorderColorLight
 )
 
+
 @Composable
 fun WeUITheme(
     darkTheme: Boolean = isSystemInDarkTheme(),
@@ -80,9 +77,11 @@ fun WeUITheme(
 //        }
 //    }
 
+
     MaterialTheme(
         colorScheme = colorScheme,
-        typography = Typography
+        typography = Typography,
+
     ) {
         CompositionLocalProvider(
             LocalTextStyle provides TextStyle(

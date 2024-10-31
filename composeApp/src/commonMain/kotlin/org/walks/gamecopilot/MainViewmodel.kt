@@ -4,7 +4,9 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.lifecycle.ViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.update
 import org.walks.gamecopilot.data.entity.GameEntity
+import org.walks.gamecopilot.data.entity.RoomState
 import org.walks.gamecopilot.data.entity.TimeEntity
 import org.walks.gamecopilot.intent.GameIntent
 
@@ -19,7 +21,13 @@ class MainViewmodel : ViewModel() {
     private val _gameEntity = MutableStateFlow(GameEntity(0, mutableListOf()))
     val gameEntity: StateFlow<GameEntity> = _gameEntity
 
-    var topTipState= mutableStateOf("")
+    private val _roomEntityState = MutableStateFlow(RoomState())
+    val roomEntityState: StateFlow<RoomState> = _roomEntityState
+
+    private val _roomFinished=MutableStateFlow(false)
+    val roomFinished: StateFlow<Boolean> = _roomFinished
+
+    var topTipState = mutableStateOf("")
         private set
 
     private val wordList by lazy {
@@ -59,12 +67,43 @@ class MainViewmodel : ViewModel() {
             }
 
             is GameIntent.CreateAGameRoom -> {
-                if(intent.roomKey.isNullOrBlank()||intent.roomName.isNullOrBlank()){
+                if (intent.roomKey.isBlank() || intent.roomName.isBlank()) {
                     topTipState.value = "房间名或密码不能为空"
+                    return
+                }
+
+                _roomEntityState.update {
+                    it.copy(
+                        roomNumber = intent.roomKey,
+                        roomFinished = true,
+                        playerNo = 1,
+                        playerNum = 1,
+                        startedGameMode = startedGameMode.value
+                    )
+                }
+                _roomFinished.update {
+                    true
                 }
             }
-            is GameIntent.JoinToAGameRoom -> {
 
+            is GameIntent.JoinToAGameRoom -> {
+                if (intent.roomKey.isBlank() || intent.roomName.isBlank()) {
+                    topTipState.value = "房间名或密码不能为空"
+                    return
+                }
+
+                _roomEntityState.update {
+                    it.copy(
+                        roomNumber = intent.roomKey,
+                        roomFinished = true,
+                        playerNo = 1,
+                        playerNum = 1,
+                        startedGameMode = startedGameMode.value
+                    )
+                }
+                _roomFinished.update {
+                    true
+                }
             }
         }
     }

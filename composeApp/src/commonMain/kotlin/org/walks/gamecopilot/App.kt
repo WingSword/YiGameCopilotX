@@ -5,6 +5,8 @@ import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.combinedClickable
+import androidx.compose.foundation.gestures.Orientation
+import androidx.compose.foundation.gestures.scrollable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -17,10 +19,14 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardColors
+import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CenterAlignedTopAppBar
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
@@ -33,12 +39,12 @@ import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -52,18 +58,23 @@ import androidx.lifecycle.viewmodel.CreationExtras
 import androidx.lifecycle.viewmodel.MutableCreationExtras
 import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
+import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import com.yi.yigamecopilot.android.theme.MorandiColorList
+import kotlinx.coroutines.flow.collectLatest
 import org.walks.gamecopilot.theme.WeUITheme
 import org.jetbrains.compose.ui.tooling.preview.Preview
 import org.walks.gamecopilot.intent.GameIntent
 import org.walks.gamecopilot.ui.badge.WeBadge
 import org.walks.gamecopilot.ui.button.ButtonType
+import org.walks.gamecopilot.ui.button.CircleButton
 import org.walks.gamecopilot.ui.button.CommonButton
 import org.walks.gamecopilot.ui.button.WeButton
+import org.walks.gamecopilot.ui.home.ModeSelectList
 import org.walks.gamecopilot.ui.input.CommonTextField
+import org.walks.gamecopilot.ui.input.HalfRadioTextField
 import org.walks.gamecopilot.ui.picker.WeSingleColumnPicker
 
 @Composable
@@ -153,26 +164,28 @@ fun AppView(viewmodel: MainViewmodel) {
     ) { inp ->
         Column(
             modifier = Modifier
-                .padding(inp)
+                .padding(horizontal = 24.dp, vertical = inp.calculateTopPadding())
                 .fillMaxWidth(),
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Center
         ) {
-            Column(
-                modifier = Modifier
-                    .fillMaxWidth(),
-                horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.Center
-            ) {
-                NavigationHost(viewmodel)
-            }
+            NavigationHost(viewmodel)
         }
     }
 }
 
 @Composable
-fun NavigationHost(viewmodel: MainViewmodel){
-    val navi= rememberNavController()
+fun NavigationHost(viewmodel: MainViewmodel) {
+    val navi = rememberNavController()
+    LaunchedEffect(viewmodel.roomEntityState) {
+        viewmodel.roomEntityState.collectLatest { roomState ->
+            if (navi.currentDestination?.route == "start" && roomState.roomFinished) {
+                navi.navigate("room")
+            }
+        }
+    }
+
+
     NavHost(navi, startDestination = "start") {
         composable("start") {
             StartPage(viewmodel)
@@ -185,7 +198,7 @@ fun NavigationHost(viewmodel: MainViewmodel){
 
 @Composable
 fun StartPage(viewmodel: MainViewmodel) {
-    val scope = rememberCoroutineScope()
+
     var showNumberPicker by remember { mutableStateOf(false) }
 
     var roomName by remember { mutableStateOf("") }
@@ -194,35 +207,68 @@ fun StartPage(viewmodel: MainViewmodel) {
     val gameMode = viewmodel.startedGameMode.collectAsState()
     val playerNum = viewmodel.playerNumber.collectAsState()
 
-    AnimatedVisibility(gameMode.value == 0) {
-        CommonButton("谁是卧底", onClick = {
+
+    Column {
+        ModeSelectList(mutableListOf("谁是卧底1", "谁是卧底2", "谁是卧底3")) {
             viewmodel.handleIntent(GameIntent.updateGameMode(1))
-        })
-    }
-
-
-
-    Spacer(Modifier.height(16.dp))
-    AnimatedVisibility(gameMode.value == 1) {
-        Column(
-            verticalArrangement = Arrangement.spacedBy(16.dp),
-            horizontalAlignment = Alignment.CenterHorizontally
-        ) {
-            CommonTextField(value = roomName, label = "房间名称", onValueChange = { roomName = it })
-            CommonTextField(value = roomKey, label = "房间密钥", onValueChange = { roomKey = it })
-
-            Row {
-                CommonButton("创建房间 ", onClick = {
-                    viewmodel.handleIntent(GameIntent.CreateAGameRoom(roomName, roomKey))
-                })
-                Spacer(Modifier.width(16.dp))
-                CommonButton("加入房间 ", onClick = {
-
-                })
-            }
-
         }
+        Spacer(Modifier.height(16.dp))
+        AnimatedVisibility(gameMode.value == 1) {
+            Column(
+                verticalArrangement = Arrangement.spacedBy(16.dp),
+                modifier = Modifier.scrollable(
+                    state = rememberScrollState(),
+                    orientation = Orientation.Vertical
+                )
+            ) {
+                Text(
+                    "创建/加入房间",
+                    style = MaterialTheme.typography.bodyLarge,
+                    color = Color.Black
+                )
+                Card(
+                    modifier = Modifier.fillMaxWidth()
+                        .shadow(10.dp, shape = RoundedCornerShape(32.dp))
+                        .clip(RoundedCornerShape(32.dp)),
+                    colors = CardDefaults.cardColors(containerColor = Color(0xFF8EC3CB))
+                ) {
+                    Column(
+                        modifier = Modifier.padding(end = 16.dp, top = 16.dp, bottom = 16.dp)
+                            .fillMaxWidth(),
+                        verticalArrangement = Arrangement.spacedBy(16.dp),
+                        horizontalAlignment = Alignment.CenterHorizontally
+                    ) {
+                        HalfRadioTextField(
+                            value = roomName,
+                            label = "房间名称",
+                            onValueChange = { roomName = it })
+                        HalfRadioTextField(
+                            value = roomKey,
+                            label = "房间密钥",
+                            onValueChange = { roomKey = it })
 
+                        Row(
+                            modifier = Modifier.height(68.dp).fillMaxWidth(),
+                            horizontalArrangement = Arrangement.End
+                        ) {
+                            CircleButton("创建房间 ", onClick = {
+                                viewmodel.handleIntent(
+                                    GameIntent.CreateAGameRoom(
+                                        roomName,
+                                        roomKey,
+                                    )
+                                )
+                            })
+                            Spacer(Modifier.width(16.dp))
+                            CircleButton("加入房间 ", backColor = Color(0xFFFFB333), onClick = {
+                                GameIntent.JoinToAGameRoom(roomName, roomKey)
+                            })
+                        }
+
+                    }
+                }
+            }
+        }
     }
     AnimatedVisibility(gameMode.value > 1) {
         CommonButton("选择游玩人数 " + numberList[playerNum.value], onClick = {
@@ -250,12 +296,13 @@ fun StartPage(viewmodel: MainViewmodel) {
     )
 }
 
+
 @Composable
 fun RoomPage() {
+    Box {
 
+    }
 }
-
-
 
 
 @OptIn(ExperimentalFoundationApi::class)
