@@ -4,6 +4,7 @@ import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -25,7 +26,7 @@ fun StartPage(viewmodel: MainViewmodel) {
     val gameModeList= listOf("谁是卧底", "谁是卧底（本地）", "谁是卧底3")
     val gameMode = viewmodel.startedGameMode.collectAsState()
     val playerNum = viewmodel.playerNumber.collectAsState()
-    Column {
+    Column(modifier = Modifier.padding(horizontal = 24.dp)) {
         ModeSelectList(gameModeList) {position->
             viewmodel.handleIntent(GameIntent.updateGameMode(position+1))
         }

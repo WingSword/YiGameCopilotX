@@ -165,7 +165,7 @@ fun AppView(viewmodel: MainViewmodel) {
     ) { inp ->
         Column(
             modifier = Modifier
-                .padding(horizontal = 24.dp, vertical = inp.calculateTopPadding())
+                .padding(inp)
                 .fillMaxWidth(),
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Center
@@ -192,7 +192,7 @@ fun NavigationHost(viewmodel: MainViewmodel) {
             StartPage(viewmodel)
         }
         composable("room") {
-            RoomPage()
+            RoomPage(viewmodel)
         }
     }
 }

@@ -67,10 +67,10 @@ class MainViewmodel : ViewModel() {
             }
 
             is GameIntent.CreateAGameRoom -> {
-                if (intent.roomKey.isBlank() || intent.roomName.isBlank()) {
-                    topTipState.value = "房间名或密码不能为空"
-                    return
-                }
+//                if (intent.roomKey.isBlank() || intent.roomName.isBlank()) {
+//                    topTipState.value = "房间名或密码不能为空"
+//                    return
+//                }
 
                 _roomEntityState.update {
                     it.copy(
