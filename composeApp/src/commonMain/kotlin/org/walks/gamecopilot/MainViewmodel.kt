@@ -57,7 +57,7 @@ class MainViewmodel : ViewModel() {
                             TimeEntity(
                                 gamePlayerNumber = playerNumber.value,
                                 gameWord = wordList.random(),
-                                spyNum = (1..playerNumber.value).random()
+                                spyNum = (1..roomEntityState.value.playerNum).random()
                             )
                         )
                         _gameEntity.value =

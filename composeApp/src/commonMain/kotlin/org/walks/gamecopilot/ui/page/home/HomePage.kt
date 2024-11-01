@@ -22,12 +22,12 @@ import org.walks.gamecopilot.ui.picker.WeSingleColumnPicker
 fun StartPage(viewmodel: MainViewmodel) {
     var showNumberPicker by remember { mutableStateOf(false) }
     val numberList = listOf("4", "5", "6", "7", "8", "9", "10")
-    val gameModeList= listOf("谁是卧底1", "谁是卧底2", "谁是卧底3")
+    val gameModeList= listOf("谁是卧底", "谁是卧底（本地）", "谁是卧底3")
     val gameMode = viewmodel.startedGameMode.collectAsState()
     val playerNum = viewmodel.playerNumber.collectAsState()
     Column {
-        ModeSelectList(gameModeList) {
-            viewmodel.handleIntent(GameIntent.updateGameMode(1))
+        ModeSelectList(gameModeList) {position->
+            viewmodel.handleIntent(GameIntent.updateGameMode(position+1))
         }
         Spacer(Modifier.height(16.dp))
         AnimatedVisibility(gameMode.value == 1) {
