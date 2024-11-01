@@ -61,13 +61,22 @@ fun MemberList(itemList: List<MemberEntry>) {
 
 @Composable
 fun RoomMemberListItem(item: MemberEntry) {
+    var memberStanding by remember { mutableStateOf(0) }
     Row(
         modifier = Modifier.height(64.dp).width(128.dp)
-            .background(color = Color(0xFFF6B550), shape = RoundedCornerShape(0, 32, 32, 0)
+            .background(
+                color = Color(0xFFF6B550), shape = RoundedCornerShape(0, 32, 32, 0)
             ).padding(6.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        CircleButton("${item.playerNo}号")
-
+        CircleButton("${item.playerNo}号", canClickable = !item.isMine) {
+            memberStanding = (memberStanding + 1) % roomMemberListItemStanding.size
+        }
+        Text(
+            if (item.isMine) "自己" else roomMemberListItemStanding[memberStanding],
+            modifier = Modifier.padding(start = 4.dp)
+        )
     }
 }
+
+val roomMemberListItemStanding: List<String> = listOf("身份存疑", "卧底", "好人")

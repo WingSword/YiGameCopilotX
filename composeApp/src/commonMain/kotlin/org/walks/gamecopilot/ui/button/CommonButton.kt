@@ -44,14 +44,15 @@ fun CommonButton(
 fun CircleButton(
     text: String,
     backColor: Color = MaterialTheme.colorScheme.primary,
-    onClick: (() -> Unit)? = null
+    canClickable: Boolean = true,
+    onClick: (() -> Unit)? = null,
 ) {
     Box(
         modifier = Modifier.wrapContentWidth().aspectRatio(1/1f)
             .background(color = backColor, shape = CircleShape)
             .clickable(onClick = {
                 onClick?.invoke()
-            }), contentAlignment = Alignment.Center
+            }, enabled = canClickable), contentAlignment = Alignment.Center
     ) {
         Text(text = text, fontSize = 16.sp, textAlign = TextAlign.Center)
     }
