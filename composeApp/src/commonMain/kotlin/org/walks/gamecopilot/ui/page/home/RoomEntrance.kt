@@ -38,7 +38,7 @@ fun RoomEntranceCard(viewmodel: MainViewmodel) {
     var roomKey by remember { mutableStateOf("") }
     Column(
         verticalArrangement = Arrangement.spacedBy(16.dp),
-        modifier = Modifier.scrollable(
+        modifier = Modifier.padding(horizontal = 24.dp).scrollable(
             state = rememberScrollState(),
             orientation = Orientation.Vertical
         )

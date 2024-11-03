@@ -26,8 +26,8 @@ fun StartPage(viewmodel: MainViewmodel) {
     val gameModeList= listOf("谁是卧底", "谁是卧底（本地）", "谁是卧底3")
     val gameMode = viewmodel.startedGameMode.collectAsState()
     val playerNum = viewmodel.playerNumber.collectAsState()
-    Column(modifier = Modifier.padding(horizontal = 24.dp)) {
-        ModeSelectList(gameModeList) {position->
+    Column(modifier = Modifier) {
+        ModeSelectList(gameModeList, gameMode.value-1) {position->
             viewmodel.handleIntent(GameIntent.updateGameMode(position+1))
         }
         Spacer(Modifier.height(16.dp))
