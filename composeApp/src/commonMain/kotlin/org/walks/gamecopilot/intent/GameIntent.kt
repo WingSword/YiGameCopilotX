@@ -10,4 +10,5 @@ sealed class GameIntent {
         val roomKey: String,
         val asPrimary: Boolean = false
     ) : GameIntent()
+    object LeaveGameRoom : GameIntent()
 }

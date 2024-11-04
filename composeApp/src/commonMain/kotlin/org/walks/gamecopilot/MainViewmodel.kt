@@ -12,8 +12,6 @@ import org.walks.gamecopilot.intent.GameIntent
 
 
 class MainViewmodel : ViewModel() {
-    private val _playerNumber = MutableStateFlow<Int>(0)
-    val playerNumber: StateFlow<Int> = _playerNumber
 
     private val _startedGameMode = MutableStateFlow<Int>(0)
     val startedGameMode: StateFlow<Int> = _startedGameMode
@@ -24,8 +22,6 @@ class MainViewmodel : ViewModel() {
     private val _roomEntityState = MutableStateFlow(RoomState())
     val roomEntityState: StateFlow<RoomState> = _roomEntityState
 
-    private val _roomFinished=MutableStateFlow(false)
-    val roomFinished: StateFlow<Boolean> = _roomFinished
 
     var topTipState = mutableStateOf("")
         private set
@@ -40,13 +36,14 @@ class MainViewmodel : ViewModel() {
     fun handleIntent(intent: GameIntent) {
         when (intent) {
             is GameIntent.updatePlayerNum -> {
-                _playerNumber.value = intent.num
+                _roomEntityState.update {
+                    it.copy(playerNum = intent.num)
+                }
             }
 
 
             is GameIntent.updateGameMode -> {
                 _startedGameMode.value = intent.mode
-
             }
 
             is GameIntent.startGame -> {
@@ -55,7 +52,7 @@ class MainViewmodel : ViewModel() {
                         val list = _gameEntity.value.timeEntityList
                         list.add(
                             TimeEntity(
-                                gamePlayerNumber = playerNumber.value,
+                                gamePlayerNumber = roomEntityState.value.playerNum,
                                 gameWord = wordList.random(),
                                 spyNum = (1..roomEntityState.value.playerNum).random()
                             )
@@ -67,10 +64,6 @@ class MainViewmodel : ViewModel() {
             }
 
             is GameIntent.CreateAGameRoom -> {
-//                if (intent.roomKey.isBlank() || intent.roomName.isBlank()) {
-//                    topTipState.value = "房间名或密码不能为空"
-//                    return
-//                }
 
                 _roomEntityState.update {
                     it.copy(
@@ -80,9 +73,6 @@ class MainViewmodel : ViewModel() {
                         playerNum = 1,
                         startedGameMode = startedGameMode.value
                     )
-                }
-                _roomFinished.update {
-                    true
                 }
             }
 
@@ -101,12 +91,25 @@ class MainViewmodel : ViewModel() {
                         startedGameMode = startedGameMode.value
                     )
                 }
-                _roomFinished.update {
-                    true
+            }
+
+            GameIntent.LeaveGameRoom -> {
+                _roomEntityState.update {
+                    it.copy(
+                        roomNumber = "",
+                        roomFinished = false,
+                        playerNo = 0,
+                        playerNum = 0,
+                        startedGameMode = startedGameMode.value
+                    )
                 }
             }
         }
     }
 
+
+    fun roomConfigure(){
+
+    }
 
 }

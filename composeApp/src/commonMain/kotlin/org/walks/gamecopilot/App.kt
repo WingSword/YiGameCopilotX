@@ -103,7 +103,7 @@ fun App() {
 @Composable
 fun AppView(viewmodel: MainViewmodel) {
     val snackState = remember { mutableStateOf(SnackbarHostState()) }
-    val playerNum = viewmodel.playerNumber.collectAsState()
+    val playerNum = viewmodel.roomEntityState.collectAsState().value.playerNum
     val navi = rememberNavController()
     Scaffold(
         topBar = {
@@ -114,9 +114,9 @@ fun AppView(viewmodel: MainViewmodel) {
                             text = "卧底游戏",
                             color = MaterialTheme.colorScheme.secondary
                         )
-                        AnimatedVisibility(playerNum.value > 0) {
+                        AnimatedVisibility(playerNum > 0) {
                             Text(
-                                "当前房间人数: ${playerNum.value}人",
+                                "当前房间人数: ${playerNum}人",
                                 style = MaterialTheme.typography.bodyMedium,
                                 color = MaterialTheme.colorScheme.tertiary
                             )
@@ -144,6 +144,9 @@ fun AppView(viewmodel: MainViewmodel) {
 
                             }else{
                                 navi.popBackStack()
+                                if(navi.currentDestination?.route == "start"){
+                                    viewmodel.handleIntent(GameIntent.LeaveGameRoom)
+                                }
                             }
 
                         },

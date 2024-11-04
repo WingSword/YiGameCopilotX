@@ -25,7 +25,7 @@ fun StartPage(viewmodel: MainViewmodel) {
     val numberList = listOf("4", "5", "6", "7", "8", "9", "10")
     val gameModeList= listOf("谁是卧底", "谁是卧底（本地）", "谁是卧底3")
     val gameMode = viewmodel.startedGameMode.collectAsState()
-    val playerNum = viewmodel.playerNumber.collectAsState()
+    val playerNum = viewmodel.roomEntityState.collectAsState().value.playerNum
     Column(modifier = Modifier.padding(horizontal = 24.dp)) {
         ModeSelectList(gameModeList, gameMode.value) {position->
             viewmodel.handleIntent(GameIntent.updateGameMode(position))
@@ -36,7 +36,7 @@ fun StartPage(viewmodel: MainViewmodel) {
         }
 
         AnimatedVisibility(gameMode.value == 1) {
-            CommonButton("选择游玩人数 " + numberList[playerNum.value], onClick = {
+            CommonButton("选择游玩人数 " + numberList[playerNum], onClick = {
                 showNumberPicker = true
             })
         }
@@ -59,6 +59,6 @@ fun StartPage(viewmodel: MainViewmodel) {
         range = numberList,
         onCancel = { showNumberPicker = false },
         onChange = { viewmodel.handleIntent(GameIntent.updatePlayerNum(it)) },
-        value = playerNum.value
+        value = playerNum
     )
 }
