@@ -104,6 +104,7 @@ fun App() {
 fun AppView(viewmodel: MainViewmodel) {
     val snackState = remember { mutableStateOf(SnackbarHostState()) }
     val playerNum = viewmodel.roomEntityState.collectAsState().value.playerNum
+    val roomTitle=viewmodel.roomEntityState.collectAsState().value.roomNumber
     val navi = rememberNavController()
     Scaffold(
         topBar = {
@@ -111,14 +112,14 @@ fun AppView(viewmodel: MainViewmodel) {
                 title = {
                     Column(horizontalAlignment = Alignment.CenterHorizontally) {
                         Text(
-                            text = "卧底游戏",
-                            color = MaterialTheme.colorScheme.secondary
+                            text =if(navi.currentDestination?.route == "room") roomTitle else "卧底游戏",
+                            color = MaterialTheme.colorScheme.onPrimary
                         )
                         AnimatedVisibility(playerNum > 0) {
                             Text(
                                 "当前房间人数: ${playerNum}人",
                                 style = MaterialTheme.typography.bodyMedium,
-                                color = MaterialTheme.colorScheme.tertiary
+                                color = MaterialTheme.colorScheme.onSecondary
                             )
                         }
                         AnimatedVisibility(viewmodel.topTipState.value.isNotBlank()) {
