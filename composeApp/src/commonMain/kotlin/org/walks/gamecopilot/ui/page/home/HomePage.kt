@@ -27,29 +27,31 @@ fun StartPage(viewmodel: MainViewmodel) {
     val gameMode = viewmodel.startedGameMode.collectAsState()
     val playerNum = viewmodel.playerNumber.collectAsState()
     Column(modifier = Modifier) {
-        ModeSelectList(gameModeList, gameMode.value-1) {position->
-            viewmodel.handleIntent(GameIntent.updateGameMode(position+1))
+        ModeSelectList(gameModeList, gameMode.value) {position->
+            viewmodel.handleIntent(GameIntent.updateGameMode(position))
         }
         Spacer(Modifier.height(16.dp))
-        AnimatedVisibility(gameMode.value == 1) {
+        AnimatedVisibility(gameMode.value == 0) {
             RoomEntranceCard(viewmodel)
         }
-    }
-    AnimatedVisibility(gameMode.value > 1) {
-        CommonButton("选择游玩人数 " + numberList[playerNum.value], onClick = {
-            showNumberPicker = true
-        })
-    }
 
-    AnimatedVisibility(gameMode.value == 1) {
-        val gameStateList = viewmodel.gameEntity.collectAsState().value.timeEntityList
-        if (gameStateList.isNotEmpty()) {
-            GreetingView(
-                gameStateList.last().spyNum,
-                gameStateList.last().gameWord
-            )
+        AnimatedVisibility(gameMode.value == 1) {
+            CommonButton("选择游玩人数 " + numberList[playerNum.value], onClick = {
+                showNumberPicker = true
+            })
+        }
+
+        AnimatedVisibility(gameMode.value == 1) {
+            val gameStateList = viewmodel.gameEntity.collectAsState().value.timeEntityList
+            if (gameStateList.isNotEmpty()) {
+                GreetingView(
+                    gameStateList.last().spyNum,
+                    gameStateList.last().gameWord
+                )
+            }
         }
     }
+
 
     WeSingleColumnPicker(
         visible = showNumberPicker,

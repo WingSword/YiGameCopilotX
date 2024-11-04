@@ -1,5 +1,6 @@
 package org.walks.gamecopilot.ui.page.home
 
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -50,7 +51,7 @@ fun ModeCard(desc: String, isSelected: Boolean = false, background: Color = Colo
 }
 
 @Composable
-fun ModeCardNext(desc: String, isSelected: Boolean = false, background: Color = Color(0xFFF6B550)){
+fun ModeCardNext(desc: String, isSelected: Boolean = false, background: Color = Color(0xFFF6B550)) {
     Column(
         modifier = Modifier.clip(shape = RoundedCornerShape(32.dp)).fillMaxSize()
             .background(color = background)
@@ -72,35 +73,36 @@ fun ModeCardNext(desc: String, isSelected: Boolean = false, background: Color = 
     }
 }
 
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
-fun ModeSelectList(list: List<String>,selectedPos:Int=0, onItemClick: (Int) -> Unit) {
+fun ModeSelectList(list: List<String>, selectedPos: Int = 0, onItemClick: (Int) -> Unit) {
     val screenWidthDp = ScreenSizeProvider.screenWidthDp
-    val currentItemWidth=(screenWidthDp/3)*2
-    val nextItemWidth=(currentItemWidth/3)*2
-    val lastItemWidth=currentItemWidth/3
-    LaunchedEffect(Unit){
+    val currentItemWidth = (screenWidthDp / 3) * 2
+    val nextItemWidth = (currentItemWidth / 3)
+    val lastItemWidth = currentItemWidth / 3
 
-
-    }
-    val colorList= listOf(
+    val colorList = listOf(
         Color(0xFFF6B550),
         Color(0xFF53AA99),
         Color(0xFFE46B49),
         Color(0xFF2E476E),
     )
-    LazyRow(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
+    LazyRow(horizontalArrangement = Arrangement.spacedBy(16.dp), modifier = Modifier.padding(horizontal = 24.dp)) {
+
         items(list.size) {
-            if(selectedPos==it){
-                Box(modifier = Modifier.size(currentItemWidth,208.dp).clickable { onItemClick.invoke(it) }) {
-                    ModeCard(list[it], background = colorList[it%4])
+            if (selectedPos == it) {
+                Box(
+                    modifier = Modifier.size(currentItemWidth, 208.dp)
+                        .clickable { onItemClick.invoke(it) }) {
+                    ModeCard(list[it], background = colorList[it % 4])
                 }
-            }else{
-                Box(modifier = Modifier.size(nextItemWidth,208.dp).clickable { onItemClick.invoke(it) }) {
-                    ModeCardNext(list[it], background = colorList[it%4])
+            } else {
+                Box(
+                    modifier = Modifier.size(nextItemWidth, 208.dp)
+                        .clickable { onItemClick.invoke(it) }) {
+                    ModeCardNext(list[it], background = colorList[it % 4])
                 }
-
             }
-
         }
     }
 }

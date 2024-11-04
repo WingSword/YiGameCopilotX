@@ -24,6 +24,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.List
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardColors
 import androidx.compose.material3.CardDefaults
@@ -102,6 +103,7 @@ fun App() {
 fun AppView(viewmodel: MainViewmodel) {
     val snackState = remember { mutableStateOf(SnackbarHostState()) }
     val playerNum = viewmodel.playerNumber.collectAsState()
+    val navi = rememberNavController()
     Scaffold(
         topBar = {
             CenterAlignedTopAppBar(
@@ -128,31 +130,36 @@ fun AppView(viewmodel: MainViewmodel) {
                     }
                 },
                 navigationIcon = {
-                    AnimatedVisibility(viewmodel.startedGameMode.value > 0) {
-                        IconButton(
-                            modifier = Modifier
-                                .clip(CircleShape)
-                                .border(
-                                    width = 2.dp,
-                                    color = MaterialTheme.colorScheme.secondaryContainer,
-                                    shape = CircleShape
-                                ),
-                            onClick = {
 
-                            },
-                            colors = IconButtonColors(
-                                containerColor = MaterialTheme.colorScheme.secondaryContainer,
-                                contentColor = MaterialTheme.colorScheme.onSecondaryContainer,
-                                disabledContentColor = Color.Red,
-                                disabledContainerColor = MaterialTheme.colorScheme.secondaryContainer
-                            )
-                        ) {
-                            Icon(
-                                imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                                contentDescription = "back button"
-                            )
-                        }
+                    IconButton(
+                        modifier = Modifier
+                            .clip(CircleShape)
+                            .border(
+                                width = 2.dp,
+                                color = MaterialTheme.colorScheme.secondaryContainer,
+                                shape = CircleShape
+                            ),
+                        onClick = {
+                            if(navi.currentBackStack.value.isEmpty()){
+
+                            }else{
+                                navi.popBackStack()
+                            }
+
+                        },
+                        colors = IconButtonColors(
+                            containerColor = MaterialTheme.colorScheme.secondaryContainer,
+                            contentColor = MaterialTheme.colorScheme.onSecondaryContainer,
+                            disabledContentColor = Color.Red,
+                            disabledContainerColor = MaterialTheme.colorScheme.secondaryContainer
+                        )
+                    ) {
+                        Icon(
+                            imageVector = if(navi.currentBackStack.value.isEmpty()) Icons.AutoMirrored.Filled.List else Icons.AutoMirrored.Filled.ArrowBack,
+                            contentDescription = "back button"
+                        )
                     }
+
                 },
                 modifier = Modifier
                     .padding(24.dp)
@@ -170,14 +177,13 @@ fun AppView(viewmodel: MainViewmodel) {
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Center
         ) {
-            NavigationHost(viewmodel)
+            NavigationHost(viewmodel, navi)
         }
     }
 }
 
 @Composable
-fun NavigationHost(viewmodel: MainViewmodel) {
-    val navi = rememberNavController()
+fun NavigationHost(viewmodel: MainViewmodel, navi: NavHostController) {
     LaunchedEffect(viewmodel.roomEntityState) {
         viewmodel.roomEntityState.collectLatest { roomState ->
             if (navi.currentDestination?.route == "start" && roomState.roomFinished) {
@@ -196,7 +202,6 @@ fun NavigationHost(viewmodel: MainViewmodel) {
         }
     }
 }
-
 
 
 @OptIn(ExperimentalFoundationApi::class)
