@@ -19,12 +19,15 @@ import com.yi.yigamecopilot.android.theme.BackgroundColorDark
 import com.yi.yigamecopilot.android.theme.BackgroundColorLight
 import com.yi.yigamecopilot.android.theme.BorderColorDark
 import com.yi.yigamecopilot.android.theme.BorderColorLight
+import com.yi.yigamecopilot.android.theme.CardColorDark
+import com.yi.yigamecopilot.android.theme.CardColorLight
 import com.yi.yigamecopilot.android.theme.DangerColorDark
 import com.yi.yigamecopilot.android.theme.DangerColorLight
 import com.yi.yigamecopilot.android.theme.FontColorDark
 import com.yi.yigamecopilot.android.theme.FontColorLight
 import com.yi.yigamecopilot.android.theme.FontSecondaryColorDark
 import com.yi.yigamecopilot.android.theme.FontSecondaryColorLight
+import com.yi.yigamecopilot.android.theme.MorandiBrown
 import com.yi.yigamecopilot.android.theme.OnBackgroundColorDark
 import com.yi.yigamecopilot.android.theme.OnBackgroundColorLight
 import com.yi.yigamecopilot.android.theme.PrimaryColor
@@ -32,6 +35,7 @@ import com.yi.yigamecopilot.android.theme.PrimaryColor
 private val DarkColorScheme = darkColorScheme(
     primary = PrimaryColor,
     onPrimary = FontColorDark,
+    secondary = Color.LightGray,
     onSecondary = FontSecondaryColorDark,
     background = BackgroundColorDark,
     onBackground = OnBackgroundColorDark,
@@ -39,12 +43,16 @@ private val DarkColorScheme = darkColorScheme(
     onSurface = BackgroundColorDark,
     error = DangerColorDark,
     errorContainer = OnBackgroundColorDark,
-    outline = BorderColorDark
+    outline = BorderColorDark,
+    primaryContainer = CardColorDark,
+    secondaryContainer = MorandiBrown
+
 )
 
 private val LightColorScheme = lightColorScheme(
     primary = PrimaryColor,
     onPrimary = FontColorLight,
+    secondary = Color.DarkGray,
     onSecondary = FontSecondaryColorLight,
     background = BackgroundColorLight,
     onBackground = OnBackgroundColorLight,
@@ -52,7 +60,9 @@ private val LightColorScheme = lightColorScheme(
     onSurface = BackgroundColorLight,
     error = DangerColorLight,
     errorContainer = Color(0xffFFFBE6),
-    outline = BorderColorLight
+    outline = BorderColorLight,
+    primaryContainer = CardColorLight,
+    secondaryContainer = Color(0xFFF6B550)
 )
 
 

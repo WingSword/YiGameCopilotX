@@ -82,11 +82,11 @@ fun HalfRadioTextField(
             textAlign = TextAlign.Center
         ),
         colors = TextFieldDefaults.colors(
-            focusedTextColor = Color.Black,
-            unfocusedTextColor = MaterialTheme.colorScheme.tertiary,
+            focusedTextColor = MaterialTheme.colorScheme.onPrimary,
+            unfocusedTextColor = MaterialTheme.colorScheme.onSecondary,
             unfocusedContainerColor = backgroundColor,
-            focusedContainerColor = MaterialTheme.colorScheme.onBackground,
-            focusedLabelColor = Color.Black,
+            focusedContainerColor = MaterialTheme.colorScheme.background,
+
             )
     )
 }

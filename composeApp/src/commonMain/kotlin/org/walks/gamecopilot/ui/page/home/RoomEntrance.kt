@@ -38,7 +38,7 @@ fun RoomEntranceCard(viewmodel: MainViewmodel) {
     var roomKey by remember { mutableStateOf("") }
     Column(
         verticalArrangement = Arrangement.spacedBy(16.dp),
-        modifier = Modifier.padding(horizontal = 24.dp).scrollable(
+        modifier = Modifier.padding().scrollable(
             state = rememberScrollState(),
             orientation = Orientation.Vertical
         )
@@ -46,13 +46,13 @@ fun RoomEntranceCard(viewmodel: MainViewmodel) {
         Text(
             "创建/加入房间",
             style = MaterialTheme.typography.bodyLarge,
-            color = Color.Black
+            color = MaterialTheme.colorScheme.secondary
         )
         Card(
             modifier = Modifier.fillMaxWidth()
                 .shadow(10.dp, shape = RoundedCornerShape(32.dp))
                 .clip(RoundedCornerShape(32.dp)),
-            colors = CardDefaults.cardColors(containerColor = Color(0xFF8EC3CB))
+            colors = CardDefaults.cardColors()
         ) {
             Column(
                 modifier = Modifier.padding(end = 16.dp, top = 16.dp, bottom = 16.dp)
@@ -82,7 +82,7 @@ fun RoomEntranceCard(viewmodel: MainViewmodel) {
                         )
                     })
                     Spacer(Modifier.width(16.dp))
-                    CircleButton("加入房间 ", backColor = Color(0xFFFFB333), onClick = {
+                    CircleButton("加入房间 ", backColor = MaterialTheme.colorScheme.secondaryContainer, onClick = {
                         GameIntent.JoinToAGameRoom(roomName, roomKey)
                     })
                 }

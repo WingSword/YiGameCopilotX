@@ -12,10 +12,12 @@ val BackgroundColorLight = Color(0xffEDEDED)
 val BackgroundColorDark = Color(0xff111111)
 val OnBackgroundColorLight = Color.White
 val OnBackgroundColorDark = Color(0xff191919)
-val DangerColorLight = Color(0xffFA5151)
+val DangerColorLight = Color(0xFFE46B49)
 val DangerColorDark = Color(0xff9A0404)
 val WarningColor = Color(254, 156, 1)
 val PlainColor = Color(199, 198, 205)
+val CardColorDark=Color(0xFF8EC3CB)
+val CardColorLight=Color(0xFF22a2c3)
 
 // 文字颜色
 val FontColorLight = Color(0f, 0f, 0f, 0.9f)

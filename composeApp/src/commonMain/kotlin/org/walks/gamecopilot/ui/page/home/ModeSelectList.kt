@@ -87,7 +87,7 @@ fun ModeSelectList(list: List<String>, selectedPos: Int = 0, onItemClick: (Int) 
         Color(0xFFE46B49),
         Color(0xFF2E476E),
     )
-    LazyRow(horizontalArrangement = Arrangement.spacedBy(16.dp), modifier = Modifier.padding(horizontal = 24.dp)) {
+    LazyRow(horizontalArrangement = Arrangement.spacedBy(16.dp), modifier = Modifier.padding()) {
 
         items(list.size) {
             if (selectedPos == it) {
