@@ -1,7 +1,7 @@
 package org.walks.gamecopilot.intent
 
 sealed class GameIntent {
-    data class updatePlayerNum(val num: Int) : GameIntent()
+    data class updatePlayerNum(val num: Int=0) : GameIntent()
     data class updateGameMode(val mode: Int) : GameIntent()
     data class startGame(val mode: Int) : GameIntent()
     data class CreateAGameRoom(val roomName: String, val roomKey: String) : GameIntent()
@@ -11,4 +11,5 @@ sealed class GameIntent {
         val asPrimary: Boolean = false
     ) : GameIntent()
     object LeaveGameRoom : GameIntent()
+
 }

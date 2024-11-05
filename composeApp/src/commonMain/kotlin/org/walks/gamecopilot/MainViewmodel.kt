@@ -36,9 +36,16 @@ class MainViewmodel : ViewModel() {
     fun handleIntent(intent: GameIntent) {
         when (intent) {
             is GameIntent.updatePlayerNum -> {
-                _roomEntityState.update {
-                    it.copy(playerNum = intent.num)
+                if(startedGameMode.value==0){
+                    _roomEntityState.update {
+                        it.copy(playerNum =roomEntityState.value.playerNum+1 )
+                    }
+                }else{
+                    _roomEntityState.update {
+                        it.copy(playerNum = intent.num)
+                    }
                 }
+
             }
 
 

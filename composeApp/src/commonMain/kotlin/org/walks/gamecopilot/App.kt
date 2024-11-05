@@ -4,6 +4,7 @@ import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.gestures.Orientation
 import androidx.compose.foundation.gestures.scrollable
@@ -25,6 +26,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.List
+import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardColors
 import androidx.compose.material3.CardDefaults
@@ -116,11 +118,17 @@ fun AppView(viewmodel: MainViewmodel) {
                             color = MaterialTheme.colorScheme.onPrimary
                         )
                         AnimatedVisibility(playerNum > 0) {
-                            Text(
-                                "当前房间人数: ${playerNum}人",
-                                style = MaterialTheme.typography.bodyMedium,
-                                color = MaterialTheme.colorScheme.onSecondary
-                            )
+                            Row {
+                                Text(
+                                    "当前房间人数: ${playerNum}人",
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    color = MaterialTheme.colorScheme.onSecondary
+                                )
+                                Icon(Icons.Filled.Refresh,"刷新房间人数", modifier = Modifier.clickable {
+                                    viewmodel.handleIntent(GameIntent.updatePlayerNum())
+                                })
+                            }
+
                         }
                         AnimatedVisibility(viewmodel.topTipState.value.isNotBlank()) {
                             Text(
@@ -141,7 +149,7 @@ fun AppView(viewmodel: MainViewmodel) {
                                 shape = CircleShape
                             ),
                         onClick = {
-                            if(navi.currentBackStack.value.isEmpty()){
+                            if(navi.currentDestination?.route == "start"){
 
                             }else{
                                 navi.popBackStack()
