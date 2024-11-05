@@ -29,7 +29,7 @@ fun RoomPage(viewmodel: MainViewmodel) {
     }
 
     Column {
-        FlopArea()
+        FlopArea(viewmodel,roomState)
         Spacer(Modifier.weight(1f))
         AnimatedVisibility(
             visible = animVisible,

@@ -10,6 +10,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
+import androidx.compose.foundation.lazy.grid.rememberLazyGridState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -28,6 +29,7 @@ import org.walks.gamecopilot.ui.button.CircleButton
 @Composable
 fun MemberList(itemList: List<MemberEntry>) {
 
+    val scrollState = rememberLazyGridState()
     val minWidth=(100+itemList.size*44).dp
     LazyVerticalGrid(
         columns = GridCells.Fixed(2),
@@ -36,12 +38,13 @@ fun MemberList(itemList: List<MemberEntry>) {
             .padding(top = 56.dp, bottom = 10.dp),
         reverseLayout = true,
         horizontalArrangement = Arrangement.spacedBy(16.dp),
-
+        state = scrollState
     ) {
         items(itemList.size) {
             RoomMemberListItem(itemList[it], it % 2 == 0)
         }
     }
+
 
 }
 

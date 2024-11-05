@@ -28,7 +28,7 @@ fun StartPage(viewmodel: MainViewmodel) {
     val playerNum = viewmodel.roomEntityState.collectAsState().value.playerNum
     Column(modifier = Modifier.padding(horizontal = 24.dp)) {
         ModeSelectList(gameModeList, gameMode.value) {position->
-            viewmodel.handleIntent(GameIntent.updateGameMode(position))
+            viewmodel.handleIntent(GameIntent.SwitchGameMode(position))
         }
         Spacer(Modifier.height(16.dp))
         AnimatedVisibility(gameMode.value == 0) {
@@ -58,7 +58,7 @@ fun StartPage(viewmodel: MainViewmodel) {
         title = "选择游玩人数",
         range = numberList,
         onCancel = { showNumberPicker = false },
-        onChange = { viewmodel.handleIntent(GameIntent.updatePlayerNum(it)) },
+        onChange = { viewmodel.handleIntent(GameIntent.RefreshPlayerNumber(it)) },
         value = playerNum
     )
 }

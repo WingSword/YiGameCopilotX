@@ -35,7 +35,7 @@ class MainViewmodel : ViewModel() {
 
     fun handleIntent(intent: GameIntent) {
         when (intent) {
-            is GameIntent.updatePlayerNum -> {
+            is GameIntent.RefreshPlayerNumber -> {
                 if(startedGameMode.value==0){
                     _roomEntityState.update {
                         it.copy(playerNum =roomEntityState.value.playerNum+1 )
@@ -49,12 +49,12 @@ class MainViewmodel : ViewModel() {
             }
 
 
-            is GameIntent.updateGameMode -> {
+            is GameIntent.SwitchGameMode -> {
                 _startedGameMode.value = intent.mode
             }
 
-            is GameIntent.startGame -> {
-                when (intent.mode) {
+            is GameIntent.StartGame -> {
+                when (startedGameMode.value) {
                     1 -> {
                         val list = _gameEntity.value.timeEntityList
                         list.add(
@@ -64,8 +64,7 @@ class MainViewmodel : ViewModel() {
                                 spyNum = (1..roomEntityState.value.playerNum).random()
                             )
                         )
-                        _gameEntity.value =
-                            _gameEntity.value.copy(gameMode = intent.mode, timeEntityList = list)
+                        _gameEntity.value = _gameEntity.value.copy(gameMode = startedGameMode.value, timeEntityList = list)
                     }
                 }
             }
