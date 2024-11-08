@@ -63,6 +63,7 @@ import com.yi.yigamecopilot.android.theme.MorandiColorList
 import kotlinx.coroutines.flow.collectLatest
 import org.walks.gamecopilot.theme.WeUITheme
 import org.jetbrains.compose.ui.tooling.preview.Preview
+import org.walks.gamecopilot.http.joinARoom
 import org.walks.gamecopilot.intent.GameIntent
 import org.walks.gamecopilot.ui.badge.WeBadge
 import org.walks.gamecopilot.ui.button.ButtonType
@@ -144,6 +145,7 @@ fun AppView(viewmodel: MainViewmodel) {
                             ),
                         onClick = {
                             if(navi.currentBackStackEntry?.destination?.route == "start"){
+
 
                             }else{
                                 navi.popBackStack()

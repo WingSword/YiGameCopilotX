@@ -2,12 +2,15 @@ package org.walks.gamecopilot
 
 import androidx.compose.runtime.mutableStateOf
 import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.launch
 import org.walks.gamecopilot.data.entity.GameEntity
 import org.walks.gamecopilot.data.entity.RoomState
 import org.walks.gamecopilot.data.entity.TimeEntity
+import org.walks.gamecopilot.http.joinARoom
 import org.walks.gamecopilot.intent.GameIntent
 
 
@@ -70,6 +73,9 @@ class MainViewmodel : ViewModel() {
             }
 
             is GameIntent.CreateAGameRoom -> {
+                viewModelScope.launch {
+                    joinARoom(intent.roomName,intent.roomKey)
+                }
 
                 _roomEntityState.update {
                     it.copy(

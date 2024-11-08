@@ -9,7 +9,8 @@ plugins {
 }
 
 kotlin {
-    val ktor_version = "2.3.12"
+    val ktorVersion = "2.3.2"
+    val kotlinxCoroutinesVersion = "1.9.0"
     @OptIn(ExperimentalWasmDsl::class)
     wasmJs {
         browser {
@@ -39,10 +40,12 @@ kotlin {
     jvm()
 
     sourceSets {
-
         commonMain.dependencies {
             // put your Multiplatform dependencies here
             implementation(libs.ktor.client.core)
+            implementation(libs.ktor.client.content.negotiation)
+            implementation(libs.ktor.serialization.kotlinx.json)
+            implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:$kotlinxCoroutinesVersion")
         }
         androidMain.dependencies {
             implementation(libs.io.ktor.ktor.client.android11)
@@ -50,6 +53,7 @@ kotlin {
         iosMain.dependencies {
             implementation(libs.io.ktor.ktor.client.darwin5)
         }
+
     }
 
 
