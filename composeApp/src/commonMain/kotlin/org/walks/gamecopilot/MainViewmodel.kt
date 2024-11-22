@@ -8,7 +8,6 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import org.walks.gamecopilot.data.entity.GameEntity
-import org.walks.gamecopilot.data.entity.RoomState
 import org.walks.gamecopilot.data.entity.TimeEntity
 import org.walks.gamecopilot.http.joinARoom
 import org.walks.gamecopilot.intent.GameIntent
