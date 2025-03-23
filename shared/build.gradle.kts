@@ -6,11 +6,11 @@ import org.jetbrains.kotlin.gradle.targets.js.webpack.KotlinWebpackConfig
 plugins {
     alias(libs.plugins.kotlinMultiplatform)
     alias(libs.plugins.androidLibrary)
+
 }
 
 kotlin {
-    val ktorVersion = "2.3.2"
-    val kotlinxCoroutinesVersion = "1.9.0"
+
     @OptIn(ExperimentalWasmDsl::class)
     wasmJs {
         browser {
@@ -25,18 +25,18 @@ kotlin {
             }
         }
     }
-    
+
     androidTarget {
         @OptIn(ExperimentalKotlinGradlePluginApi::class)
         compilerOptions {
             jvmTarget.set(JvmTarget.JVM_11)
         }
     }
-    
+
     iosX64()
     iosArm64()
     iosSimulatorArm64()
-    
+
     jvm()
 
     sourceSets {
@@ -45,7 +45,9 @@ kotlin {
             implementation(libs.ktor.client.core)
             implementation(libs.ktor.client.content.negotiation)
             implementation(libs.ktor.serialization.kotlinx.json)
-            implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:$kotlinxCoroutinesVersion")
+            implementation(libs.ktor.coroutines)
+            implementation(libs.jetbrains.serialization.kotlinx.json)
+
         }
         androidMain.dependencies {
             implementation(libs.io.ktor.ktor.client.android11)
@@ -55,7 +57,6 @@ kotlin {
         }
 
     }
-
 
 
 }

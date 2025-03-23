@@ -139,7 +139,7 @@ fun WePopup(
                     )
                     .clip(RoundedCornerShape(topStart = 12.dp, topEnd = 12.dp))
                     .background(MaterialTheme.colorScheme.onBackground)
-                    .clickableWithoutRipple { }
+                    .clickable { }
                     .padding(padding)
                     .onSizeChanged {
                         height = it.height

@@ -22,7 +22,6 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.automirrored.filled.List
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material3.CenterAlignedTopAppBar
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -61,10 +60,9 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import com.yi.yigamecopilot.android.theme.MorandiColorList
 import kotlinx.coroutines.flow.collectLatest
-import org.walks.gamecopilot.theme.WeUITheme
 import org.jetbrains.compose.ui.tooling.preview.Preview
-import org.walks.gamecopilot.http.joinARoom
 import org.walks.gamecopilot.intent.GameIntent
+import org.walks.gamecopilot.theme.WeUITheme
 import org.walks.gamecopilot.ui.badge.WeBadge
 import org.walks.gamecopilot.ui.button.ButtonType
 import org.walks.gamecopilot.ui.button.WeButton
@@ -94,12 +92,12 @@ fun App() {
 fun AppView(viewmodel: MainViewmodel) {
     val snackState = remember { mutableStateOf(SnackbarHostState()) }
     val playerNum = viewmodel.roomEntityState.collectAsState().value.playerNum
-    val roomTitle=viewmodel.roomEntityState.collectAsState().value.roomNumber
+    val roomTitle = viewmodel.roomEntityState.collectAsState().value.roomId
     val navi = rememberNavController()
     navi.addOnDestinationChangedListener { _, destination, _ ->
         val route = destination.route
         // 根据route进行相关操作，如记录日志或更新UI
-        when(route){
+        when (route) {
 
         }
     }
@@ -109,7 +107,7 @@ fun AppView(viewmodel: MainViewmodel) {
                 title = {
                     Column(horizontalAlignment = Alignment.CenterHorizontally) {
                         Text(
-                            text =if(navi.currentDestination?.route == "room") roomTitle else "卧底游戏",
+                            text = if (navi.currentDestination?.route == "room") roomTitle else "卧底游戏",
                             color = MaterialTheme.colorScheme.onPrimary
                         )
                         AnimatedVisibility(playerNum > 0) {
@@ -119,9 +117,14 @@ fun AppView(viewmodel: MainViewmodel) {
                                     style = MaterialTheme.typography.bodyMedium,
                                     color = MaterialTheme.colorScheme.onSecondary
                                 )
-                                Icon(Icons.Filled.Refresh,"刷新房间人数", modifier = Modifier.clickable {
-                                    viewmodel.handleIntent(GameIntent.RefreshPlayerNumber())
-                                }, tint = MaterialTheme.colorScheme.onSecondary)
+                                Icon(
+                                    Icons.Filled.Refresh,
+                                    "刷新房间人数",
+                                    modifier = Modifier.clickable {
+                                        viewmodel.handleIntent(GameIntent.RefreshPlayerNumber())
+                                    },
+                                    tint = MaterialTheme.colorScheme.onSecondary
+                                )
                             }
 
                         }
@@ -144,26 +147,29 @@ fun AppView(viewmodel: MainViewmodel) {
                                 shape = CircleShape
                             ),
                         onClick = {
-                            if(navi.currentBackStackEntry?.destination?.route == "start"){
-
-
-                            }else{
-                                navi.popBackStack()
-                                if(navi.currentBackStackEntry?.destination?.route == "start"){
+                            if (!isStartRoute(navi)) {
+                                try {
+                                    navi.popBackStack()
+                                } catch (e: Exception) {
+                                    // 处理 popBackStack 异常，例如记录日志或提示用户
+                                    println("Error popping back stack: ${e.message}")
+                                }
+                                if (navi.currentBackStackEntry?.destination?.route == "start") {
                                     viewmodel.handleIntent(GameIntent.LeaveGameRoom)
                                 }
                             }
-
                         },
                         colors = IconButtonDefaults.iconButtonColors(
                             containerColor = MaterialTheme.colorScheme.secondaryContainer,
                             contentColor = MaterialTheme.colorScheme.onSecondaryContainer,
                         )
                     ) {
-                        Icon(
-                            imageVector = if(navi.currentBackStackEntry?.destination?.route=="start") Icons.AutoMirrored.Filled.List else Icons.AutoMirrored.Filled.ArrowBack,
-                            contentDescription = "back button"
-                        )
+                        if(!isStartRoute(navi)){
+                            Icon(
+                                imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                                contentDescription = "back button"
+                            )
+                        }
                     }
 
                 },
@@ -188,6 +194,11 @@ fun AppView(viewmodel: MainViewmodel) {
     }
 }
 
+// 提取公共逻辑到辅助函数
+private fun isStartRoute(navi: NavHostController): Boolean {
+    return navi.currentDestination?.route == "start"|| navi.currentDestination?.route == null
+}
+
 @Composable
 fun NavigationHost(viewmodel: MainViewmodel, navi: NavHostController) {
     LaunchedEffect(viewmodel.roomEntityState) {
@@ -197,8 +208,6 @@ fun NavigationHost(viewmodel: MainViewmodel, navi: NavHostController) {
             }
         }
     }
-
-
     NavHost(navi, startDestination = "start") {
         composable("start") {
             StartPage(viewmodel)

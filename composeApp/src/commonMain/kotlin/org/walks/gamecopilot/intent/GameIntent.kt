@@ -1,9 +1,9 @@
 package org.walks.gamecopilot.intent
 
 sealed class GameIntent {
-    data class CreateAGameRoom(val roomName: String, val roomKey: String) : GameIntent()
+    data class CreateAGameRoom(val roomId: String, val roomKey: String) : GameIntent()
     data class JoinToAGameRoom(
-        val roomName: String,
+        val roomId: String,
         val roomKey: String,
         val asPrimary: Boolean = false
     ) : GameIntent()

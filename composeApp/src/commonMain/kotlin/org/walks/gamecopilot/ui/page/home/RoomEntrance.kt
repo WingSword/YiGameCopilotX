@@ -15,18 +15,21 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
+import kotlinx.coroutines.launch
 import org.walks.gamecopilot.MainViewmodel
 import org.walks.gamecopilot.intent.GameIntent
 import org.walks.gamecopilot.ui.button.CircleButton
@@ -34,8 +37,10 @@ import org.walks.gamecopilot.ui.input.HalfRadioTextField
 
 @Composable
 fun RoomEntranceCard(viewmodel: MainViewmodel) {
-    var roomName by remember { mutableStateOf("") }
+    var roomId by remember { mutableStateOf("") }
     var roomKey by remember { mutableStateOf("") }
+    val snackState = remember { SnackbarHostState() }
+    val scope = rememberCoroutineScope()
     Column(
         verticalArrangement = Arrangement.spacedBy(16.dp),
         modifier = Modifier.padding().scrollable(
@@ -61,9 +66,9 @@ fun RoomEntranceCard(viewmodel: MainViewmodel) {
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
                 HalfRadioTextField(
-                    value = roomName,
+                    value = roomId,
                     label = "房间名称",
-                    onValueChange = { roomName = it })
+                    onValueChange = { roomId = it })
                 HalfRadioTextField(
                     value = roomKey,
                     label = "房间密钥",
@@ -74,20 +79,40 @@ fun RoomEntranceCard(viewmodel: MainViewmodel) {
                     horizontalArrangement = Arrangement.End
                 ) {
                     CircleButton("创建房间 ", onClick = {
-                        viewmodel.handleIntent(
-                            GameIntent.CreateAGameRoom(
-                                roomName,
-                                roomKey,
+                        if (roomId.isBlank() || roomKey.isBlank()) {
+                            scope.launch {
+                                snackState.showSnackbar("请输入房间名称")
+                            }
+                        } else {
+                            viewmodel.handleIntent(
+                                GameIntent.CreateAGameRoom(
+                                    roomId,
+                                    roomKey,
+                                )
                             )
-                        )
+                        }
                     })
                     Spacer(Modifier.width(16.dp))
-                    CircleButton("加入房间 ", backColor = MaterialTheme.colorScheme.secondaryContainer, onClick = {
-                        GameIntent.JoinToAGameRoom(roomName, roomKey)
-                    })
+                    CircleButton(
+                        "加入房间 ",
+                        backColor = MaterialTheme.colorScheme.secondaryContainer,
+                        onClick = {
+
+                            if (roomId.isBlank() || roomKey.isBlank()) {
+                                scope.launch {
+                                    snackState.showSnackbar("请输入房间名称")
+                                }
+                            } else {
+                                viewmodel.handleIntent(
+                                    GameIntent.JoinToAGameRoom(roomId, roomKey)
+                                )
+                            }
+                        })
                 }
 
             }
         }
+        // 添加 SnackbarHost 以显示 Snackbar
+        SnackbarHost(hostState = snackState)
     }
 }
