@@ -52,7 +52,7 @@ class MainViewmodel : ViewModel() {
                                 TimeEntity(
                                     gamePlayerNumber = intent.num,
                                     gameWord = wordList.random(),
-                                    spyNum = (0..intent.num).random()
+                                    spyNum = (1..intent.num).random()
                                 )
                             )
                         )
@@ -69,18 +69,20 @@ class MainViewmodel : ViewModel() {
             is GameIntent.StartGame -> {
                 when (startedGameMode.value) {
                     1 -> {
-                        val list = _gameEntity.value.timeEntityList
+
+                        val list = _gameEntity.value.timeEntityList ?:return
                         list.add(
                             TimeEntity(
-                                gamePlayerNumber = roomEntityState.value.playerNum,
+                                gamePlayerNumber = gameEntity.value.timeEntityList.last().gamePlayerNumber,
                                 gameWord = wordList.random(),
                                 spyNum = (1..roomEntityState.value.playerNum).random()
                             )
                         )
-                        _gameEntity.value = _gameEntity.value.copy(
-                            gameMode = startedGameMode.value,
-                            timeEntityList = list
-                        )
+                        _gameEntity.update {
+                            it.copy(
+                                timeEntityList =list
+                            )
+                        }
                     }
                 }
             }

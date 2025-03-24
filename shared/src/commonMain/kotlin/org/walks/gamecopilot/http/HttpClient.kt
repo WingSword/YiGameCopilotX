@@ -84,7 +84,7 @@ suspend fun createRoomRequest(roomId: String, passwd: String): RoomDataModel? {
 //        println("JSON decoding error: ${e.message}")
     } catch (e: Exception) {
         // 捕获其他未知异常
-        println("Unexpected error in POST request: ${e.message}")
+        println("Unexpected error in  request: ${e.message}")
     } finally {
         // 避免重复关闭 client，确保其生命周期由外部管理
         // client.close() // 移除此行，避免不必要的关闭
@@ -94,15 +94,12 @@ suspend fun createRoomRequest(roomId: String, passwd: String): RoomDataModel? {
 
 suspend fun joinARoomRequest(roomId: String, passwd: String): RoomDataModel? {
     try {
-        val response = client.post(getUrl("/joinRoom")) {
+        val response = client.get(getUrl("/joinRoom")) {
             contentType(ContentType.Application.Json)
-            val map = mapOf(
-                "roomId" to roomId,
-                "passWord" to passwd,
-            )
-            setBody(
-                map
-            )
+            url {
+                parameters.append(ROOM_ID_KEY , roomId) // 添加查询参数
+                parameters.append(PASSWORD_KEY , passwd)
+            }
         }
        // val responseBody: RoomDataModel = baseJsonConf.decodeFromString(response.body())
 
@@ -110,7 +107,7 @@ suspend fun joinARoomRequest(roomId: String, passwd: String): RoomDataModel? {
         return baseJsonConf.decodeFromString<RoomDataModel>(response.body())
 
     } catch (e: Exception) {
-        println("Error in POST request: ${e.message}")
+        println("Error in  request: ${e.message}")
     } finally {
         client.close()
     }

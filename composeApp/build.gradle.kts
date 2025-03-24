@@ -71,8 +71,8 @@ kotlin {
             implementation(libs.androidx.lifecycle.viewmodel)
             implementation(libs.androidx.lifecycle.runtime.compose)
             implementation(projects.shared)
-            implementation("com.google.accompanist:accompanist-pager:0.30.1")
-            implementation("com.google.accompanist:accompanist-pager-indicators:0.30.1")
+//            implementation("com.google.accompanist:accompanist-pager:0.30.1")
+//            implementation("com.google.accompanist:accompanist-pager-indicators:0.30.1")
 
         }
         desktopMain.dependencies {

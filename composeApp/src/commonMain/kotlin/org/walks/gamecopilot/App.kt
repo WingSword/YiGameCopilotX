@@ -1,11 +1,14 @@
 package org.walks.gamecopilot
 
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.combinedClickable
+import androidx.compose.foundation.gestures.Orientation
+import androidx.compose.foundation.gestures.scrollable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -18,11 +21,13 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Refresh
+import androidx.compose.material3.ButtonColors
 import androidx.compose.material3.CenterAlignedTopAppBar
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
@@ -34,6 +39,7 @@ import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -60,12 +66,12 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import com.yi.yigamecopilot.android.theme.MorandiColorList
 import kotlinx.coroutines.flow.collectLatest
+import org.jetbrains.compose.resources.painterResource
 import org.jetbrains.compose.ui.tooling.preview.Preview
+import org.walks.gamecopilot.data.entity.TimeEntity
 import org.walks.gamecopilot.intent.GameIntent
 import org.walks.gamecopilot.theme.WeUITheme
 import org.walks.gamecopilot.ui.badge.WeBadge
-import org.walks.gamecopilot.ui.button.ButtonType
-import org.walks.gamecopilot.ui.button.WeButton
 import org.walks.gamecopilot.ui.page.home.StartPage
 import org.walks.gamecopilot.ui.page.room.RoomPage
 
@@ -164,7 +170,7 @@ fun AppView(viewmodel: MainViewmodel) {
                             contentColor = MaterialTheme.colorScheme.onSecondaryContainer,
                         )
                     ) {
-                        if(!isStartRoute(navi)){
+                        if (!isStartRoute(navi)) {
                             Icon(
                                 imageVector = Icons.AutoMirrored.Filled.ArrowBack,
                                 contentDescription = "back button"
@@ -196,7 +202,7 @@ fun AppView(viewmodel: MainViewmodel) {
 
 // 提取公共逻辑到辅助函数
 private fun isStartRoute(navi: NavHostController): Boolean {
-    return navi.currentDestination?.route == "start"|| navi.currentDestination?.route == null
+    return navi.currentDestination?.route == "start" || navi.currentDestination?.route == null
 }
 
 @Composable
@@ -221,39 +227,53 @@ fun NavigationHost(viewmodel: MainViewmodel, navi: NavHostController) {
 
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
-fun GreetingView(spyNum: Int, gameWord: String) {
-    var greetingTotalPlayer by remember { mutableIntStateOf(0) }
-    var buttonText by remember { mutableStateOf("选择游玩人数") }
+fun GreetingView(gameState: TimeEntity) {
+    val spyNum = gameState.spyNum
+    val gameWord = gameState.gameWord
+    val greetingTotalPlayer = gameState.gamePlayerNumber
+
     var greetingPlayerNumber by remember { mutableIntStateOf(1) }
-    var buttonClickTime = mutableListOf(0, 0, 0, 0, 0, 0, 0, 0, 0, 0)
+    var buttonClickTime =remember { mutableListOf(0, 0, 0, 0, 0, 0, 0, 0, 0, 0) }
     var currentSelect = remember { mutableIntStateOf(0) }
     var currentPlayTime by remember { mutableIntStateOf(0) }
     Spacer(Modifier.height(8.dp))
 
     Column(
         modifier = Modifier
-            .padding(16.dp),
+            .padding(8.dp).scrollable(rememberScrollState(), Orientation.Vertical),
         horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.Center
+        verticalArrangement = Arrangement.Center,
     ) {
-        Text("选择查看编号", modifier = Modifier.padding(16.dp), color = Color.Black)
+        Row(verticalAlignment= Alignment.CenterVertically) {
+            Text("选择查看编号", modifier = Modifier, color = MaterialTheme.colorScheme.secondary)
+            Icon(imageVector = Icons.Filled.Refresh, contentDescription = "重新开始",tint= MaterialTheme.colorScheme.secondary)
+        }
+
         LazyVerticalGrid(
             GridCells.Fixed(4),
-            horizontalArrangement = Arrangement.spacedBy(16.dp),
-            verticalArrangement = Arrangement.spacedBy(16.dp)
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp),
         ) {
             items(greetingTotalPlayer) { pos ->
-                Box(modifier = Modifier.padding(vertical = 16.dp)) {
-                    WeButton(
-                        text = (pos + 1).toString(),
-                        type = if (buttonClickTime[pos] == 0) ButtonType.PRIMARY else ButtonType.PLAIN
-                    ) {
-                        currentSelect.value = 0
-                        greetingPlayerNumber = pos + 1
-                        buttonText = greetingPlayerNumber.toString()
+                Box(modifier = Modifier.padding(top = 8.dp), contentAlignment = Alignment.TopCenter) {
+                    TextButton(
+                        onClick = {
+                            currentSelect.value = 0
+                            greetingPlayerNumber = pos + 1
+                        },
+                        shape= CircleShape,
+                        border = BorderStroke(2.dp, color = Color.LightGray),
+                        colors = ButtonColors(
+                            containerColor =Color.White ,
+                            contentColor =if (buttonClickTime[pos] >=1) Color.LightGray else MaterialTheme.colorScheme.primary,
+                            disabledContainerColor = MaterialTheme.colorScheme.inversePrimary,
+                            disabledContentColor = MaterialTheme.colorScheme.error
+                        )) {
+
+                        Text(text = (pos + 1).toString())
                     }
                     if (buttonClickTime[pos] > 1) {
-                        WeBadge("查看" + buttonClickTime[pos] + "次", size = 14.dp)
+                        WeBadge("查看"+buttonClickTime[pos]+"次" , size = 12.dp, fontSize = 10)
                     }
 
                 }
@@ -311,6 +331,6 @@ fun GreetingView(spyNum: Int, gameWord: String) {
 @Composable
 fun DefaultPreview() {
     WeUITheme {
-        GreetingView(1, "")
+        //GreetingView(1, "",4)
     }
 }

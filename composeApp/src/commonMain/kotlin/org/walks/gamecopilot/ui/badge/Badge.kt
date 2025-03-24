@@ -30,7 +30,8 @@ fun WeBadge(
     size: Dp = 10.dp,
     color: Color = Color.Red,
     alignment: Alignment = Alignment.TopEnd,
-    holder: (@Composable () -> Unit)? = null
+    holder: (@Composable () -> Unit)? = null,
+    fontSize: Int=12
 ) {
     Box {
         val density = LocalDensity.current
@@ -81,7 +82,7 @@ fun WeBadge(
             contentAlignment = Alignment.Center
         ) {
             content?.let {
-                Text(text = it, color = Color.White, fontSize = 12.sp)
+                Text(text = it, color = Color.White, fontSize = fontSize.sp)
             }
         }
     }
