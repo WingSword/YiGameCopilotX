@@ -10,8 +10,9 @@ import kotlinx.coroutines.launch
 import org.walks.gamecopilot.data.entity.GameEntity
 import org.walks.gamecopilot.data.entity.RoomState
 import org.walks.gamecopilot.data.entity.TimeEntity
-import org.walks.gamecopilot.http.createRoomRequest
-import org.walks.gamecopilot.http.joinARoomRequest
+import org.walks.gamecopilot.http.RoomModule
+import org.walks.gamecopilot.http.client
+
 import org.walks.gamecopilot.intent.GameIntent
 
 
@@ -30,10 +31,16 @@ class MainViewmodel : ViewModel() {
     var topTipState = mutableStateOf("")
         private set
 
+    var userId=""
+
     private val wordList by lazy {
         addWordsToMap(wordMap)
         wordMap.values.toList()
         wordMap.keys.toList()
+    }
+
+    val roomModule by lazy {
+        RoomModule(client)
     }
 
 
@@ -45,7 +52,6 @@ class MainViewmodel : ViewModel() {
                         it.copy(playerNum = roomEntityState.value.playerNum + 1)
                     }
                 } else {
-
                     _gameEntity.update {
                         it.copy(
                             timeEntityList = mutableListOf(
@@ -58,7 +64,29 @@ class MainViewmodel : ViewModel() {
                         )
                     }
                 }
+            }
 
+            is GameIntent.RefreshSpyNumber -> {
+                if (startedGameMode.value == 0) {
+
+                } else {
+                    val entity = TimeEntity(
+                        gamePlayerNumber = intent.num,
+                        gameWord = wordList.random(),
+                        spyNum = (1..intent.num).random()
+                    )
+                    _gameEntity.update {
+                        it.copy(
+                            timeEntityList = mutableListOf(
+                                TimeEntity(
+                                    gamePlayerNumber = intent.num,
+                                    gameWord = wordList.random(),
+                                    spyNum = (1..intent.num).random()
+                                )
+                            )
+                        )
+                    }
+                }
             }
 
 
@@ -69,20 +97,32 @@ class MainViewmodel : ViewModel() {
             is GameIntent.StartGame -> {
                 when (startedGameMode.value) {
                     1 -> {
-
-                        val list = _gameEntity.value.timeEntityList ?:return
+                        val list = _gameEntity.value.timeEntityList
                         list.add(
                             TimeEntity(
                                 gamePlayerNumber = gameEntity.value.timeEntityList.last().gamePlayerNumber,
                                 gameWord = wordList.random(),
-                                spyNum = (1..roomEntityState.value.playerNum).random()
+                                spyNum = (1..gameEntity.value.timeEntityList.last().gamePlayerNumber).random()
                             )
                         )
                         _gameEntity.update {
                             it.copy(
-                                timeEntityList =list
+                                timeEntityList = list
                             )
                         }
+                    }
+                }
+            }
+            is GameIntent.RefreshRoomInfo -> {
+                viewModelScope.launch {
+                    val result = roomModule.getRoomInfo(roomEntityState.value.roomId,roomEntityState.value.roomKey)
+                    if (result.isSuccess()) {
+                        _roomEntityState.update {
+                            roomEntityState.value.copy(
+
+                            )
+                        }
+
                     }
                 }
             }
@@ -93,37 +133,30 @@ class MainViewmodel : ViewModel() {
                     return
                 }
                 viewModelScope.launch {
-                    val result = createRoomRequest(intent.roomId, intent.roomKey)
-                    if (result != null) {
+                    val result = roomModule.createRoom(intent.roomId, intent.roomKey)
+                    if (result.isSuccess()) {
                         _roomEntityState.update {
                             it.copy(
                                 roomId = intent.roomId,
                                 roomFinished = true,
                                 playerNo = 1,
                                 playerNum = 1,
-                                startedGameMode = startedGameMode.value
-                            )
+
+                                )
                         }
                     }
-
                 }
-
-
             }
 
             is GameIntent.JoinToAGameRoom -> {
 
                 viewModelScope.launch {
-                    val result = joinARoomRequest(intent.roomId, intent.roomKey)
-                    if (result != null) {
+                    val result = roomModule.joinRoom(intent.roomId, intent.roomKey)
+                    if (result.isSuccess()) {
                         _roomEntityState.update {
                             it.copy(
-                                roomId = intent.roomKey,
-                                roomFinished = true,
                                 playerNo = 1,
-                                playerNum = 1,
-                                startedGameMode = startedGameMode.value
-                            )
+                                playerNum = it.playerNum + 1,)
                         }
                     }
                 }

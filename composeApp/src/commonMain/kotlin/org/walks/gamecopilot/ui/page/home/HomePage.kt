@@ -1,7 +1,6 @@
 package org.walks.gamecopilot.ui.page.home
 
 import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -9,9 +8,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
-import androidx.compose.material3.SnackbarHostState
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -65,20 +62,20 @@ fun LocalSpyGame(viewmodel: MainViewmodel) {
                 showNumberPicker = true
             })
 
-            if (playerNum>4) {
+            if (playerNum > 5) {
                 var showSpyNumberPicker by remember { mutableStateOf(false) }
-                val list={1..playerNum/2-1}
+                val spyList = (1..<playerNum / 2).map { "$it" }
                 Spacer(Modifier.width(8.dp))
                 CommonButton("选择卧底人数", onClick = {
-                    showSpyNumberPicker=true
+                    showSpyNumberPicker = true
                 })
 
                 WeSingleColumnPicker(
                     visible = showSpyNumberPicker,
-                    title = "选择卧底人数",
-                    range = list as List<String>,
+                    title = "选择卧底人数$spyList",
+                    range = spyList,
                     onCancel = { showSpyNumberPicker = false },
-                    onChange = { viewmodel.handleIntent(GameIntent.RefreshPlayerNumber(numberList[it].toInt())) },
+                    onChange = { viewmodel.handleIntent(GameIntent.RefreshSpyNumber(it+1)) },
                     value = numberList.indexOf(playerNum.toString())
                 )
             }
@@ -87,7 +84,10 @@ fun LocalSpyGame(viewmodel: MainViewmodel) {
 
         if (gameStateList.isNotEmpty()) {
             GreetingView(
-                gameStateList.last()
+                gameStateList.last(),
+                onRefresh = {
+                    viewmodel.handleIntent(GameIntent.StartGame)
+                }
             )
         }
     }

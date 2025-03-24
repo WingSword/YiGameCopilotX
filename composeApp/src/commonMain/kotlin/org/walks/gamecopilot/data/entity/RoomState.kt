@@ -4,6 +4,7 @@ data class RoomState(
     val startedGameMode: Int = 0,
     val roomFinished: Boolean = false,
     val roomId: String = "",
+    val roomKey:String="",
     val playerNo: Int = 0,
     val playerNum: Int = 0
 ){

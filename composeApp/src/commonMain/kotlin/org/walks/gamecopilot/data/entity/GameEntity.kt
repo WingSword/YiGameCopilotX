@@ -14,8 +14,6 @@ data class TimeEntity(
     var spyNum: Int = 1,
     val gamePlayerNumber: Int = 0,
 ) {
-
-
     fun optBadGuyNumber(): Int {
         this.spyNum = Random.nextInt(1, gamePlayerNumber)
         return this.spyNum
