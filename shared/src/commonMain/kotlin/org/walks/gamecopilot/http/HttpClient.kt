@@ -28,7 +28,9 @@ val baseJsonConf = Json {
 }
 const val HOST = "http://116.198.196.244:8080/api"
 
-
+val roomModule by lazy {
+    RoomModule(client)
+}
 
 @Serializable
 data class PostData(

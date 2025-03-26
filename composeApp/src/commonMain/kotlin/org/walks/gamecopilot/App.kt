@@ -133,7 +133,7 @@ fun AppView(viewmodel: MainViewmodel) {
                                     Icons.Filled.Refresh,
                                     "刷新房间人数",
                                     modifier = Modifier.clickable {
-                                        viewmodel.handleIntent(GameIntent.RefreshPlayerNumber())
+                                        viewmodel.handleIntent(GameIntent.RefreshRoomInfo)
                                     },
                                     tint = MaterialTheme.colorScheme.onSecondary
                                 )
@@ -230,119 +230,6 @@ fun NavigationHost(viewmodel: MainViewmodel, navi: NavHostController) {
     }
 }
 
-
-@OptIn(ExperimentalFoundationApi::class)
-@Composable
-fun GreetingView(gameState: TimeEntity, onRefresh: ()->Unit) {
-    val spyNum = gameState.spyNum
-    val gameWord = gameState.gameWord
-    val greetingTotalPlayer = gameState.gamePlayerNumber
-
-    var greetingPlayerNumber by remember { mutableIntStateOf(1) }
-    var buttonClickTime =remember { mutableListOf(0, 0, 0, 0, 0, 0, 0, 0, 0, 0) }
-    var currentSelect = remember { mutableIntStateOf(0) }
-    var currentPlayTime by remember { mutableIntStateOf(0) }
-    Spacer(Modifier.height(8.dp))
-    val scope= rememberCoroutineScope()
-    val rotation = remember { Animatable(0f) }
-    Column(
-        modifier = Modifier
-            .padding(8.dp).scrollable(rememberScrollState(), Orientation.Vertical),
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.Center,
-    ) {
-        Row(verticalAlignment= Alignment.CenterVertically) {
-            Text("选择查看编号", modifier = Modifier, color = MaterialTheme.colorScheme.secondary)
-            Icon(imageVector = Icons.Filled.Refresh, contentDescription = "重新开始",tint= MaterialTheme.colorScheme.secondary,
-                modifier = Modifier.rotate(rotation.value).clickable {
-                    onRefresh.invoke()
-                    scope.launch {
-                        rotation.animateTo(
-                            targetValue = 360f,
-                            animationSpec = tween(durationMillis = 500, easing = LinearEasing)
-                        )
-                        rotation.snapTo(0f) // 重置角度准备下次旋转
-                    }
-                })
-        }
-
-        LazyVerticalGrid(
-            GridCells.Fixed(4),
-            horizontalArrangement = Arrangement.spacedBy(8.dp),
-            verticalArrangement = Arrangement.spacedBy(8.dp),
-        ) {
-            items(greetingTotalPlayer) { pos ->
-                Box(modifier = Modifier.padding(top = 8.dp), contentAlignment = Alignment.TopCenter) {
-                    TextButton(
-                        onClick = {
-                            currentSelect.value = 0
-                            greetingPlayerNumber = pos + 1
-                        },
-                        shape= CircleShape,
-                        border = BorderStroke(2.dp, color = Color.LightGray),
-                        colors = ButtonColors(
-                            containerColor =Color.White ,
-                            contentColor =if (buttonClickTime[pos] >=1) Color.LightGray else MaterialTheme.colorScheme.primary,
-                            disabledContainerColor = MaterialTheme.colorScheme.inversePrimary,
-                            disabledContentColor = MaterialTheme.colorScheme.error
-                        )) {
-
-                        Text(text = (pos + 1).toString())
-                    }
-                    if (buttonClickTime[pos] > 1) {
-                        WeBadge("查看"+buttonClickTime[pos]+"次" , size = 12.dp, fontSize = 10)
-                    }
-
-                }
-
-            }
-        }
-        Spacer(Modifier.height(10.dp))
-        Box(
-            contentAlignment = Alignment.Center,
-            modifier = Modifier
-                .height(160.dp)
-                .width(120.dp)
-                .clip(RoundedCornerShape(20.dp))
-                .border(
-                    width = 4.dp,
-                    color = MorandiColorList[currentPlayTime % 8],
-                    shape = RoundedCornerShape(20.dp)
-                )
-                .background(if (currentSelect.value == 0) Color.LightGray else Color.White)
-                .shadow(1.dp)
-                .combinedClickable(onLongClick = {
-                    buttonClickTime[greetingPlayerNumber - 1] =
-                        buttonClickTime[greetingPlayerNumber - 1] + 1
-                    currentSelect.value = 1
-                }) {
-                    currentSelect.value = 0
-                },
-        ) {
-            Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                Spacer(modifier = Modifier.weight(1f))
-                Text(
-                    if (currentSelect.value == 0) "$greetingPlayerNumber 号\n长按查看身份词"
-                    else if (spyNum == greetingPlayerNumber) "你是卧底"
-                    else gameWord,
-                    textAlign = TextAlign.Center,
-                    color = if (currentSelect.value == 0) MaterialTheme.colorScheme.secondary
-                    else if (spyNum == greetingPlayerNumber) MaterialTheme.colorScheme.error
-                    else MaterialTheme.colorScheme.primary,
-                    fontSize = 16.sp
-                )
-                Spacer(modifier = Modifier.weight(1f))
-                Text(
-                    "再次点击关闭身份牌",
-                    color = MaterialTheme.colorScheme.secondary,
-                    fontSize = 10.sp
-                )
-                Spacer(modifier = Modifier.height(8.dp))
-            }
-
-        }
-    }
-}
 
 @Preview
 @Composable

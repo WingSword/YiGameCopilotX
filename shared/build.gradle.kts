@@ -46,7 +46,7 @@ kotlin {
             implementation(libs.ktor.client.content.negotiation)
             implementation(libs.ktor.serialization.kotlinx.json)
             implementation(libs.ktor.coroutines)
-            implementation(libs.jetbrains.serialization.kotlinx.json)
+            api(libs.jetbrains.serialization.kotlinx.json)
 
         }
         androidMain.dependencies {

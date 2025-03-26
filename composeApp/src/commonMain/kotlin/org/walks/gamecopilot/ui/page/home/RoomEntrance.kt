@@ -95,9 +95,9 @@ fun RoomEntranceCard(viewmodel: MainViewmodel) {
                     Spacer(Modifier.width(16.dp))
                     CircleButton(
                         "加入房间 ",
-                        backColor = MaterialTheme.colorScheme.secondaryContainer,
+                        backColor = MaterialTheme.colorScheme.secondary,
+                        textColor = MaterialTheme.colorScheme.onSecondary,
                         onClick = {
-
                             if (roomId.isBlank() || roomKey.isBlank()) {
                                 scope.launch {
                                     snackState.showSnackbar("请输入房间名称")

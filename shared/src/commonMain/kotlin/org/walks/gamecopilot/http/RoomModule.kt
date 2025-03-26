@@ -26,10 +26,10 @@ class RoomModule(private val httpClient: HttpClient) {
                 }
 
                 is Response.Error -> {
-                    throw Exception(it.message)
+                    null
                 }
             }
-            data
+            data?:RoomDataModel(code = 0, msg = "创建房间失败")
         }
     }
 
@@ -44,10 +44,10 @@ class RoomModule(private val httpClient: HttpClient) {
                 }
 
                 is Response.Error -> {
-                    throw Exception(it.message)
+                    null
                 }
             }
-            data
+            data?:RoomDataModel(code = 0, msg = "加入房间失败")
         }
     }
 
@@ -62,10 +62,10 @@ class RoomModule(private val httpClient: HttpClient) {
                 }
 
                 is Response.Error -> {
-                    throw Exception(it.message)
+                    null
                 }
             }
-            data
+            data?:RoomDataModel(code = 0, msg = "获取房间信息失败")
         }
     }
 }

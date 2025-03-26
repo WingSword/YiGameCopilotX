@@ -44,6 +44,7 @@ fun CommonButton(
 fun CircleButton(
     text: String,
     backColor: Color = MaterialTheme.colorScheme.primaryContainer,
+    textColor: Color= MaterialTheme.colorScheme.onPrimary,
     canClickable: Boolean = true,
     onClick: (() -> Unit)? = null,
 ) {
@@ -54,6 +55,6 @@ fun CircleButton(
                 onClick?.invoke()
             }, enabled = canClickable), contentAlignment = Alignment.Center
     ) {
-        Text(text = text, fontSize = 16.sp, textAlign = TextAlign.Center, color = MaterialTheme.colorScheme.onPrimary)
+        Text(text = text, fontSize = 16.sp, textAlign = TextAlign.Center, color = textColor)
     }
 }

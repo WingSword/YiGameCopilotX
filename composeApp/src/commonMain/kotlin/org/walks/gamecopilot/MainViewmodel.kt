@@ -7,12 +7,12 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import org.walks.gamecopilot.data.UserInfoEntity
 import org.walks.gamecopilot.data.entity.GameEntity
 import org.walks.gamecopilot.data.entity.RoomState
 import org.walks.gamecopilot.data.entity.TimeEntity
-import org.walks.gamecopilot.http.RoomModule
-import org.walks.gamecopilot.http.client
-
+import org.walks.gamecopilot.http.baseJsonConf
+import org.walks.gamecopilot.http.roomModule
 import org.walks.gamecopilot.intent.GameIntent
 
 
@@ -31,17 +31,7 @@ class MainViewmodel : ViewModel() {
     var topTipState = mutableStateOf("")
         private set
 
-    var userId=""
-
-    private val wordList by lazy {
-        addWordsToMap(wordMap)
-        wordMap.values.toList()
-        wordMap.keys.toList()
-    }
-
-    val roomModule by lazy {
-        RoomModule(client)
-    }
+    var userId = ""
 
 
     fun handleIntent(intent: GameIntent) {
@@ -52,14 +42,15 @@ class MainViewmodel : ViewModel() {
                         it.copy(playerNum = roomEntityState.value.playerNum + 1)
                     }
                 } else {
-                    _gameEntity.update {
-                        it.copy(
+                    _gameEntity.update { entity ->
+                        entity.copy(
                             timeEntityList = mutableListOf(
                                 TimeEntity(
-                                    gamePlayerNumber = intent.num,
-                                    gameWord = wordList.random(),
-                                    spyNum = (1..intent.num).random()
-                                )
+                                    totalPlayerNumber = intent.num
+                                ).apply {
+                                    getUniqueRandomBatch()
+                                    optNewGameWord()
+                                }
                             )
                         )
                     }
@@ -70,19 +61,16 @@ class MainViewmodel : ViewModel() {
                 if (startedGameMode.value == 0) {
 
                 } else {
-                    val entity = TimeEntity(
-                        gamePlayerNumber = intent.num,
-                        gameWord = wordList.random(),
-                        spyNum = (1..intent.num).random()
-                    )
+                    val timeEntity = gameEntity.value.timeEntityList.lastOrNull() ?: return
                     _gameEntity.update {
                         it.copy(
                             timeEntityList = mutableListOf(
-                                TimeEntity(
-                                    gamePlayerNumber = intent.num,
-                                    gameWord = wordList.random(),
-                                    spyNum = (1..intent.num).random()
-                                )
+                                timeEntity.copy(
+                                    spyNum = intent.num
+                                ).apply {
+                                    getUniqueRandomBatch()
+                                    optNewGameWord()
+                                }
                             )
                         )
                     }
@@ -97,29 +85,25 @@ class MainViewmodel : ViewModel() {
             is GameIntent.StartGame -> {
                 when (startedGameMode.value) {
                     1 -> {
-                        val list = _gameEntity.value.timeEntityList
-                        list.add(
-                            TimeEntity(
-                                gamePlayerNumber = gameEntity.value.timeEntityList.last().gamePlayerNumber,
-                                gameWord = wordList.random(),
-                                spyNum = (1..gameEntity.value.timeEntityList.last().gamePlayerNumber).random()
-                            )
-                        )
-                        _gameEntity.update {
-                            it.copy(
-                                timeEntityList = list
-                            )
-                        }
+                        restartLocalSpyGame()
                     }
                 }
             }
+
             is GameIntent.RefreshRoomInfo -> {
                 viewModelScope.launch {
-                    val result = roomModule.getRoomInfo(roomEntityState.value.roomId,roomEntityState.value.roomKey)
+                    val result = roomModule.getRoomInfo(
+                        roomEntityState.value.roomId,
+                        roomEntityState.value.roomKey
+                    )
                     if (result.isSuccess()) {
+                        val users = baseJsonConf.decodeFromString<List<UserInfoEntity>>(
+                            result.data?.users ?: ""
+                        )
+
                         _roomEntityState.update {
                             roomEntityState.value.copy(
-
+                                playerNum = users.size
                             )
                         }
 
@@ -141,8 +125,7 @@ class MainViewmodel : ViewModel() {
                                 roomFinished = true,
                                 playerNo = 1,
                                 playerNum = 1,
-
-                                )
+                            )
                         }
                     }
                 }
@@ -156,7 +139,8 @@ class MainViewmodel : ViewModel() {
                         _roomEntityState.update {
                             it.copy(
                                 playerNo = 1,
-                                playerNum = it.playerNum + 1,)
+                                playerNum = it.playerNum + 1,
+                            )
                         }
                     }
                 }
@@ -177,8 +161,17 @@ class MainViewmodel : ViewModel() {
     }
 
 
-    fun roomConfigure() {
-
+    fun restartLocalSpyGame() {
+        val timeEntity = _gameEntity.value.timeEntityList.lastOrNull() ?: return
+        _gameEntity.update { entity ->
+            entity.copy(
+                timeEntityList = entity.timeEntityList.also {
+                    it.add(timeEntity.apply {
+                        getUniqueRandomBatch()
+                        optNewGameWord()
+                    })
+                }
+            )
+        }
     }
-
 }
