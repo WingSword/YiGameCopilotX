@@ -46,10 +46,9 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import kotlinx.coroutines.flow.collectLatest
 import org.jetbrains.compose.ui.tooling.preview.Preview
-import org.walks.gamecopilot.intent.GameIntent
 import org.walks.gamecopilot.intent.GameRoomIntent
 import org.walks.gamecopilot.theme.WeUITheme
-import org.walks.gamecopilot.ui.page.home.StartPage
+import org.walks.gamecopilot.ui.page.home.HomePage
 import org.walks.gamecopilot.ui.page.room.RoomPage
 
 
@@ -194,7 +193,7 @@ fun NavigationHost(viewmodel: MainViewmodel, navi: NavHostController) {
     }
     NavHost(navi, startDestination = "start") {
         composable("start") {
-            StartPage(viewmodel)
+            HomePage(viewmodel)
         }
         composable("room") {
             RoomPage(viewmodel)
