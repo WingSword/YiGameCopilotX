@@ -1,22 +1,16 @@
 package org.walks.gamecopilot.data.entity
 
-import org.walks.gamecopilot.addWordsToMap
 import org.walks.gamecopilot.wordMap
 
 data class GameEntity(
     val gameMode: Int = 0,
-    val timeEntityList: MutableList<TimeEntity> = mutableListOf()
+    val timeEntityList: MutableList<LocalSpyEntity> = mutableListOf()
 ) {
 
 }
 
-private val wordList by lazy {
-    addWordsToMap(wordMap)
-    wordMap.values.toList()
-    wordMap.keys.toList()
-}
 
-data class TimeEntity(
+data class LocalSpyEntity(
     var gameWord: String = "",
     var spyNum: Int = 1,
     var totalPlayerNumber: Int = 1,
@@ -24,21 +18,40 @@ data class TimeEntity(
     var spies: List<Int> = listOf(),
     var blackNum: Int = 0
 ) {
-    companion object {
-
+    fun refreshGame(){
+        getUniqueRandomBatch()
+        optNewGameWord()
     }
 
-    // 方式一：基于洗牌法的安全实现（推荐）
-    fun getUniqueRandomBatch() {
+    // 基于洗牌法的安全实现
+    private fun getUniqueRandomBatch() {
         if (totalPlayerNumber / 3 < spyNum) {
             spyNum = totalPlayerNumber / 3
         }
-        require(totalPlayerNumber  >= 0) { "区间至少需要2个数字" }
-        spies= (1..totalPlayerNumber).shuffled().take(spyNum)
+        require(totalPlayerNumber >= 0) { "区间至少需要2个数字" }
+        spies = (1..totalPlayerNumber).shuffled().take(spyNum)
     }
 
-    fun optNewGameWord(list: List<String> = wordMap.keys.toList()) {
-        this.gameWord = list.random()
+    private fun optNewGameWord() {
+        val n = (0..1).random()
+        val randomIndex = (0..<wordMap.size).random()
+        if (n == 0) {
+            gameWord = wordMap.getValue(wordMap.keys.elementAt(randomIndex))
+            spyWord = wordMap.keys.elementAt(randomIndex)
+        } else {
+            spyWord = wordMap.getValue(wordMap.keys.elementAt(randomIndex))
+            gameWord = wordMap.keys.elementAt(randomIndex)
+        }
+    }
+
+    fun optIdentity(currentSelectPlayer: Int): String {
+        if (!spies.contains(currentSelectPlayer)) return gameWord
+        for (i in 0..<blackNum) {
+            if (spies[i] == currentSelectPlayer) {
+                return "[空白]"
+            }
+        }
+        return spyWord
     }
 }
 

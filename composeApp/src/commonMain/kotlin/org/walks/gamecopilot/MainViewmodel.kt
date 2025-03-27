@@ -1,5 +1,6 @@
 package org.walks.gamecopilot
 
+import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
@@ -10,7 +11,7 @@ import kotlinx.coroutines.launch
 import org.walks.gamecopilot.data.UserInfoEntity
 import org.walks.gamecopilot.data.entity.GameEntity
 import org.walks.gamecopilot.data.entity.RoomState
-import org.walks.gamecopilot.data.entity.TimeEntity
+import org.walks.gamecopilot.data.entity.LocalSpyEntity
 import org.walks.gamecopilot.http.baseJsonConf
 import org.walks.gamecopilot.http.roomModule
 import org.walks.gamecopilot.intent.GameIntent
@@ -45,11 +46,10 @@ class MainViewmodel : ViewModel() {
                     _gameEntity.update { entity ->
                         entity.copy(
                             timeEntityList = mutableListOf(
-                                TimeEntity(
+                                LocalSpyEntity(
                                     totalPlayerNumber = intent.num
                                 ).apply {
-                                    getUniqueRandomBatch()
-                                    optNewGameWord()
+                                    refreshGame()
                                 }
                             )
                         )
@@ -68,8 +68,7 @@ class MainViewmodel : ViewModel() {
                                 timeEntity.copy(
                                     spyNum = intent.num
                                 ).apply {
-                                    getUniqueRandomBatch()
-                                    optNewGameWord()
+                                    refreshGame()
                                 }
                             )
                         )
@@ -160,15 +159,30 @@ class MainViewmodel : ViewModel() {
         }
     }
 
+    private fun refreshLocalSpyGame(spyNum: Int = 0, playNum: Int = 0) {
+        val timeEntity = _gameEntity.value.timeEntityList.lastOrNull() ?: return
+        _gameEntity.update {
+            it.copy(
+                timeEntityList = mutableStateListOf(
+                    timeEntity.copy(
+                        spyNum = if (spyNum != 0) spyNum else timeEntity.spyNum,
+                        totalPlayerNumber = if (playNum != 0) playNum else timeEntity.totalPlayerNumber
+                    ).apply {
+                        refreshGame()
+                    }
+                )
+            )
+        }
+    }
 
-    fun restartLocalSpyGame() {
+
+    private fun restartLocalSpyGame() {
         val timeEntity = _gameEntity.value.timeEntityList.lastOrNull() ?: return
         _gameEntity.update { entity ->
             entity.copy(
                 timeEntityList = entity.timeEntityList.also {
                     it.add(timeEntity.apply {
-                        getUniqueRandomBatch()
-                        optNewGameWord()
+                        refreshGame()
                     })
                 }
             )
