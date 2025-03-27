@@ -15,6 +15,7 @@ import org.walks.gamecopilot.data.entity.LocalSpyEntity
 import org.walks.gamecopilot.http.baseJsonConf
 import org.walks.gamecopilot.http.roomModule
 import org.walks.gamecopilot.intent.GameIntent
+import org.walks.gamecopilot.intent.GameRoomIntent
 
 
 class MainViewmodel : ViewModel() {
@@ -35,61 +36,9 @@ class MainViewmodel : ViewModel() {
     var userId = ""
 
 
-    fun handleIntent(intent: GameIntent) {
+    fun handleRoomIntent(intent: GameRoomIntent) {
         when (intent) {
-            is GameIntent.RefreshPlayerNumber -> {
-                if (startedGameMode.value == 0) {
-                    _roomEntityState.update {
-                        it.copy(playerNum = roomEntityState.value.playerNum + 1)
-                    }
-                } else {
-                    _gameEntity.update { entity ->
-                        entity.copy(
-                            timeEntityList = mutableListOf(
-                                LocalSpyEntity(
-                                    totalPlayerNumber = intent.num
-                                ).apply {
-                                    refreshGame()
-                                }
-                            )
-                        )
-                    }
-                }
-            }
-
-            is GameIntent.RefreshSpyNumber -> {
-                if (startedGameMode.value == 0) {
-
-                } else {
-                    val timeEntity = gameEntity.value.timeEntityList.lastOrNull() ?: return
-                    _gameEntity.update {
-                        it.copy(
-                            timeEntityList = mutableListOf(
-                                timeEntity.copy(
-                                    spyNum = intent.num
-                                ).apply {
-                                    refreshGame()
-                                }
-                            )
-                        )
-                    }
-                }
-            }
-
-
-            is GameIntent.SwitchGameMode -> {
-                _startedGameMode.value = intent.mode
-            }
-
-            is GameIntent.StartGame -> {
-                when (startedGameMode.value) {
-                    1 -> {
-                        restartLocalSpyGame()
-                    }
-                }
-            }
-
-            is GameIntent.RefreshRoomInfo -> {
+            is GameRoomIntent.RefreshRoomInfo -> {
                 viewModelScope.launch {
                     val result = roomModule.getRoomInfo(
                         roomEntityState.value.roomId,
@@ -110,7 +59,7 @@ class MainViewmodel : ViewModel() {
                 }
             }
 
-            is GameIntent.CreateAGameRoom -> {
+            is GameRoomIntent.CreateAGameRoom -> {
                 if (intent.roomKey.isBlank() || intent.roomId.isBlank()) {
                     topTipState.value = "房间名或密码不能为空"
                     return
@@ -130,7 +79,7 @@ class MainViewmodel : ViewModel() {
                 }
             }
 
-            is GameIntent.JoinToAGameRoom -> {
+            is GameRoomIntent.JoinToAGameRoom -> {
 
                 viewModelScope.launch {
                     val result = roomModule.joinRoom(intent.roomId, intent.roomKey)
@@ -145,7 +94,7 @@ class MainViewmodel : ViewModel() {
                 }
             }
 
-            GameIntent.LeaveGameRoom -> {
+            GameRoomIntent.LeaveGameRoom -> {
                 _roomEntityState.update {
                     it.copy(
                         roomId = "",
@@ -154,6 +103,60 @@ class MainViewmodel : ViewModel() {
                         playerNum = 0,
                         startedGameMode = startedGameMode.value
                     )
+                }
+            }
+        }
+    }
+
+    /**
+     * 处理本地游戏相关意图的分发函数
+     * @param intent 游戏操作意图对象，包含具体的游戏行为指令
+     */
+    fun handleLocalGameIntent(intent: GameIntent) {
+        when (intent) {
+            // region 刷新玩家数量处理
+            is GameIntent.RefreshPlayerNumber -> {
+                _gameEntity.update { entity ->
+                    entity.copy(
+                        timeEntityList = mutableListOf(
+                            LocalSpyEntity(
+                                totalPlayerNumber = intent.num
+                            ).apply {
+                                refreshGame()
+                            }
+                        )
+                    )
+                }
+            }
+
+
+            // region 刷新间谍数量处理
+            is GameIntent.RefreshSpyNumber -> {
+                val timeEntity = gameEntity.value.timeEntityList.lastOrNull() ?: return
+                _gameEntity.update {
+                    it.copy(
+                        timeEntityList = mutableListOf(
+                            timeEntity.copy(
+                                spyNum = intent.spyNum,
+                                blackNum = intent.blackNum
+                            ).apply {
+                                refreshGame()
+                            }
+                        )
+                    )
+                }
+            }
+
+            // region 游戏模式切换处理
+            is GameIntent.SwitchGameMode -> {
+                _startedGameMode.value = intent.mode
+            }
+
+            is GameIntent.StartGame -> {
+                when (startedGameMode.value) {
+                    1 -> {
+                        restartLocalSpyGame()
+                    }
                 }
             }
         }

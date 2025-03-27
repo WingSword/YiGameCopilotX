@@ -47,6 +47,7 @@ import androidx.navigation.compose.rememberNavController
 import kotlinx.coroutines.flow.collectLatest
 import org.jetbrains.compose.ui.tooling.preview.Preview
 import org.walks.gamecopilot.intent.GameIntent
+import org.walks.gamecopilot.intent.GameRoomIntent
 import org.walks.gamecopilot.theme.WeUITheme
 import org.walks.gamecopilot.ui.page.home.StartPage
 import org.walks.gamecopilot.ui.page.room.RoomPage
@@ -104,7 +105,7 @@ fun AppView(viewmodel: MainViewmodel) {
                                     Icons.Filled.Refresh,
                                     "刷新房间人数",
                                     modifier = Modifier.clickable {
-                                        viewmodel.handleIntent(GameIntent.RefreshRoomInfo)
+                                        viewmodel.handleRoomIntent(GameRoomIntent.RefreshRoomInfo)
                                     },
                                     tint = MaterialTheme.colorScheme.onSecondary
                                 )
@@ -138,7 +139,7 @@ fun AppView(viewmodel: MainViewmodel) {
                                     println("Error popping back stack: ${e.message}")
                                 }
                                 if (navi.currentBackStackEntry?.destination?.route == "start") {
-                                    viewmodel.handleIntent(GameIntent.LeaveGameRoom)
+                                    viewmodel.handleRoomIntent(GameRoomIntent.LeaveGameRoom)
                                 }
                             }
                         },

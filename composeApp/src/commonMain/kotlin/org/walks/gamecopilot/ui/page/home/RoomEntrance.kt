@@ -31,7 +31,7 @@ import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.launch
 import org.walks.gamecopilot.MainViewmodel
-import org.walks.gamecopilot.intent.GameIntent
+import org.walks.gamecopilot.intent.GameRoomIntent
 import org.walks.gamecopilot.ui.button.CircleButton
 import org.walks.gamecopilot.ui.input.HalfRadioTextField
 
@@ -84,8 +84,8 @@ fun RoomEntranceCard(viewmodel: MainViewmodel) {
                                 snackState.showSnackbar("请输入房间名称")
                             }
                         } else {
-                            viewmodel.handleIntent(
-                                GameIntent.CreateAGameRoom(
+                            viewmodel.handleRoomIntent(
+                                GameRoomIntent.CreateAGameRoom(
                                     roomId,
                                     roomKey,
                                 )
@@ -103,9 +103,7 @@ fun RoomEntranceCard(viewmodel: MainViewmodel) {
                                     snackState.showSnackbar("请输入房间名称")
                                 }
                             } else {
-                                viewmodel.handleIntent(
-                                    GameIntent.JoinToAGameRoom(roomId, roomKey)
-                                )
+                                viewmodel.handleRoomIntent(GameRoomIntent.JoinToAGameRoom(roomId, roomKey))
                             }
                         })
                 }

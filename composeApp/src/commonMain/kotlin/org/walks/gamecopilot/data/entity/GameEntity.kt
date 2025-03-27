@@ -53,5 +53,9 @@ data class LocalSpyEntity(
         }
         return spyWord
     }
+
+    fun isSpy(num:Int): Boolean{
+        return spies.contains(num)
+    }
 }
 

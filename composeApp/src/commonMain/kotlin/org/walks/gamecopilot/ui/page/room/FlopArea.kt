@@ -16,11 +16,8 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Build
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -49,7 +46,7 @@ fun FlopArea(viewmodel: MainViewmodel, roomState: State<RoomState>) {
     Column(modifier = Modifier.padding(horizontal = 24.dp, vertical = 16.dp).fillMaxWidth(), horizontalAlignment = Alignment.End) {
         StandingCard("ababababa", emptySet())
         Spacer(modifier = Modifier.height(16.dp))
-        Row(modifier = Modifier.clickable { viewmodel.handleIntent(GameIntent.StartGame) }) {
+        Row(modifier = Modifier.clickable { viewmodel.handleLocalGameIntent(GameIntent.StartGame) }) {
 
             GoSign()
             Spacer(Modifier.width(8.dp))

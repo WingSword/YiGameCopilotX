@@ -63,16 +63,14 @@ kotlin {
             //implementation(compose.material)
             implementation(compose.material3)
             implementation(compose.ui)
+//            implementation(libs.fluent)
+//            implementation(libs.fluent.icons.extended) // If you want to use full fluent icons.
             implementation(compose.components.resources)
             implementation(compose.components.uiToolingPreview)
             implementation(libs.jetbrains.navigation.compose)
-
-
             implementation(libs.androidx.lifecycle.viewmodel)
             implementation(libs.androidx.lifecycle.runtime.compose)
             implementation(projects.shared)
-//            implementation("com.google.accompanist:accompanist-pager:0.30.1")
-//            implementation("com.google.accompanist:accompanist-pager-indicators:0.30.1")
 
         }
         desktopMain.dependencies {
