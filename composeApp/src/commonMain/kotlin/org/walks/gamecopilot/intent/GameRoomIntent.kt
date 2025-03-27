@@ -9,8 +9,9 @@ sealed class GameRoomIntent {
     data class JoinToAGameRoom(
         val roomId: String,
         val roomKey: String,
-        val asPrimary: Boolean = false
     ) : GameRoomIntent()
     data object LeaveGameRoom : GameRoomIntent()
     data object RefreshRoomInfo : GameRoomIntent()
+    data object StartGame : GameRoomIntent()
+    data object DeleteGameRoom : GameRoomIntent()
 }

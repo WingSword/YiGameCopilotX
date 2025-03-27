@@ -1,6 +1,5 @@
 package org.walks.gamecopilot
 
-import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
@@ -10,8 +9,8 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import org.walks.gamecopilot.data.UserInfoEntity
 import org.walks.gamecopilot.data.entity.GameEntity
-import org.walks.gamecopilot.data.entity.RoomState
 import org.walks.gamecopilot.data.entity.LocalSpyEntity
+import org.walks.gamecopilot.data.entity.RoomState
 import org.walks.gamecopilot.http.baseJsonConf
 import org.walks.gamecopilot.http.roomModule
 import org.walks.gamecopilot.intent.GameIntent
@@ -33,80 +32,137 @@ class MainViewmodel : ViewModel() {
     var topTipState = mutableStateOf("")
         private set
 
-    var userId = ""
+    private var userId = ""
 
 
     fun handleRoomIntent(intent: GameRoomIntent) {
         when (intent) {
             is GameRoomIntent.RefreshRoomInfo -> {
-                viewModelScope.launch {
-                    val result = roomModule.getRoomInfo(
-                        roomEntityState.value.roomId,
-                        roomEntityState.value.roomKey
-                    )
-                    if (result.isSuccess()) {
-                        val users = baseJsonConf.decodeFromString<List<UserInfoEntity>>(
-                            result.data?.users ?: ""
-                        )
-
-                        _roomEntityState.update {
-                            roomEntityState.value.copy(
-                                playerNum = users.size
-                            )
-                        }
-
-                    }
-                }
+                refreshRoomGameInfo()
             }
 
             is GameRoomIntent.CreateAGameRoom -> {
-                if (intent.roomKey.isBlank() || intent.roomId.isBlank()) {
-                    topTipState.value = "房间名或密码不能为空"
-                    return
-                }
-                viewModelScope.launch {
-                    val result = roomModule.createRoom(intent.roomId, intent.roomKey)
-                    if (result.isSuccess()) {
-                        _roomEntityState.update {
-                            it.copy(
-                                roomId = intent.roomId,
-                                roomFinished = true,
-                                playerNo = 1,
-                                playerNum = 1,
-                            )
-                        }
-                    }
-                }
+                enterGameRoom(intent.roomId, intent.roomKey, true)
             }
 
             is GameRoomIntent.JoinToAGameRoom -> {
+                enterGameRoom(intent.roomId, intent.roomKey, false)
+            }
 
+            GameRoomIntent.LeaveGameRoom -> {
+                val id = roomEntityState.value.roomId
+                val key = roomEntityState.value.roomKey
                 viewModelScope.launch {
-                    val result = roomModule.joinRoom(intent.roomId, intent.roomKey)
+                    var result = roomModule.leaveRoom(
+                        id,
+                        key,
+                        userId
+                    )
                     if (result.isSuccess()) {
-                        _roomEntityState.update {
-                            it.copy(
-                                playerNo = 1,
-                                playerNum = it.playerNum + 1,
-                            )
-                        }
+                        clearRoomState()
                     }
                 }
             }
 
-            GameRoomIntent.LeaveGameRoom -> {
-                _roomEntityState.update {
-                    it.copy(
-                        roomId = "",
-                        roomFinished = false,
-                        playerNo = 0,
-                        playerNum = 0,
-                        startedGameMode = startedGameMode.value
+            GameRoomIntent.StartGame -> {
+                roomStartGame()
+            }
+
+            GameRoomIntent.DeleteGameRoom -> {
+                deleteRoom()
+            }
+        }
+    }
+
+
+    private fun roomStartGame() {
+        viewModelScope.launch {
+            val result = roomModule.startGame(
+                roomEntityState.value.roomId,
+                roomEntityState.value.roomKey,
+                userId
+            )
+            if (result.isSuccess()) {
+                refreshRoomGameInfo()
+                return@launch
+            }
+            topTipState.value = result.msg ?: "游戏开始失败"
+        }
+    }
+
+    private fun refreshRoomGameInfo() {
+        viewModelScope.launch {
+            val result = roomModule.getRoomInfo(
+                roomEntityState.value.roomId,
+                roomEntityState.value.roomKey
+            )
+            if (result.isSuccess()) {
+                val userList = baseJsonConf.decodeFromString<List<UserInfoEntity>>(
+                    result.data?.users ?: ""
+                )
+                _roomEntityState.update { roomState ->
+                    roomState.copy(
+                        roomPlayerNum = userList.size,
+                        users = result.data?.users ?: "",
+                        memberList = userList,
+                        playerNo = userList.indexOf(userList.find { it.userId == userId })
                     )
                 }
             }
         }
     }
+
+    private fun enterGameRoom(roomId: String, roomKey: String, asOwner: Boolean = false) {
+        if (roomId.isBlank() || roomKey.isBlank()) {
+            topTipState.value = "房间名或密码不能为空"
+            return
+        }
+        viewModelScope.launch {
+            val result =
+                if (asOwner) roomModule.createRoom(roomId, roomKey) else roomModule.joinRoom(
+                    roomId,
+                    roomKey
+                )
+            if (result.isSuccess()) {
+                userId = result.data ?: ""
+                _roomEntityState.update {
+                    it.copy(
+                        roomId = roomId,
+                        roomFinished = true,
+                        roomKey = roomKey,
+                    )
+                }
+                refreshRoomGameInfo()
+                return@launch
+            }
+            topTipState.value = result.msg ?: "加入房间失败"
+        }
+    }
+
+    private fun deleteRoom() {
+        viewModelScope.launch {
+            val result = roomModule.deleteRoom(
+                roomEntityState.value.roomId,
+                roomEntityState.value.roomKey,
+                userId
+            )
+            if (result.isSuccess()) {
+                clearRoomState()
+            }
+        }
+    }
+
+    private fun clearRoomState() = _roomEntityState.update {
+        it.copy(
+            roomId = "",
+            roomKey = "",
+            roomFinished = false,
+            playerNo = 0,
+            roomPlayerNum = 0,
+            startedGameMode = startedGameMode.value
+        )
+    }
+
 
     /**
      * 处理本地游戏相关意图的分发函数
@@ -128,7 +184,6 @@ class MainViewmodel : ViewModel() {
                     )
                 }
             }
-
 
             // region 刷新间谍数量处理
             is GameIntent.RefreshSpyNumber -> {
@@ -161,23 +216,6 @@ class MainViewmodel : ViewModel() {
             }
         }
     }
-
-    private fun refreshLocalSpyGame(spyNum: Int = 0, playNum: Int = 0) {
-        val timeEntity = _gameEntity.value.timeEntityList.lastOrNull() ?: return
-        _gameEntity.update {
-            it.copy(
-                timeEntityList = mutableStateListOf(
-                    timeEntity.copy(
-                        spyNum = if (spyNum != 0) spyNum else timeEntity.spyNum,
-                        totalPlayerNumber = if (playNum != 0) playNum else timeEntity.totalPlayerNumber
-                    ).apply {
-                        refreshGame()
-                    }
-                )
-            )
-        }
-    }
-
 
     private fun restartLocalSpyGame() {
         val timeEntity = _gameEntity.value.timeEntityList.lastOrNull() ?: return

@@ -74,7 +74,7 @@ fun App() {
 @Composable
 fun AppView(viewmodel: MainViewmodel) {
     val snackState = remember { mutableStateOf(SnackbarHostState()) }
-    val playerNum = viewmodel.roomEntityState.collectAsState().value.playerNum
+    val playerNum = viewmodel.roomEntityState.collectAsState().value.roomPlayerNum
     val roomTitle = viewmodel.roomEntityState.collectAsState().value.roomId
     val navi = rememberNavController()
     navi.addOnDestinationChangedListener { _, destination, _ ->

@@ -14,7 +14,6 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
-import kotlinx.coroutines.flow.collectLatest
 import org.walks.gamecopilot.MainViewmodel
 import org.walks.gamecopilot.data.entity.MemberEntry
 
@@ -24,7 +23,7 @@ fun RoomPage(viewmodel: MainViewmodel) {
     var animVisible by remember { mutableStateOf(false) }
     val roomState=viewmodel.roomEntityState.collectAsState()
     val memberList = mutableStateListOf<MemberEntry>()
-    for (memberNo in 1.. roomState.value.playerNum) {
+    for (memberNo in 1.. roomState.value.roomPlayerNum) {
         memberList.add(MemberEntry(memberNo,memberNo==roomState.value.playerNo))
     }
 

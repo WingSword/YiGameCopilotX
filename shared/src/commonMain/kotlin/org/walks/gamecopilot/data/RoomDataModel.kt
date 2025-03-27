@@ -1,4 +1,4 @@
-package org.walks.gamecopilot
+package org.walks.gamecopilot.data
 
 import kotlinx.serialization.Serializable
 
