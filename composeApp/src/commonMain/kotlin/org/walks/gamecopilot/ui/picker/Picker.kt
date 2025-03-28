@@ -38,6 +38,7 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import org.walks.gamecopilot.PlatformHelper
 import org.walks.gamecopilot.ui.button.ButtonType
 import org.walks.gamecopilot.ui.button.WeButton
 import org.walks.gamecopilot.ui.popup.WePopup
@@ -82,6 +83,7 @@ fun WePicker(
                             options = options,
                             index = localValues[index]
                         ) {
+                            PlatformHelper.getInstance().vibrateMethod()
                             localValues[index] = it
                             onColumnValueChange?.invoke(index, it, localValues.copyOf())
                         }

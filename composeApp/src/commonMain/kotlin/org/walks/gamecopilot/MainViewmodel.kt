@@ -217,6 +217,13 @@ class MainViewmodel : ViewModel() {
         }
     }
 
+    // 在 common 代码中调用
+    fun vibrateLong() = PlatformHelper.getInstance().vibrateLongMethod()
+
+    fun vibrite() {
+        PlatformHelper.getInstance().vibrateMethod()
+    }
+
     private fun restartLocalSpyGame() {
         val timeEntity = _gameEntity.value.timeEntityList.lastOrNull() ?: return
         _gameEntity.update { entity ->

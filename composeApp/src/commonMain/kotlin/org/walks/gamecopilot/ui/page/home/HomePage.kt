@@ -21,8 +21,13 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -34,6 +39,7 @@ import androidx.compose.ui.unit.sp
 import com.yi.yigamecopilot.android.theme.MorandiColorList
 import kotlinx.coroutines.launch
 import org.walks.gamecopilot.MainViewmodel
+import org.walks.gamecopilot.PlatformHelper
 import org.walks.gamecopilot.intent.GameIntent
 
 /**
@@ -80,7 +86,6 @@ fun HomePage(viewmodel: MainViewmodel) {
 }
 
 
-
 @Composable
 fun ModeCard(
     title: String,
@@ -93,7 +98,7 @@ fun ModeCard(
             .background(color = background)
             .border(
                 width = 8.dp,
-                color =  MaterialTheme.colorScheme.secondary ,
+                color = MaterialTheme.colorScheme.secondary,
                 shape = RoundedCornerShape(32.dp)
             ).padding(16.dp),
         contentAlignment = Alignment.BottomEnd
@@ -180,6 +185,14 @@ fun ModeSelectList(list: List<String>, selectedPos: Int = 0, onItemClick: (Int) 
     )
     // 创建协程作用域用于处理滚动动画
     val coroutineScope = rememberCoroutineScope()
+
+    var isInitialized by remember { mutableStateOf(false) } // 新增初始化标记
+
+    LaunchedEffect(key1 = pagerState.currentPage) {
+        if (isInitialized)
+            PlatformHelper.getInstance().vibrateMethod()
+        isInitialized = true
+    }
 
     Column(modifier = Modifier.height(180.dp).fillMaxWidth()) {
         // 水平分页容器：设置间距和边距实现卡片堆叠视觉效果

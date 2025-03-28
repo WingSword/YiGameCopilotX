@@ -58,6 +58,7 @@ import androidx.compose.ui.window.Dialog
 import com.yi.yigamecopilot.android.theme.MorandiColorList
 import kotlinx.coroutines.launch
 import org.walks.gamecopilot.MainViewmodel
+import org.walks.gamecopilot.PlatformHelper
 import org.walks.gamecopilot.data.entity.LocalSpyEntity
 import org.walks.gamecopilot.intent.GameIntent
 import org.walks.gamecopilot.ui.badge.WeBadge
@@ -98,6 +99,12 @@ fun LocalSpyGame(viewmodel: MainViewmodel) {
     val gameStateList = viewmodel.gameEntity.collectAsState().value.timeEntityList
     // 当前玩家总数，默认取最近一次记录或4人
     val playerNum = gameStateList.lastOrNull()?.totalPlayerNumber ?: 4
+
+    LaunchedEffect(key1 = gameTimeState) {
+        if (gameTimeState > 0) {
+            PlatformHelper.getInstance().vibrateLongMethod()
+        }
+    }
 
     Column(modifier = Modifier.fillMaxWidth(), horizontalAlignment = Alignment.CenterHorizontally) {
         // 游玩人数选择区
@@ -150,6 +157,7 @@ fun LocalSpyGame(viewmodel: MainViewmodel) {
                                 )
                             )
                         }
+
                         2 -> {
                             // 直接更新空白卡数量
                             viewmodel.handleLocalGameIntent(
@@ -211,7 +219,6 @@ fun LocalSpyGame(viewmodel: MainViewmodel) {
 }
 
 
-
 /**
  * 游戏身份展示视图组件
  *
@@ -232,7 +239,7 @@ fun GameGreetingView(key: Int, gameState: LocalSpyEntity) {
     }
     // 玩家查看次数记录列表
     var watchedTimeList = remember(key) {
-        MutableList(13){0}
+        MutableList(13) { 0 }
     }
 
     /* 当key变化时重置游戏状态 */
@@ -242,46 +249,57 @@ fun GameGreetingView(key: Int, gameState: LocalSpyEntity) {
             watchedTimeList[it] = 0
         }
     }
+    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+        /* 玩家选择区域布局 */
+        LocalPlayerSelectArea(
+            playerNum = realGameState.totalPlayerNumber,
+            getWatchedTime = { watchedTimeList[it] },
+            badge = { currentSelect ->
+                // 不同状态下的徽章显示逻辑
+                if (identityDisPlayState.value == IDENTITY_SHOW_ALL) {
+                    WeBadge(
+                        realGameState.optIdentity(currentSelect),
+                        size = 12.dp,
+                        fontSize = 10,
+                        color = if (realGameState.spies.contains(currentSelect)) MaterialTheme.colorScheme.error
+                        else MaterialTheme.colorScheme.primaryContainer
+                    )
+                } else if ((watchedTimeList[currentSelect]) > 1) {
+                    WeBadge(
+                        "查看" + watchedTimeList[currentSelect] + "次",
+                        size = 12.dp,
+                        fontSize = 10
+                    )
+                }
+            },
+            onClick = { _ -> /* 点击事件占位 */ }
+        ) { currentSelect ->
+            // 长按查看该号码玩家身份并增加查看次数
+            currentSelectPlayer = currentSelect
+            watchedTimeList[currentSelect] += 1
+            identityDisPlayState.value = IDENTITY_SHOW
+            PlatformHelper.getInstance().vibrateMethod()
+        }
 
-    /* 玩家选择区域布局 */
-    LocalPlayerSelectArea(
-        playerNum = realGameState.totalPlayerNumber,
-        getWatchedTime = { watchedTimeList[it] },
-        badge = { currentSelect ->
-            // 不同状态下的徽章显示逻辑
-            if (identityDisPlayState.value == IDENTITY_SHOW_ALL) {
-                WeBadge(
-                    realGameState.optIdentity(currentSelect),
-                    size = 12.dp,
-                    fontSize = 10,
-                    color = if (realGameState.spies.contains(currentSelect)) MaterialTheme.colorScheme.error
-                    else MaterialTheme.colorScheme.primaryContainer
-                )
-            } else if ((watchedTimeList[currentSelect]) > 1) {
-                WeBadge("查看" + watchedTimeList[currentSelect] + "次", size = 12.dp, fontSize = 10)
-            }
-        },
-        onClick = { _ -> /* 点击事件占位 */ }
-    ) { currentSelect ->
-        // 更新当前选中玩家并增加查看次数
-        currentSelectPlayer = currentSelect
-        watchedTimeList[currentSelect] += 1
-        identityDisPlayState.value = IDENTITY_SHOW
+        Spacer(Modifier.weight(1f))
+        // 长按提示条件判断
+        AnimatedVisibility(
+            (watchedTimeList.filter { it > 0 }).size >= gameState.totalPlayerNumber
+                    && identityDisPlayState.value != IDENTITY_SHOW_ALL
+        ) {
+            Text(
+                text = "长按公布所有身份",
+                color = MaterialTheme.colorScheme.tertiary,
+                modifier = Modifier.combinedClickable(onLongClick = {
+                    PlatformHelper.getInstance().vibrateLongMethod()
+                    identityDisPlayState.value = IDENTITY_SHOW_ALL
+                    PlatformHelper.getInstance().vibrateLongMethod()
+                }) {
+                    /* 点击事件占位 */
+                })
+        }
+        Spacer(Modifier.weight(1f))
     }
-
-    Spacer(Modifier.height(8.dp))
-    // 长按提示条件判断
-    if ((watchedTimeList.filter { it > 0 }).size >= gameState.totalPlayerNumber) {
-        Text(
-            text = "长按公布所有身份",
-            color = MaterialTheme.colorScheme.tertiary,
-            modifier = Modifier.combinedClickable(onLongClick = {
-                identityDisPlayState.value = IDENTITY_SHOW_ALL
-            }) {
-                /* 点击事件占位 */
-            })
-    }
-    Spacer(Modifier.height(8.dp))
 
     // 身份卡片动画显示逻辑
     AnimatedVisibility(identityDisPlayState.value == IDENTITY_SHOW || identityDisPlayState.value == IDENTITY_SHOW_ONE) {
@@ -351,6 +369,7 @@ fun LocalPlayerSelectArea(
                             color = when {
                                 interactionState.value is PressInteraction.Press ->
                                     MaterialTheme.colorScheme.primary.copy(alpha = 0.1f)
+
                                 watchedTime >= 1 -> MaterialTheme.colorScheme.tertiaryContainer
                                 else -> MaterialTheme.colorScheme.primary
                             },
@@ -380,7 +399,6 @@ fun LocalPlayerSelectArea(
         }
     }
 }
-
 
 
 /**
@@ -438,8 +456,8 @@ fun LocalSpyIdentityCard(
                 else if (gameState.isSpy(currentSelectPlayer)) "卧底" else "平民",
                 textAlign = TextAlign.Center,
                 color = if (gameState.isSpy(currentSelectPlayer)) MaterialTheme.colorScheme.error
-                    else if (identityDismiss == IDENTITY_SHOW_ONE) MaterialTheme.colorScheme.onPrimary
-                    else MaterialTheme.colorScheme.onSecondaryContainer,
+                else if (identityDismiss == IDENTITY_SHOW_ONE) MaterialTheme.colorScheme.onPrimary
+                else MaterialTheme.colorScheme.onSecondaryContainer,
                 fontSize = 16.sp,
                 modifier = Modifier.fillMaxWidth()
             )

@@ -3,22 +3,18 @@ package org.walks.gamecopilot
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
-import androidx.compose.runtime.Composable
-import androidx.compose.ui.tooling.preview.Preview
-import org.walks.gamecopilot.ui.page.home.ModeCard
 
+/**
+ *  Created by Wing at 15:47 on 2025/3/28
+ *
+ */
+// 或 Activity 中
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-
+        PlatformHelper.init(applicationContext)
         setContent {
             App()
         }
     }
-}
-
-@Preview
-@Composable
-fun AppAndroidPreview() {
-    ModeCard("Mode 1")
 }
