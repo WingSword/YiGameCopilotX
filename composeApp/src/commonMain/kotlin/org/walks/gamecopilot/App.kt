@@ -1,6 +1,9 @@
 package org.walks.gamecopilot
 
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.LinearEasing
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -26,14 +29,19 @@ import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.CreationExtras
@@ -45,7 +53,9 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.launch
 import org.jetbrains.compose.ui.tooling.preview.Preview
+import org.walks.gamecopilot.event.NavigationEvent
 import org.walks.gamecopilot.intent.GameRoomIntent
 import org.walks.gamecopilot.theme.WeUITheme
 import org.walks.gamecopilot.ui.page.home.HomePage
@@ -70,96 +80,14 @@ fun App() {
 }
 
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AppView(viewmodel: MainViewmodel) {
     val snackState = remember { mutableStateOf(SnackbarHostState()) }
-    val playerNum = viewmodel.roomEntityState.collectAsState().value.roomPlayerNum
-    val roomTitle = viewmodel.roomEntityState.collectAsState().value.roomId
     val navi = rememberNavController()
-    navi.addOnDestinationChangedListener { _, destination, _ ->
-        val route = destination.route
-        // 根据route进行相关操作，如记录日志或更新UI
-        when (route) {
 
-        }
-    }
     Scaffold(
         topBar = {
-            CenterAlignedTopAppBar(
-                title = {
-                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                        Text(
-                            text = if (navi.currentDestination?.route == "room") roomTitle else "卧底游戏",
-                            color = MaterialTheme.colorScheme.onPrimary
-                        )
-                        AnimatedVisibility(playerNum > 0) {
-                            Row(verticalAlignment = Alignment.CenterVertically) {
-                                Text(
-                                    "当前房间人数: ${playerNum}人",
-                                    style = MaterialTheme.typography.bodyMedium,
-                                    color = MaterialTheme.colorScheme.onSecondary
-                                )
-                                Icon(
-                                    Icons.Filled.Refresh,
-                                    "刷新房间人数",
-                                    modifier = Modifier.clickable {
-                                        viewmodel.handleRoomIntent(GameRoomIntent.RefreshRoomInfo)
-                                    },
-                                    tint = MaterialTheme.colorScheme.onSecondary
-                                )
-                            }
-
-                        }
-                        AnimatedVisibility(viewmodel.topTipState.value.isNotBlank()) {
-                            Text(
-                                viewmodel.topTipState.value,
-                                style = MaterialTheme.typography.bodyMedium,
-                                color = MaterialTheme.colorScheme.error
-                            )
-                        }
-                    }
-                },
-                navigationIcon = {
-                    IconButton(
-                        modifier = Modifier
-                            .clip(CircleShape)
-                            .border(
-                                width = 2.dp,
-                                color = MaterialTheme.colorScheme.secondaryContainer,
-                                shape = CircleShape
-                            ),
-                        onClick = {
-                            if (!isStartRoute(navi)) {
-                                try {
-                                    navi.popBackStack()
-                                } catch (e: Exception) {
-                                    // 处理 popBackStack 异常，例如记录日志或提示用户
-                                    println("Error popping back stack: ${e.message}")
-                                }
-                                if (navi.currentBackStackEntry?.destination?.route == "start") {
-                                    viewmodel.handleRoomIntent(GameRoomIntent.LeaveGameRoom)
-                                }
-                            }
-                        },
-                        colors = IconButtonDefaults.iconButtonColors(
-                            containerColor = MaterialTheme.colorScheme.secondaryContainer,
-                            contentColor = MaterialTheme.colorScheme.onSecondaryContainer,
-                        )
-                    ) {
-                        if (!isStartRoute(navi)) {
-                            Icon(
-                                imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                                contentDescription = "back button"
-                            )
-                        }
-                    }
-
-                },
-                modifier = Modifier
-                    .padding(24.dp)
-                    .clip(RoundedCornerShape(20.dp))
-            )
+            AppTopBar(navi, viewmodel, viewmodel.roomEntityState.value.roomId)
         },
         snackbarHost = {
             SnackbarHost(hostState = snackState.value)
@@ -175,6 +103,11 @@ fun AppView(viewmodel: MainViewmodel) {
             NavigationHost(viewmodel, navi)
         }
     }
+    LaunchedEffect(Unit) {
+        viewmodel.topTipState.collect { tip ->
+            tip?.let { snackState.value.showSnackbar(it) }
+        }
+    }
 }
 
 // 提取公共逻辑到辅助函数
@@ -182,15 +115,117 @@ private fun isStartRoute(navi: NavHostController): Boolean {
     return navi.currentDestination?.route == "start" || navi.currentDestination?.route == null
 }
 
+private fun isStartRoute(route: String?): Boolean {
+    return route == "start" || route == null
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun NavigationHost(viewmodel: MainViewmodel, navi: NavHostController) {
-    LaunchedEffect(viewmodel.roomEntityState) {
-        viewmodel.roomEntityState.collectLatest { roomState ->
-            if (navi.currentDestination?.route == "start" && roomState.roomFinished) {
-                navi.navigate("room")
-            }
+fun AppTopBar(navi: NavHostController, viewmodel: MainViewmodel, roomTitle: String) {
+    // 协程作用域：用于处理动画等异步操作
+    val scope = rememberCoroutineScope()
+    // 旋转动画：刷新按钮的旋转动画控制
+    val rotation = remember { Animatable(0f) }
+
+    var current by remember { mutableStateOf("") }
+    LaunchedEffect(Unit) {
+        navi.currentBackStackEntryFlow.collectLatest {
+            current = navi.currentDestination?.route ?: ""
         }
     }
+    CenterAlignedTopAppBar(
+        title = {
+            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                Text(
+                    text = if (current == "room") roomTitle else "卧底游戏",
+                    color = MaterialTheme.colorScheme.onPrimary
+                )
+            }
+        },
+        navigationIcon = {
+            IconButton(
+                modifier = Modifier
+                    .clip(CircleShape)
+                    .border(
+                        width = 2.dp,
+                        color = MaterialTheme.colorScheme.secondaryContainer,
+                        shape = CircleShape
+                    ),
+                onClick = {
+                    if (!isStartRoute(current)) {
+                        try {
+                            navi.popBackStack()
+                        } catch (e: Exception) {
+                            // 处理 popBackStack 异常，例如记录日志或提示用户
+                            println("Error popping back stack: ${e.message}")
+                        }
+                        if (current == "start") {
+                            viewmodel.handleRoomIntent(GameRoomIntent.LeaveGameRoom)
+                        }
+                    }
+                },
+                colors = IconButtonDefaults.iconButtonColors(
+                    containerColor = MaterialTheme.colorScheme.secondaryContainer,
+                    contentColor = MaterialTheme.colorScheme.onSecondaryContainer,
+                )
+            ) {
+                if (!isStartRoute(current)) {
+                    Icon(
+                        imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                        contentDescription = "back button"
+                    )
+                }
+            }
+        },
+        actions = {
+            if (!isStartRoute(current))
+                IconButton(
+                    modifier = Modifier
+                        .clip(CircleShape)
+                        .border(
+                            width = 2.dp,
+                            color = MaterialTheme.colorScheme.tertiaryContainer,
+                            shape = CircleShape
+                        ).rotate(rotation.value),
+                    onClick = {
+                        scope.launch {
+                            rotation.animateTo(
+                                targetValue = 360f,
+                                animationSpec = tween(durationMillis = 500, easing = LinearEasing)
+                            )
+                            rotation.snapTo(0f) // 重置角度准备下次旋转
+                        }
+                        viewmodel.handleRoomIntent(GameRoomIntent.RefreshRoomInfo)
+                    },
+                    colors = IconButtonDefaults.iconButtonColors(
+                        containerColor = MaterialTheme.colorScheme.tertiaryContainer,
+                        contentColor = MaterialTheme.colorScheme.onTertiaryContainer,
+                    ),
+                    content = {
+                        Text(viewmodel.roomEntityState.value.roomPlayerNum.toString())
+                        Icon(
+                            modifier = Modifier.fillMaxSize(),
+                            imageVector = Icons.Filled.Refresh,
+                            contentDescription = "刷新房间人数",
+                            tint = MaterialTheme.colorScheme.onSecondary.copy(alpha = 0.33f)
+                        )
+                    }
+                )
+        },
+        modifier = Modifier
+            .padding(24.dp)
+            .clip(RoundedCornerShape(20.dp)),
+        colors = TopAppBarDefaults.centerAlignedTopAppBarColors(
+            containerColor = Color.Transparent,
+            titleContentColor = MaterialTheme.colorScheme.onPrimaryContainer,
+            navigationIconContentColor = MaterialTheme.colorScheme.onPrimaryContainer,
+            actionIconContentColor = MaterialTheme.colorScheme.onPrimaryContainer,
+        )
+    )
+}
+
+@Composable
+fun NavigationHost(viewmodel: MainViewmodel, navi: NavHostController) {
     NavHost(navi, startDestination = "start") {
         composable("start") {
             HomePage(viewmodel)
@@ -199,6 +234,25 @@ fun NavigationHost(viewmodel: MainViewmodel, navi: NavHostController) {
             RoomPage(viewmodel)
         }
     }
+    LaunchedEffect(Unit) {
+        viewmodel.navigationEvents.collect { event ->
+            event?.let {
+                when (event) {
+                    is NavigationEvent.NavigateTo -> {
+                        navi.navigate(event.route) {
+                            event.popUpToRoute?.let { route ->
+                                popUpTo(route) { inclusive = event.inclusive }
+                            }
+                        }
+                    }
+
+                    NavigationEvent.PopBackStack -> navi.popBackStack()
+                    is NavigationEvent.PopUpTo -> navi.popBackStack(event.route, event.inclusive)
+                }
+            }
+        }
+    }
+
 }
 
 

@@ -7,8 +7,8 @@ data class RoomState(
     val roomFinished: Boolean = false,
     val roomId: String = "",
     val roomKey: String = "",
-    val playerNo: Int = 0,
-    val roomPlayerNum: Int = 0,
+    val playerNo: Int = 1,
+    val roomPlayerNum: Int = 18,
     val users: String = "",
     var memberList: List<UserInfoEntity> = listOf()
 ) {

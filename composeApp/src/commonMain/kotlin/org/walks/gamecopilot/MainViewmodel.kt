@@ -11,6 +11,7 @@ import org.walks.gamecopilot.data.UserInfoEntity
 import org.walks.gamecopilot.data.entity.GameEntity
 import org.walks.gamecopilot.data.entity.LocalSpyEntity
 import org.walks.gamecopilot.data.entity.RoomState
+import org.walks.gamecopilot.event.NavigationEvent
 import org.walks.gamecopilot.http.baseJsonConf
 import org.walks.gamecopilot.http.roomModule
 import org.walks.gamecopilot.intent.GameIntent
@@ -28,9 +29,12 @@ class MainViewmodel : ViewModel() {
     private val _roomEntityState = MutableStateFlow(RoomState())
     val roomEntityState: StateFlow<RoomState> = _roomEntityState
 
+    private val _navigationEvents: MutableStateFlow<NavigationEvent?> = MutableStateFlow(null)
+    val navigationEvents: StateFlow<NavigationEvent?> = _navigationEvents
 
-    var topTipState = mutableStateOf("")
-        private set
+    private val _topTipState: MutableStateFlow<String?> = MutableStateFlow(null)
+    var topTipState: StateFlow<String?> = _topTipState
+
 
     private var userId = ""
 
@@ -42,6 +46,14 @@ class MainViewmodel : ViewModel() {
             }
 
             is GameRoomIntent.CreateAGameRoom -> {
+                viewModelScope.launch {
+                    _navigationEvents.emit(
+                        NavigationEvent.NavigateTo(
+                            "room"
+                        )
+                    )
+                }
+
                 enterGameRoom(intent.roomId, intent.roomKey, true)
             }
 
@@ -86,8 +98,10 @@ class MainViewmodel : ViewModel() {
                 refreshRoomGameInfo()
                 return@launch
             }
-            topTipState.value = result.msg ?: "游戏开始失败"
-        }
+            _topTipState.emit(
+                result.msg ?: "游戏开始失败"
+            )
+             }
     }
 
     private fun refreshRoomGameInfo() {
@@ -113,10 +127,6 @@ class MainViewmodel : ViewModel() {
     }
 
     private fun enterGameRoom(roomId: String, roomKey: String, asOwner: Boolean = false) {
-        if (roomId.isBlank() || roomKey.isBlank()) {
-            topTipState.value = "房间名或密码不能为空"
-            return
-        }
         viewModelScope.launch {
             val result =
                 if (asOwner) roomModule.createRoom(roomId, roomKey) else roomModule.joinRoom(
@@ -135,7 +145,7 @@ class MainViewmodel : ViewModel() {
                 refreshRoomGameInfo()
                 return@launch
             }
-            topTipState.value = result.msg ?: "加入房间失败"
+            _topTipState.emit(result.msg ?: "加入房间失败")
         }
     }
 

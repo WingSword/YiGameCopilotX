@@ -3,8 +3,11 @@ package org.walks.gamecopilot.ui.page.room
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.slideInVertically
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -13,7 +16,9 @@ import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.unit.dp
 import org.walks.gamecopilot.MainViewmodel
 import org.walks.gamecopilot.data.entity.MemberEntry
 
@@ -21,24 +26,26 @@ import org.walks.gamecopilot.data.entity.MemberEntry
 @Composable
 fun RoomPage(viewmodel: MainViewmodel) {
     var animVisible by remember { mutableStateOf(false) }
-    val roomState=viewmodel.roomEntityState.collectAsState()
+    val roomState = viewmodel.roomEntityState.collectAsState()
     val memberList = mutableStateListOf<MemberEntry>()
-    for (memberNo in 1.. roomState.value.roomPlayerNum) {
-        memberList.add(MemberEntry(memberNo,memberNo==roomState.value.playerNo))
+    for (memberNo in 1..roomState.value.roomPlayerNum) {
+        memberList.add(MemberEntry(memberNo, memberNo == roomState.value.playerNo))
     }
 
-    Column {
-        FlopArea(viewmodel,roomState)
-        Spacer(Modifier.weight(1f))
+    Box(
+        contentAlignment = Alignment.BottomCenter,
+        modifier = Modifier.fillMaxSize().padding( 24.dp)
+    ) {
         AnimatedVisibility(
             visible = animVisible,
             enter = slideInVertically(
                 initialOffsetY = { it / 2 },
-                animationSpec = tween(durationMillis = 500)
+                animationSpec = tween(durationMillis = 300)
             )
         ) {
             MemberList(memberList)
         }
+        FlopArea(viewmodel, roomState)
     }
     // 可以根据路由导航的时机来触发visible为true
     LaunchedEffect(Unit) {

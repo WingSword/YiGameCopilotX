@@ -15,6 +15,8 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.wrapContentSize
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -42,44 +44,29 @@ import org.walks.gamecopilot.intent.GameIntent
 
 @Composable
 fun FlopArea(viewmodel: MainViewmodel, roomState: State<RoomState>) {
+    StandingCard("ababababa", emptySet())
 
-    Column(modifier = Modifier.padding(horizontal = 24.dp, vertical = 16.dp).fillMaxWidth(), horizontalAlignment = Alignment.End) {
-        StandingCard("ababababa", emptySet())
-        Spacer(modifier = Modifier.height(16.dp))
-        Row(modifier = Modifier.clickable { viewmodel.handleLocalGameIntent(GameIntent.StartGame) }) {
-
-            GoSign()
-            Spacer(Modifier.width(8.dp))
-            Text(
-                "开始新游戏",
-                style = MaterialTheme.typography.titleMedium,
-                color = MaterialTheme.colorScheme.onPrimary,
-            )
-
-        }
-
-    }
 }
 
 @Composable
-fun GoSign(modifier: Modifier = Modifier.size(20.dp)){
+fun GoSign(modifier: Modifier = Modifier.size(20.dp)) {
     Canvas(modifier = modifier) {
         val startX = size.width
-        val startY = size.height/2
+        val startY = size.height / 2
         val lineLength = size.width / 3
         val halfLineLength = lineLength / 2
 
         drawLine(
             color = Color.Black,
             start = Offset(startX, startY),
-            end = Offset(startX/2, startY),
+            end = Offset(startX / 2, startY),
             strokeWidth = size.width / 8,
             cap = StrokeCap.Round
         )
 
         drawLine(
             color = Color.Black,
-            start = Offset(startX, startY ),
+            start = Offset(startX, startY),
             end = Offset(startX, size.height),
             strokeWidth = size.width / 8,
             cap = StrokeCap.Round
@@ -91,57 +78,30 @@ fun GoSign(modifier: Modifier = Modifier.size(20.dp)){
 fun StandingCard(standingWord: String, skills: Set<String>) {
     var hideStandingWord by remember { mutableStateOf(true) }
     Card(
-        modifier = Modifier.fillMaxWidth().height(120.dp)
-            .shadow(10.dp, shape = RoundedCornerShape(32.dp))
-            .clip(RoundedCornerShape(32.dp)),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.tertiaryContainer)
+        modifier = Modifier.fillMaxWidth().height(60.dp)
+            .shadow(10.dp, shape = CircleShape)
+            .clip(CircleShape),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.6f))
     ) {
-        Row {
-            Box(
-                Modifier.width(88.dp).fillMaxHeight().background(
-                    color = Color(0xFF8EC3CB),
-                    shape = RoundedCornerShape(32, 0, 0, 32)
-                ).clickable {
-                    hideStandingWord = false
-                },
-                contentAlignment = Alignment.Center
-            ) {
-                androidx.compose.animation.AnimatedVisibility(!hideStandingWord) {
-                    Row {
-                        Text(
-                            "隐藏",
-                            modifier = Modifier.background(
-                                shape = RoundedCornerShape(32, 0, 0, 32),
-                                color = Color(0xFF8EC3CB)
-                            ).clickable {
-                                hideStandingWord = true
-                            }.weight(1f),
-                            textAlign = TextAlign.Center
-                        )
-                        if (skills.isNotEmpty()) {
-                            Text(
-                                "技能",
-                                modifier = Modifier.background(
-                                    color = MaterialTheme.colorScheme.secondary
-                                ).clickable {
-                                    hideStandingWord = true
-                                }.weight(1f),
-                                textAlign = TextAlign.Center
-                            )
-                        }
-                    }
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            modifier = Modifier.wrapContentSize().padding(horizontal = 12.dp)
+        ) {
+            Text(
+                if (hideStandingWord) "查看身份" else "隐藏身份",
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onPrimary,
+                modifier = Modifier.clickable {
+                    hideStandingWord = !hideStandingWord
                 }
-                androidx.compose.animation.AnimatedVisibility(hideStandingWord) {
-                    Text(
-                        "查看身份",
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onPrimary
-                    )
-                }
-            }
-            Spacer(modifier = Modifier.width(16.dp))
+            )
+
+            Spacer(
+                modifier = Modifier.padding(horizontal = 12.dp).fillMaxHeight(0.8f).width(0.5.dp)
+                    .background(MaterialTheme.colorScheme.onTertiaryContainer.copy(alpha = 0.3f))
+            )
             Column(
-                modifier = Modifier.fillMaxHeight().padding(16.dp).weight(1f),
+                modifier = Modifier.fillMaxHeight().weight(1f),
                 verticalArrangement = Arrangement.Center
             ) {
                 Text(
