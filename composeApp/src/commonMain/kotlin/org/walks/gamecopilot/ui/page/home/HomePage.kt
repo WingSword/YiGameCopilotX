@@ -10,11 +10,14 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -40,7 +43,10 @@ import com.yi.yigamecopilot.android.theme.MorandiColorList
 import kotlinx.coroutines.launch
 import org.walks.gamecopilot.MainViewmodel
 import org.walks.gamecopilot.PlatformHelper
+import org.walks.gamecopilot.clickableWithoutRipple
 import org.walks.gamecopilot.intent.GameIntent
+import org.walks.gamecopilot.ui.animation.DiceAnimation
+import org.walks.gamecopilot.ui.widget.FlipCard
 
 /**
  * 首页主界面组件，包含游戏模式选择和对应模式的内容展示
@@ -79,7 +85,10 @@ fun HomePage(viewmodel: MainViewmodel) {
         }
 
         // 预留的模式1的扩展区域（当前为空，可能为未来扩展保留）
-        AnimatedVisibility(gameMode.value == 1) {
+        AnimatedVisibility(gameMode.value == 2) {
+            Column (Modifier.fillMaxSize(), horizontalAlignment = Alignment.CenterHorizontally) {
+
+            }
 
         }
     }

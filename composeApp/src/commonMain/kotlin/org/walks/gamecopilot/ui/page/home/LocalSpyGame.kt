@@ -3,8 +3,16 @@ package org.walks.gamecopilot.ui.page.home
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.LinearEasing
+import androidx.compose.animation.core.Spring
+import androidx.compose.animation.core.VisibilityThreshold
+import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.slideInVertically
+import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.LocalIndication
@@ -19,6 +27,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
@@ -30,8 +39,6 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Refresh
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -50,20 +57,25 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
+import androidx.compose.ui.window.DialogProperties
 import com.yi.yigamecopilot.android.theme.MorandiColorList
 import kotlinx.coroutines.launch
 import org.walks.gamecopilot.MainViewmodel
 import org.walks.gamecopilot.PlatformHelper
+import org.walks.gamecopilot.clickableWithoutRipple
 import org.walks.gamecopilot.data.entity.LocalSpyEntity
 import org.walks.gamecopilot.intent.GameIntent
 import org.walks.gamecopilot.ui.badge.WeBadge
 import org.walks.gamecopilot.ui.button.CommonButton
 import org.walks.gamecopilot.ui.picker.WeSingleColumnPicker
+import org.walks.gamecopilot.ui.widget.FlipCard
 
 /**
  *  Created by Wing at 20:53 on 2025/3/25
@@ -72,7 +84,6 @@ import org.walks.gamecopilot.ui.picker.WeSingleColumnPicker
 
 const val IDENTITY_DISMISS = 0
 const val IDENTITY_SHOW = -1
-const val IDENTITY_SHOW_ONE = -2
 const val IDENTITY_SHOW_ALL = -3
 
 
@@ -302,19 +313,28 @@ fun GameGreetingView(key: Int, gameState: LocalSpyEntity) {
     }
 
     // 身份卡片动画显示逻辑
-    AnimatedVisibility(identityDisPlayState.value == IDENTITY_SHOW || identityDisPlayState.value == IDENTITY_SHOW_ONE) {
-        Dialog(onDismissRequest = { identityDisPlayState.value = IDENTITY_DISMISS }) {
+    AnimatedVisibility(
+        modifier = Modifier.fillMaxSize(),
+        visible = identityDisPlayState.value == IDENTITY_SHOW,
+        // 组合动画+物理效果
+        enter = slideInVertically(
+            animationSpec = spring(
+                stiffness = Spring.StiffnessMediumLow,
+                visibilityThreshold = IntOffset.VisibilityThreshold
+            ),
+            initialOffsetY = { it }
+        ) + fadeIn(spring(dampingRatio = Spring.DampingRatioMediumBouncy)),
+        exit = slideOutVertically() + fadeOut()) {
+        Dialog(
+            onDismissRequest = { identityDisPlayState.value = IDENTITY_DISMISS },
+            properties = DialogProperties(
+                usePlatformDefaultWidth = false // 关键属性
+            )
+        ) {
             LocalSpyIdentityCard(
                 gameState = gameState,
-                identityDismiss = identityDisPlayState.value,
                 currentSelectPlayer = currentSelectPlayer,
-                onTap = {
-                    if (identityDisPlayState.value == IDENTITY_SHOW_ONE) {
-                        identityDisPlayState.value = IDENTITY_DISMISS
-                    } else {
-                        identityDisPlayState.value = IDENTITY_SHOW_ONE
-                    }
-                })
+            )
         }
     }
 }
@@ -405,74 +425,90 @@ fun LocalPlayerSelectArea(
  * 身份卡片组件，用于显示玩家身份信息及操作提示
  *
  * @param gameState 当前游戏状态实体，包含玩家身份数据及操作逻辑
- * @param identityDismiss 身份牌显示状态标识，决定是否显示详细身份信息
  * @param currentSelectPlayer 当前选择的玩家编号（默认1号玩家）
- * @param onTap 点击事件的回调函数，用于处理卡片点击后的逻辑
  */
 @Composable
 fun LocalSpyIdentityCard(
     gameState: LocalSpyEntity,
-    identityDismiss: Int,
     currentSelectPlayer: Int = 1,
-    onTap: () -> Unit
 ) {
+    val flipState = remember { mutableStateOf(false) }
     // 主容器：包含卡片布局和交互效果
-    Box(
-        modifier = Modifier.height(160.dp).width(120.dp).clip(RoundedCornerShape(20.dp))
-            .clickable { onTap() }
-            .background(
-                color = if (identityDismiss == IDENTITY_SHOW_ONE) MaterialTheme.colorScheme.secondaryContainer
-                else MaterialTheme.colorScheme.primaryContainer,
-            ).border(
-                BorderStroke(
-                    width = 4.dp,
-                    color = MorandiColorList[(0..7).random()] // 随机生成边框颜色
+    FlipCard(
+        modifier = Modifier.height(200.dp).width(140.dp).clip(RoundedCornerShape(20.dp))
+            .clickable { flipState.value = !flipState.value },
+        backContent = {
+            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                Text(
+                    text = currentSelectPlayer.toString(),
+                    fontSize = 90.sp,
+                    fontWeight = FontWeight.W900,
+                    color = MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.33f),
+                    textAlign = TextAlign.Right
+                )
+                Spacer(modifier = Modifier.weight(1f))
+                Text(
+                    if (gameState.isSpy(currentSelectPlayer)) "[卧底]" else "[平民]",
+                    textAlign = TextAlign.Center,
+                    color = if (gameState.isSpy(currentSelectPlayer)) MaterialTheme.colorScheme.error
+                    else MaterialTheme.colorScheme.onSecondaryContainer,
+                    fontSize = 20.sp,
+                    fontWeight = FontWeight.ExtraLight,
+                    modifier = Modifier.fillMaxWidth()
+                )
+                // 操作提示文本：根据显示状态切换提示语
+                Text(
+                    "点击卡片查看身份词",
+                    color = MaterialTheme.colorScheme.onSecondary,
+                    fontSize = 12.sp,
+                    modifier = Modifier.fillMaxWidth(),
+                    textAlign = TextAlign.Center,
+                )
+                Spacer(modifier = Modifier.weight(1f))
+            }
+        },
+        frontContent = {
+            Box(
+                modifier = Modifier.background(
+                    color = MaterialTheme.colorScheme.secondaryContainer
+                ).border(
+                    BorderStroke(
+                        width = 4.dp,
+                        color = MorandiColorList[(0..7).random()] // 随机生成边框颜色
+                    ),
+                    shape = RoundedCornerShape(20.dp)
                 ),
-                shape = RoundedCornerShape(20.dp)
-            ),
-        contentAlignment = Alignment.BottomEnd
-    ) {
-        // 玩家编号显示：大号倾斜文字效果
-        Text(
-            text = currentSelectPlayer.toString(),
-            modifier = Modifier.rotate(-30f),
-            fontSize = 90.sp,
-            fontWeight = FontWeight.W900,
-            color = MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.33f),
-            textAlign = TextAlign.Right
-        )
+                contentAlignment = Alignment.BottomEnd
+            ) {
+                Text(
+                    text = currentSelectPlayer.toString(),
+                    modifier = Modifier.rotate(-30f),
+                    fontSize = 90.sp,
+                    fontWeight = FontWeight.W900,
+                    color = MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.33f),
+                    textAlign = TextAlign.Right
+                )
+                Column(modifier = Modifier.fillMaxSize()) {
+                    Spacer(modifier = Modifier.weight(1f))
+                    Text(
+                        gameState.optIdentity(currentSelectPlayer),
+                        textAlign = TextAlign.Center,
+                        color = if (gameState.isSpy(currentSelectPlayer)) MaterialTheme.colorScheme.error
+                        else MaterialTheme.colorScheme.onSecondaryContainer,
+                        fontSize = 28.sp,
+                        fontWeight = FontWeight.SemiBold,
+                        fontFamily = FontFamily.SansSerif,
+                        modifier = Modifier.fillMaxWidth(),
+                    )
+                    Spacer(modifier = Modifier.weight(1f))
 
-        // 身份信息卡片容器
-        Card(
-            colors = CardDefaults.cardColors(
-                containerColor = Color.Transparent
-            ),
-        ) {
-            Spacer(modifier = Modifier.weight(1f))
+                }
+            }
 
-            // 动态身份显示区域：根据状态显示不同内容
-            Text(
-                if (identityDismiss == IDENTITY_SHOW_ONE) gameState.optIdentity(currentSelectPlayer)
-                else if (gameState.isSpy(currentSelectPlayer)) "卧底" else "平民",
-                textAlign = TextAlign.Center,
-                color = if (gameState.isSpy(currentSelectPlayer)) MaterialTheme.colorScheme.error
-                else if (identityDismiss == IDENTITY_SHOW_ONE) MaterialTheme.colorScheme.onPrimary
-                else MaterialTheme.colorScheme.onSecondaryContainer,
-                fontSize = 16.sp,
-                modifier = Modifier.fillMaxWidth()
-            )
+        },
+        isFlipped = !flipState.value,
+        onFlipComplete = {
 
-            Spacer(modifier = Modifier.weight(1f))
-
-            // 操作提示文本：根据显示状态切换提示语
-            Text(
-                if (identityDismiss == IDENTITY_SHOW_ONE) "再次点击关闭身份牌" else "点击卡片查看身份词",
-                color = MaterialTheme.colorScheme.onSecondary,
-                fontSize = 12.sp,
-                modifier = Modifier.fillMaxWidth(),
-                textAlign = TextAlign.Center,
-            )
-            Spacer(modifier = Modifier.height(8.dp))
         }
-    }
+    )
 }
