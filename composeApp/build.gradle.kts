@@ -10,6 +10,9 @@ plugins {
     alias(libs.plugins.jetbrainsCompose)
     alias(libs.plugins.compose.compiler)
 }
+val appName="卧底游戏助手"
+// 修改版本声明为：
+val composeHtmlVersion = "1.6.1" // 保持与compose.compiler版本一致
 
 kotlin {
     @OptIn(ExperimentalWasmDsl::class)
@@ -18,7 +21,7 @@ kotlin {
         browser {
             val projectDirPath = project.projectDir.path
             commonWebpackConfig {
-                outputFileName = "composeApp.js"
+                outputFileName = "spyapp.js"
                 devServer = (devServer ?: KotlinWebpackConfig.DevServer()).apply {
                     static = (static ?: mutableListOf()).apply {
                         // Serve sources to debug inside browser
@@ -77,6 +80,7 @@ kotlin {
             implementation(compose.desktop.currentOs)
             implementation(libs.kotlinx.coroutines.swing)
         }
+
     }
 }
 
@@ -90,6 +94,7 @@ android {
 
     defaultConfig {
         applicationId = "org.walks.gamecopilot"
+        resValue("string", "app_name", appName)
         minSdk = libs.versions.android.minSdk.get().toInt()
         targetSdk = libs.versions.android.targetSdk.get().toInt()
         versionCode = 1
@@ -118,6 +123,7 @@ android {
 }
 dependencies {
     implementation(libs.places)
+    implementation(libs.androidx.lifecycle.common.jvm)
 }
 
 compose.desktop {
@@ -126,8 +132,8 @@ compose.desktop {
 
         nativeDistributions {
             targetFormats(TargetFormat.Dmg, TargetFormat.Msi, TargetFormat.Deb)
-            packageName = "org.walks.gamecopilot"
+            packageName = appName
             packageVersion = "1.0.0"
-        }
+            }
     }
 }

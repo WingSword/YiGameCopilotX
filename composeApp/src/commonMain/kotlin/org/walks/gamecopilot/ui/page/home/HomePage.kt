@@ -2,6 +2,7 @@ package org.walks.gamecopilot.ui.page.home
 
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.ExperimentalFoundationApi
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -10,14 +11,11 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -41,12 +39,15 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.yi.yigamecopilot.android.theme.MorandiColorList
 import kotlinx.coroutines.launch
+import org.jetbrains.compose.resources.DrawableResource
+import org.jetbrains.compose.resources.painterResource
 import org.walks.gamecopilot.MainViewmodel
 import org.walks.gamecopilot.PlatformHelper
-import org.walks.gamecopilot.clickableWithoutRipple
 import org.walks.gamecopilot.intent.GameIntent
-import org.walks.gamecopilot.ui.animation.DiceAnimation
-import org.walks.gamecopilot.ui.widget.FlipCard
+import yigamecopilotx.composeapp.generated.resources.Res
+import yigamecopilotx.composeapp.generated.resources.icon_spy_more
+import yigamecopilotx.composeapp.generated.resources.icon_spy_one
+import yigamecopilotx.composeapp.generated.resources.icon_spy_together
 
 /**
  * 首页主界面组件，包含游戏模式选择和对应模式的内容展示
@@ -86,7 +87,7 @@ fun HomePage(viewmodel: MainViewmodel) {
 
         // 预留的模式1的扩展区域（当前为空，可能为未来扩展保留）
         AnimatedVisibility(gameMode.value == 2) {
-            Column (Modifier.fillMaxSize(), horizontalAlignment = Alignment.CenterHorizontally) {
+            Column(Modifier.fillMaxSize(), horizontalAlignment = Alignment.CenterHorizontally) {
 
             }
 
@@ -98,6 +99,7 @@ fun HomePage(viewmodel: MainViewmodel) {
 @Composable
 fun ModeCard(
     title: String,
+    res: DrawableResource = Res.drawable.icon_spy_one,
     label: String? = null,
     isSelected: Boolean = false,
     background: Color = Color(0xFFF6B550)
@@ -112,10 +114,17 @@ fun ModeCard(
             ).padding(16.dp),
         contentAlignment = Alignment.BottomEnd
     ) {
+        Box(contentAlignment = Alignment.Center, modifier = Modifier.fillMaxSize()) {
+            Image(
+                painter = painterResource(res),
+                contentDescription = "",
+                alpha = 0.75f
+            )
+        }
         Text(
             text = title,
             modifier = Modifier.fillMaxHeight(0.6f).fillMaxWidth(0.7f),
-            color = MaterialTheme.colorScheme.onSurface,
+            color = MaterialTheme.colorScheme.secondary.copy(alpha = 0.75f),
             fontSize = 40.sp,
             fontWeight = FontWeight.W900,
             maxLines = 2,
@@ -216,6 +225,7 @@ fun ModeSelectList(list: List<String>, selectedPos: Int = 0, onItemClick: (Int) 
                 if (pagerState.currentPage == page) {
                     ModeCard(
                         title = list[page],
+                        res = getResInHomeMode(page),
                         background = MorandiColorList[page % MorandiColorList.size] // 循环使用颜色列表
                     )
                     onItemClick(pagerState.currentPage)
@@ -235,6 +245,16 @@ fun ModeSelectList(list: List<String>, selectedPos: Int = 0, onItemClick: (Int) 
                 }
             }
         }
+    }
+}
+
+@Composable
+fun getResInHomeMode(mode:Int):DrawableResource{
+    return when(mode){
+        0->Res.drawable.icon_spy_together
+        1->Res.drawable.icon_spy_one
+        else->Res.drawable.icon_spy_more
+
     }
 }
 

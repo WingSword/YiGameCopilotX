@@ -1,10 +1,11 @@
 package org.walks.gamecopilot
 
-import androidx.compose.runtime.mutableStateOf
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import org.walks.gamecopilot.data.UserInfoEntity
@@ -29,11 +30,12 @@ class MainViewmodel : ViewModel() {
     private val _roomEntityState = MutableStateFlow(RoomState())
     val roomEntityState: StateFlow<RoomState> = _roomEntityState
 
-    private val _navigationEvents: MutableStateFlow<NavigationEvent?> = MutableStateFlow(null)
-    val navigationEvents: StateFlow<NavigationEvent?> = _navigationEvents
+    // 修改事件流类型
+    private val _navigationEvents = MutableSharedFlow<NavigationEvent>(replay = 0)
+    val navigationEvents = _navigationEvents.asSharedFlow()
 
-    private val _topTipState: MutableStateFlow<String?> = MutableStateFlow(null)
-    var topTipState: StateFlow<String?> = _topTipState
+    private val _topTipState: MutableSharedFlow<String?> = MutableSharedFlow()
+    var topTipState = _topTipState.asSharedFlow()
 
 
     private var userId = ""
@@ -47,13 +49,15 @@ class MainViewmodel : ViewModel() {
 
             is GameRoomIntent.CreateAGameRoom -> {
                 viewModelScope.launch {
-                    _navigationEvents.emit(
-                        NavigationEvent.NavigateTo(
-                            "room"
-                        )
+                    emitNavigationEvent(NavigationEvent.NavigateTo("room"))
+                }
+                _roomEntityState.update {
+                    it.copy(
+                        roomId = intent.roomId,
+                        roomFinished = true,
+                        roomKey = intent.roomKey,
                     )
                 }
-
                 enterGameRoom(intent.roomId, intent.roomKey, true)
             }
 
@@ -86,6 +90,10 @@ class MainViewmodel : ViewModel() {
         }
     }
 
+    private suspend fun emitNavigationEvent(event: NavigationEvent) {
+        _navigationEvents.emit(event)
+    }
+
 
     private fun roomStartGame() {
         viewModelScope.launch {
@@ -101,7 +109,7 @@ class MainViewmodel : ViewModel() {
             _topTipState.emit(
                 result.msg ?: "游戏开始失败"
             )
-             }
+        }
     }
 
     private fun refreshRoomGameInfo() {

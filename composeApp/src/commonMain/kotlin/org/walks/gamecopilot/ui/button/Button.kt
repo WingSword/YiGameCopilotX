@@ -27,7 +27,7 @@ import com.yi.yigamecopilot.android.theme.DangerColorLight
 import com.yi.yigamecopilot.android.theme.FontColorDark
 import com.yi.yigamecopilot.android.theme.FontColorLight
 import com.yi.yigamecopilot.android.theme.PrimaryColor
-import com.yi.yigamecopilot.android.ui.loading.WeLoading
+import org.walks.gamecopilot.ui.loading.WeLoading
 
 enum class ButtonType {
     PRIMARY,

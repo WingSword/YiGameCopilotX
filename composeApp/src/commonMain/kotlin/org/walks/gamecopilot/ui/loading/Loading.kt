@@ -1,4 +1,4 @@
-package com.yi.yigamecopilot.android.ui.loading
+package org.walks.gamecopilot.ui.loading
 
 import androidx.compose.animation.core.DurationBasedAnimationSpec
 import androidx.compose.animation.core.FastOutLinearInEasing
@@ -9,9 +9,7 @@ import androidx.compose.animation.core.infiniteRepeatable
 import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Canvas
-import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.Refresh
 import androidx.compose.material3.Icon
@@ -23,16 +21,13 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.geometry.center
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.drawscope.scale
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.yi.yigamecopilot.android.theme.PrimaryColor
-import kotlin.math.cos
 import kotlin.math.roundToInt
-import kotlin.math.sin
 
 /**
  * 加载中动画图标
@@ -161,40 +156,7 @@ fun MiLoadingWeb(color: Color = PrimaryColor) {
     }
 }
 
-@Composable
-fun MiLoadingMobile(
-    borderColor: Color = MaterialTheme.colorScheme.onPrimary,
-    dotColor: Color = borderColor,
-    animationSpec: DurationBasedAnimationSpec<Float> = tween(
-        durationMillis = 1200,
-        easing = LinearEasing
-    )
-) {
-    val infiniteTransition = rememberInfiniteTransition(label = "")
-    val angle = infiniteTransition.animateFloat(
-        initialValue = 0f,
-        targetValue = 360f,
-        animationSpec = infiniteRepeatable(
-            animation = animationSpec,
-            repeatMode = RepeatMode.Restart
-        ),
-        label = "MiLoadingMobileAnimation"
-    )
 
-    Canvas(
-        modifier = Modifier
-            .size(34.dp)
-            .border(2.dp, borderColor, CircleShape)
-    ) {
-        val circleRadius = size.minDimension / 2 - 8.dp.toPx()
-        val dotRadius = 4.dp.toPx()
-        val center = size.center
-        val dotX = cos(Math.toRadians(angle.value.toDouble())) * circleRadius + center.x
-        val dotY = sin(Math.toRadians(angle.value.toDouble())) * circleRadius + center.y
-
-        drawCircle(dotColor, radius = dotRadius, center = Offset(dotX.toFloat(), dotY.toFloat()))
-    }
-}
 
 @Composable
 fun DotDanceLoading(color: Color = PrimaryColor) {
