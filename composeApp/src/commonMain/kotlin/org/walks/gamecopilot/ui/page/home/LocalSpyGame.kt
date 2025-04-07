@@ -3,7 +3,6 @@ package org.walks.gamecopilot.ui.page.home
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.Animatable
-import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.VisibilityThreshold
@@ -31,11 +30,9 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Refresh
@@ -48,6 +45,7 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -66,14 +64,13 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import com.yi.yigamecopilot.android.theme.MorandiColorList
+import com.yi.yigamecopilot.android.theme.MorandiGreen
 import kotlinx.coroutines.launch
 import org.walks.gamecopilot.MainViewmodel
 import org.walks.gamecopilot.PlatformHelper
-import org.walks.gamecopilot.clickableWithoutRipple
 import org.walks.gamecopilot.data.entity.LocalSpyEntity
 import org.walks.gamecopilot.intent.GameIntent
 import org.walks.gamecopilot.ui.badge.WeBadge
-import org.walks.gamecopilot.ui.button.CommonButton
 import org.walks.gamecopilot.ui.picker.WeSingleColumnPicker
 import org.walks.gamecopilot.ui.widget.FlipCard
 
@@ -97,15 +94,10 @@ const val IDENTITY_SHOW_ALL = -3
 fun LocalSpyGame(viewmodel: MainViewmodel) {
     // 状态控制：控制人数选择器弹窗的显示状态
     var showNumberPicker by remember { mutableStateOf(false) }
-    // 协程作用域：用于处理动画等异步操作
-    val scope = rememberCoroutineScope()
-    // 旋转动画：刷新按钮的旋转动画控制
-    val rotation = remember { Animatable(0f) }
-
     // 游戏状态控制：用于强制刷新游戏问候视图的key值
     var gameTimeState by remember { mutableIntStateOf(0) }
     // 可选的游玩人数范围（4-12人）
-    val numberList = (4..12).map { it.toString() }
+    val numberList = (4..16).map { it.toString() }
     // 从ViewModel获取当前游戏状态数据
     val gameStateList = viewmodel.gameEntity.collectAsState().value.timeEntityList
     // 当前玩家总数，默认取最近一次记录或4人
@@ -119,98 +111,87 @@ fun LocalSpyGame(viewmodel: MainViewmodel) {
 
     Column(modifier = Modifier.fillMaxWidth(), horizontalAlignment = Alignment.CenterHorizontally) {
         // 游玩人数选择区
-        Row {
-            CommonButton("选择游玩人数 $playerNum", onClick = {
+        Row (
+            verticalAlignment =Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.Center,
+            modifier = Modifier.background(MorandiGreen, shape = RoundedCornerShape(12.dp))
+                .fillMaxWidth().border(width = 4.dp, color = MaterialTheme.colorScheme.secondary, shape = RoundedCornerShape(12.dp)).padding(12.dp)
+        ) {
+            Text("选择游玩人数 $playerNum", modifier = Modifier.clickable {
                 showNumberPicker = true
-            })
-        }
+            },color = MaterialTheme.colorScheme.secondary)
+            // 当玩家数>=6时显示进阶配置选项
+            if (playerNum >= 6) {
+                // 状态控制：当前显示的卧底/空白卡选择器类型（0=隐藏，1=卧底，2=空白卡）
+                var showSpyNumberPicker by remember { mutableStateOf(0) }
+                // 最大卧底数计算（总人数的三分之一）
+                val maxSpyList = (1..playerNum / 3).map { "$it" }
 
-        // 当玩家数>=6时显示进阶配置选项
-        if (playerNum >= 6) {
-            // 状态控制：当前显示的卧底/空白卡选择器类型（0=隐藏，1=卧底，2=空白卡）
-            var showSpyNumberPicker by remember { mutableStateOf(0) }
-            // 最大卧底数计算（总人数的三分之一）
-            val maxSpyList = (1..playerNum / 3).map { "$it" }
+                // 从游戏状态获取当前配置值
+                val spyNumber = gameStateList.lastOrNull()?.spyNum ?: 1
+                val blackNum = gameStateList.lastOrNull()?.blackNum ?: 0
 
-            // 从游戏状态获取当前配置值
-            val spyNumber = gameStateList.lastOrNull()?.spyNum ?: 1
-            val blackNum = gameStateList.lastOrNull()?.blackNum ?: 0
+                Spacer(Modifier.weight(1f))
 
-            Spacer(Modifier.height(8.dp))
-            Row {
-                // 卧底数量选择按钮
-                CommonButton("选择卧底人数 $spyNumber", onClick = {
-                    showSpyNumberPicker = 1
-                }, backColor = MaterialTheme.colorScheme.secondary)
-                Spacer(Modifier.size(8.dp))
-                // 空白卡数量选择按钮
-                CommonButton("空白卡数量 $blackNum", onClick = {
-                    showSpyNumberPicker = 2
-                }, backColor = MaterialTheme.colorScheme.secondary)
+                    // 卧底数量选择按钮
+                    Text("卧底人数 $spyNumber", modifier = Modifier.clickable {
+                        showSpyNumberPicker = 1
+                    }, color = MaterialTheme.colorScheme.error)
+                    Spacer(Modifier.weight(1f))
+                    // 空白卡数量选择按钮
+                    Text(text = "空白卡数量 $blackNum", modifier = Modifier.clickable {
+                        showSpyNumberPicker = 2
+                    })
+
+
+                // 数值选择器组件（卧底/空白卡）
+                WeSingleColumnPicker(
+                    visible = showSpyNumberPicker != 0,
+                    title = if (showSpyNumberPicker == 1) "选择卧底人数" else "选择空白卡片数量",
+                    range = if (showSpyNumberPicker == 1) maxSpyList else (0..(gameStateList.lastOrNull()?.spyNum
+                        ?: 1)).map { "$it" },
+                    onCancel = { showSpyNumberPicker = 0 },
+                    onChange = {
+                        gameTimeState++
+                        when (showSpyNumberPicker) {
+                            1 -> {
+                                // 更新卧底数量时自动修正空白卡数值不超过新卧底数
+                                viewmodel.handleLocalGameIntent(
+                                    GameIntent.RefreshSpyNumber(
+                                        spyNum = maxSpyList[it].toInt(),
+                                        blackNum = if (blackNum <= spyNumber) blackNum else 0
+                                    )
+                                )
+                            }
+
+                            2 -> {
+                                // 直接更新空白卡数量
+                                viewmodel.handleLocalGameIntent(
+                                    GameIntent.RefreshSpyNumber(
+                                        spyNum = spyNumber,
+                                        blackNum = it
+                                    )
+                                )
+                            }
+                        }
+                    },
+                    value = if (showSpyNumberPicker == 1) gameStateList.lastOrNull()?.spyNum
+                        ?: 1 else gameStateList.lastOrNull()?.blackNum ?: 0
+                )
             }
-
-            // 数值选择器组件（卧底/空白卡）
-            WeSingleColumnPicker(
-                visible = showSpyNumberPicker != 0,
-                title = if (showSpyNumberPicker == 1) "选择卧底人数" else "选择空白卡片数量",
-                range = if (showSpyNumberPicker == 1) maxSpyList else (0..(gameStateList.lastOrNull()?.spyNum
-                    ?: 1)).map { "$it" },
-                onCancel = { showSpyNumberPicker = 0 },
-                onChange = {
-                    gameTimeState++
-                    when (showSpyNumberPicker) {
-                        1 -> {
-                            // 更新卧底数量时自动修正空白卡数值不超过新卧底数
-                            viewmodel.handleLocalGameIntent(
-                                GameIntent.RefreshSpyNumber(
-                                    spyNum = maxSpyList[it].toInt(),
-                                    blackNum = if (blackNum <= spyNumber) blackNum else 0
-                                )
-                            )
-                        }
-
-                        2 -> {
-                            // 直接更新空白卡数量
-                            viewmodel.handleLocalGameIntent(
-                                GameIntent.RefreshSpyNumber(
-                                    spyNum = spyNumber,
-                                    blackNum = it
-                                )
-                            )
-                        }
-                    }
-                },
-                value = if (showSpyNumberPicker == 1) gameStateList.lastOrNull()?.spyNum
-                    ?: 1 else gameStateList.lastOrNull()?.blackNum ?: 0
-            )
         }
-
         // 游戏数据显示区
         if (gameStateList.isNotEmpty()) {
             Spacer(Modifier.height(8.dp))
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Text("选择编号长按查看", color = MaterialTheme.colorScheme.secondary)
-                // 刷新按钮：带旋转动画的重新开始功能
-                Icon(
-                    imageVector = Icons.Filled.Refresh,
-                    contentDescription = "重新开始",
-                    tint = MaterialTheme.colorScheme.secondary,
-                    modifier = Modifier.rotate(rotation.value).clickable {
-                        viewmodel.handleLocalGameIntent(GameIntent.StartGame)
-                        gameTimeState++
-                        scope.launch {
-                            rotation.animateTo(
-                                targetValue = 360f,
-                                animationSpec = tween(durationMillis = 500, easing = LinearEasing)
-                            )
-                            rotation.snapTo(0f) // 重置角度准备下次旋转
-                        }
-                    })
-            }
+
             // 游戏结果显示组件，key控制强制刷新
             GameGreetingView(
                 key = gameTimeState,
                 gameStateList.last(),
+                onStart = {
+                    viewmodel.handleLocalGameIntent(GameIntent.StartGame)
+                    gameTimeState++
+                }
             )
         }
     }
@@ -238,11 +219,19 @@ fun LocalSpyGame(viewmodel: MainViewmodel) {
  */
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
-fun GameGreetingView(key: Int, gameState: LocalSpyEntity) {
+fun GameGreetingView(key: Int, gameState: LocalSpyEntity, onStart: () -> Unit) {
     // 当前选中玩家索引（1-based）
     var currentSelectPlayer by remember { mutableIntStateOf(1) }
     // 身份显示状态机（默认隐藏）
     val identityDisPlayState = remember { mutableStateOf(IDENTITY_DISMISS) }
+    //单个玩家身份展示状态
+    var playerIdentityState = remember {
+        mutableStateListOf<Int>()
+    }
+    // 协程作用域：用于处理动画等异步操作
+    val scope = rememberCoroutineScope()
+    // 旋转动画：刷新按钮的旋转动画控制
+    val rotation = remember { Animatable(0f) }
 
     // 派生游戏状态（根据key变化重置）
     val realGameState by remember(key) {
@@ -250,16 +239,47 @@ fun GameGreetingView(key: Int, gameState: LocalSpyEntity) {
     }
     // 玩家查看次数记录列表
     var watchedTimeList = remember(key) {
-        MutableList(13) { 0 }
+        MutableList(17) { 0 }
     }
 
     /* 当key变化时重置游戏状态 */
-    LaunchedEffect(key1 = key) {
+    LaunchedEffect(key1 = realGameState.gameWord) {
         identityDisPlayState.value = IDENTITY_DISMISS
         watchedTimeList.map {
             watchedTimeList[it] = 0
         }
+        playerIdentityState.clear()
     }
+    Row(verticalAlignment = Alignment.CenterVertically) {
+        Text(
+            text = if ((watchedTimeList.filter { it > 0 }).size >= gameState.totalPlayerNumber
+                && identityDisPlayState.value != IDENTITY_SHOW_ALL
+            ) "长按公布所有身份" else "选择编号查看",
+            color = MaterialTheme.colorScheme.secondary,
+            modifier = Modifier.combinedClickable(onLongClick = {
+                PlatformHelper.getInstance().vibrateLongMethod()
+                identityDisPlayState.value = IDENTITY_SHOW_ALL
+                PlatformHelper.getInstance().vibrateLongMethod()
+            }) {
+                /* 点击事件占位 */
+            })
+        // 刷新按钮：带旋转动画的重新开始功能
+        Icon(
+            imageVector = Icons.Filled.Refresh,
+            contentDescription = "重新开始",
+            tint = MaterialTheme.colorScheme.secondary,
+            modifier = Modifier.rotate(rotation.value).clickable {
+                onStart()
+                scope.launch {
+                    rotation.animateTo(
+                        targetValue = 360f,
+                        animationSpec = tween(durationMillis = 500, easing = LinearEasing)
+                    )
+                    rotation.snapTo(0f) // 重置角度准备下次旋转
+                }
+            })
+    }
+
     Column(horizontalAlignment = Alignment.CenterHorizontally) {
         /* 玩家选择区域布局 */
         LocalPlayerSelectArea(
@@ -269,10 +289,20 @@ fun GameGreetingView(key: Int, gameState: LocalSpyEntity) {
                 // 不同状态下的徽章显示逻辑
                 if (identityDisPlayState.value == IDENTITY_SHOW_ALL) {
                     WeBadge(
-                        realGameState.optIdentity(currentSelect),
+                        if (identityDisPlayState.value > 0) "" else realGameState.optIdentity(
+                            currentSelect
+                        ),
                         size = 12.dp,
                         fontSize = 10,
-                        color = if (realGameState.spies.contains(currentSelect)) MaterialTheme.colorScheme.error
+                        color = if (realGameState.isSpy(currentSelect)) MaterialTheme.colorScheme.error
+                        else MaterialTheme.colorScheme.primaryContainer
+                    )
+                } else if(playerIdentityState.contains(currentSelect)){
+                    WeBadge(
+                        if (realGameState.isSpy(currentSelect)) "卧底" else "平民" ,
+                        size = 12.dp,
+                        fontSize = 10,
+                        color = if (realGameState.isSpy(currentSelect)) MaterialTheme.colorScheme.error
                         else MaterialTheme.colorScheme.primaryContainer
                     )
                 } else if ((watchedTimeList[currentSelect]) > 1) {
@@ -283,33 +313,15 @@ fun GameGreetingView(key: Int, gameState: LocalSpyEntity) {
                     )
                 }
             },
-            onClick = { _ -> /* 点击事件占位 */ }
+            onClick = { currentSelect ->
+                currentSelectPlayer = currentSelect
+                watchedTimeList[currentSelect] += 1
+                identityDisPlayState.value = IDENTITY_SHOW
+                PlatformHelper.getInstance().vibrateMethod()
+            }
         ) { currentSelect ->
-            // 长按查看该号码玩家身份并增加查看次数
-            currentSelectPlayer = currentSelect
-            watchedTimeList[currentSelect] += 1
-            identityDisPlayState.value = IDENTITY_SHOW
-            PlatformHelper.getInstance().vibrateMethod()
+            playerIdentityState.add(currentSelect)
         }
-
-        Spacer(Modifier.weight(1f))
-        // 长按提示条件判断
-        AnimatedVisibility(
-            (watchedTimeList.filter { it > 0 }).size >= gameState.totalPlayerNumber
-                    && identityDisPlayState.value != IDENTITY_SHOW_ALL
-        ) {
-            Text(
-                text = "长按公布所有身份",
-                color = MaterialTheme.colorScheme.tertiary,
-                modifier = Modifier.combinedClickable(onLongClick = {
-                    PlatformHelper.getInstance().vibrateLongMethod()
-                    identityDisPlayState.value = IDENTITY_SHOW_ALL
-                    PlatformHelper.getInstance().vibrateLongMethod()
-                }) {
-                    /* 点击事件占位 */
-                })
-        }
-        Spacer(Modifier.weight(1f))
     }
 
     // 身份卡片动画显示逻辑
@@ -383,19 +395,19 @@ fun LocalPlayerSelectArea(
                 // 玩家头像容器，包含点击交互和状态显示
                 Box(
                     modifier = Modifier
-                        .width(66.dp)
-                        .clip(CircleShape)
+                        .width(66.dp).height(66.dp)
+                        .clip(RoundedCornerShape(16.dp))
                         .background(
                             color = when {
                                 interactionState.value is PressInteraction.Press ->
                                     MaterialTheme.colorScheme.primary.copy(alpha = 0.1f)
 
-                                watchedTime >= 1 -> MaterialTheme.colorScheme.tertiaryContainer
+                                watchedTime >= 1 -> MaterialTheme.colorScheme.surface
                                 else -> MaterialTheme.colorScheme.primary
                             },
-                            shape = CircleShape
-                        )
-                        .border(BorderStroke(2.dp, borderColor), CircleShape)
+
+                            )
+                        .border(BorderStroke(4.dp, borderColor), RoundedCornerShape(16.dp))
                         .combinedClickable(
                             onLongClick = { onLongClick(currentPlayer) },
                             onClick = { onClick(currentPlayer) },
@@ -403,12 +415,12 @@ fun LocalPlayerSelectArea(
                             indication = LocalIndication.current
                         )
                         .padding(vertical = 8.dp),
-                    contentAlignment = Alignment.TopCenter
+                    contentAlignment = Alignment.Center
                 ) {
                     // 玩家序号文字显示，根据观看状态改变颜色
                     Text(
                         text = currentPlayer.toString(),
-                        color = if (watchedTime >= 1) MaterialTheme.colorScheme.onTertiaryContainer
+                        color = if (watchedTime >= 1) Color.LightGray
                         else MaterialTheme.colorScheme.onPrimary,
                         style = MaterialTheme.typography.bodyLarge
                     )
@@ -448,7 +460,7 @@ fun LocalSpyIdentityCard(
                 )
                 Spacer(modifier = Modifier.weight(1f))
                 Text(
-                    if (gameState.isSpy(currentSelectPlayer)) "[卧底]" else "[平民]",
+                    if (gameState.isSpy(currentSelectPlayer)) "" else "",
                     textAlign = TextAlign.Center,
                     color = if (gameState.isSpy(currentSelectPlayer)) MaterialTheme.colorScheme.error
                     else MaterialTheme.colorScheme.onSecondaryContainer,
@@ -493,8 +505,7 @@ fun LocalSpyIdentityCard(
                     Text(
                         gameState.optIdentity(currentSelectPlayer),
                         textAlign = TextAlign.Center,
-                        color = if (gameState.isSpy(currentSelectPlayer)) MaterialTheme.colorScheme.error
-                        else MaterialTheme.colorScheme.onSecondaryContainer,
+                        color = MaterialTheme.colorScheme.onSecondaryContainer,
                         fontSize = 28.sp,
                         fontWeight = FontWeight.SemiBold,
                         fontFamily = FontFamily.SansSerif,
