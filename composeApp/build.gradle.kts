@@ -10,9 +10,9 @@ plugins {
     alias(libs.plugins.jetbrainsCompose)
     alias(libs.plugins.compose.compiler)
 }
-val appName="卧底游戏助手"
+val appName = "FindSpy"
 // 修改版本声明为：
-val composeHtmlVersion = "1.6.1" // 保持与compose.compiler版本一致
+val composeHtmlVersion = "1.6.11" // 保持与compose.compiler版本一致
 
 kotlin {
     @OptIn(ExperimentalWasmDsl::class)
@@ -32,16 +32,16 @@ kotlin {
         }
         binaries.executable()
     }
-    
+
     androidTarget {
         @OptIn(ExperimentalKotlinGradlePluginApi::class)
         compilerOptions {
             jvmTarget.set(JvmTarget.JVM_11)
         }
     }
-    
+
     jvm("desktop")
-    
+
     listOf(
         iosX64(),
         iosArm64(),
@@ -50,12 +50,21 @@ kotlin {
         iosTarget.binaries.framework {
             baseName = "ComposeApp"
             isStatic = true
+            export(projects.shared)
+            export("com.arkivanov.decompose:decompose:3.0.2")
+            export("org.jetbrains.kotlinx:atomicfu:0.23.2")
+            linkerOpts.add("-lsqlite3")
         }
     }
-    
+
+    targets.withType<org.jetbrains.kotlin.gradle.plugin.mpp.KotlinNativeTarget> {
+        binaries.all {
+            binaryOptions["memoryModel"] = "experimental"
+        }
+    }
     sourceSets {
         val desktopMain by getting
-        
+
         androidMain.dependencies {
             implementation(compose.preview)
             implementation(libs.androidx.activity.compose)
@@ -73,13 +82,30 @@ kotlin {
             implementation(libs.jetbrains.navigation.compose)
             implementation(libs.androidx.lifecycle.viewmodel)
             implementation(libs.androidx.lifecycle.runtime.compose)
-            implementation(projects.shared)
+            api(projects.shared)
 
         }
         desktopMain.dependencies {
             implementation(compose.desktop.currentOs)
             implementation(libs.kotlinx.coroutines.swing)
         }
+
+        iosMain.dependencies {
+            // 基础运行时
+            implementation(compose.runtime)
+            implementation(compose.foundation)
+            implementation(compose.material3)
+
+            // 常用多平台库
+            implementation(libs.ktor.client.darwin)  // 网络请求
+            implementation(libs.kotlinx.coroutines.core) // 协程
+            implementation(libs.napier) // 日志
+            implementation(libs.multiplatform.settings) // 本地存储
+
+            // 共享模块必须显式导出
+            api(projects.shared)
+        }
+
 
     }
 }
@@ -134,6 +160,6 @@ compose.desktop {
             targetFormats(TargetFormat.Dmg, TargetFormat.Msi, TargetFormat.Deb)
             packageName = appName
             packageVersion = "1.0.0"
-            }
+        }
     }
 }

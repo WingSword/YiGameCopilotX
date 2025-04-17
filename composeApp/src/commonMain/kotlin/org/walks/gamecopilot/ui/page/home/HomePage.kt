@@ -21,6 +21,7 @@ import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextField
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -58,7 +59,7 @@ import yigamecopilotx.composeapp.generated.resources.icon_spy_together
 @Composable
 fun HomePage(viewmodel: MainViewmodel) {
     // 支持的三种游戏模式配置列表
-    val gameModeList = listOf("谁是卧底", "卧底本地版", "敬请期待")
+    val gameModeList = listOf("谁是卧底", "卧底本地版", "卧底快速版")
     // 从ViewModel收集当前选择的游戏模式状态（转换为Compose可观察状态）
     val gameMode = viewmodel.startedGameMode.collectAsState()
 
@@ -85,11 +86,9 @@ fun HomePage(viewmodel: MainViewmodel) {
             LocalSpyGame(viewmodel)
         }
 
-        // 预留的模式1的扩展区域（当前为空，可能为未来扩展保留）
+        // 快速游戏
         AnimatedVisibility(gameMode.value == 2) {
-            Column(Modifier.fillMaxSize(), horizontalAlignment = Alignment.CenterHorizontally) {
-
-            }
+            QuickSetting()
 
         }
     }
