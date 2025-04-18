@@ -95,7 +95,7 @@ kotlin {
             implementation(compose.runtime)
             implementation(compose.foundation)
             implementation(compose.material3)
-
+            api("org.jetbrains.kotlinx:atomicfu:0.23.2")
             // 常用多平台库
             implementation(libs.ktor.client.darwin)  // 网络请求
             implementation(libs.kotlinx.coroutines.core) // 协程
