@@ -38,6 +38,7 @@ kotlin {
     iosSimulatorArm64()
 
     jvm()
+// For KSP, configure using KSP extension:
 
     sourceSets {
         commonMain.dependencies {

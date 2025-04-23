@@ -2,11 +2,15 @@ package org.walks.gamecopilot
 
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.LinearEasing
+import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.gestures.detectTapGestures
+import androidx.compose.foundation.hoverable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -16,8 +20,11 @@ import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -25,17 +32,21 @@ import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material3.CenterAlignedTopAppBar
+import androidx.compose.material3.DrawerState
+import androidx.compose.material3.DrawerValue
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.IconButtonDefaults
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.ModalNavigationDrawer
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBarDefaults
+import androidx.compose.material3.rememberDrawerState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -48,6 +59,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -96,25 +109,39 @@ fun App() {
 fun AppView(viewmodel: MainViewmodel) {
     val snackState = remember { mutableStateOf(SnackbarHostState()) }
     val navi = rememberNavController()
+    val drawerState = rememberDrawerState(DrawerValue.Closed)
+    val scope = rememberCoroutineScope()
 
-    Scaffold(
-        topBar = {
-            AppTopBar(navi, viewmodel)
-        },
-        snackbarHost = {
-            SnackbarHost(hostState = snackState.value)
-        },
-    ) { inp ->
-        Column(
-            modifier = Modifier
-                .padding(inp)
-                .fillMaxWidth(),
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.Center
-        ) {
-            NavigationHost(viewmodel, navi)
+    ModalNavigationDrawer(
+        drawerState = drawerState,
+        gesturesEnabled = drawerState.isOpen,
+        drawerContent = {
+            JellyDrawerContent(
+                drawerState = drawerState,
+                onClose = { scope.launch { drawerState.close() } },
+                modifier = Modifier.fillMaxHeight(0.85f)
+            )
         }
-    }
+    ) {
+        Scaffold(
+            topBar = {
+                AppTopBar(navi, viewmodel,drawerState)
+            },
+            snackbarHost = {
+                SnackbarHost(hostState = snackState.value)
+            },
+        ) { inp ->
+            Column(
+                modifier = Modifier
+                    .padding(inp)
+                    .fillMaxWidth(),
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.Center
+            ) {
+                NavigationHost(viewmodel, navi)
+            }
+        }}
+
     LaunchedEffect(key1 = Unit) {
         viewmodel.topTipState.collect {
             if (it != null) {
@@ -131,7 +158,74 @@ private fun isStartRoute(route: String?): Boolean {
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun AppTopBar(navi: NavHostController, viewmodel: MainViewmodel) {
+fun JellyDrawerContent(
+    drawerState: DrawerState,
+    onClose: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+
+    val list= listOf(
+        "首页",
+        "掷骰子",
+        "游戏房间",
+    )
+    val offsetX by animateDpAsState(
+        targetValue = if (drawerState.isOpen) 0.dp else (-300).dp,
+        animationSpec = spring(
+            dampingRatio = 0.6f,  // 增加阻尼比增强果冻感
+            stiffness = 400f
+        )
+    )
+
+    Surface(
+        modifier = modifier
+            .padding(top = 24.dp)
+            .width(300.dp)
+            .offset(x = offsetX)
+            .border(4.dp, MaterialTheme.colorScheme.primaryContainer, RoundedCornerShape(topEnd = 16.dp, bottomEnd = 16.dp)),
+        shadowElevation = 16.dp,
+        shape = RoundedCornerShape(topEnd = 16.dp, bottomEnd = 16.dp),
+        color = MaterialTheme.colorScheme.secondaryContainer,
+        contentColor = MaterialTheme.colorScheme.onSecondaryContainer
+    ) {
+        LazyColumn(Modifier.padding(16.dp)) {
+            items(list.size) { index ->
+                val item=list[index]
+                var isPressed by remember { mutableStateOf(false) }
+                val scale = animateFloatAsState(
+                    targetValue = if (isPressed) 0.95f else 1f,
+                    animationSpec = spring(dampingRatio = 0.6f, stiffness = 400f)
+                )
+
+                Text(
+                    text = item.toString(),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(12.dp)
+                        .pointerInput(Unit) {
+                            detectTapGestures(
+                                onPress = {
+                                    isPressed = true
+                                    tryAwaitRelease()
+                                    isPressed = false
+                                }
+                            )
+                        }
+                        .graphicsLayer(scaleX = scale.value, scaleY = scale.value)
+                        .clickable { /* 处理点击 */ },
+                    fontSize = 18.sp,
+                    color = MaterialTheme.colorScheme.primary
+                )
+            }
+        }
+
+    }
+}
+
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun AppTopBar(navi: NavHostController, viewmodel: MainViewmodel,drawerState: DrawerState) {
     // 协程作用域：用于处理动画等异步操作
     val scope = rememberCoroutineScope()
     // 旋转动画：刷新按钮的旋转动画控制
@@ -203,6 +297,11 @@ fun AppTopBar(navi: NavHostController, viewmodel: MainViewmodel) {
                         if (current == "start") {
                             viewmodel.handleRoomIntent(GameRoomIntent.LeaveGameRoom)
                         }
+                    }else{
+                        scope.launch {  // 新增抽屉开关逻辑
+                            if (drawerState.isClosed) drawerState.open()
+                            else drawerState.close()
+                        }
                     }
                 },
                 colors = IconButtonDefaults.iconButtonColors(
@@ -211,7 +310,7 @@ fun AppTopBar(navi: NavHostController, viewmodel: MainViewmodel) {
                 )
             ) {
                 val rotation by animateFloatAsState(
-                    targetValue = if (isStartRoute(current)) -90f else 0f,
+                    targetValue = if (isStartRoute(current)) -180f else 0f,
                     animationSpec = tween(durationMillis = 300)
                 )
 

@@ -92,18 +92,21 @@ const val IDENTITY_SHOW_ALL = -3
  */
 @Composable
 fun LocalSpyGame(viewmodel: MainViewmodel) {
-    // 状态控制：控制人数选择器弹窗的显示状态
-    var showNumberPicker by remember { mutableStateOf(false) }
     // 游戏状态控制：用于强制刷新游戏问候视图的key值
     var gameTimeState by remember { mutableIntStateOf(0) }
-    // 可选的游玩人数范围（4-12人）
-    val numberList = (4..16).map { it.toString() }
+
     // 从ViewModel获取当前游戏状态数据
     val gameStateList = viewmodel.gameEntity.collectAsState().value.timeEntityList
+
     // 当前玩家总数，默认取最近一次记录或4人
     val playerNum = gameStateList.lastOrNull()?.totalPlayerNumber ?: 4
+    // 状态控制：控制人数选择器弹窗的显示状态
+    var showNumberPicker by remember { mutableStateOf(false) }
+    // 可选的游玩人数范围（4-12人）
+    val numberList = (4..16).map { it.toString() }
 
-    LaunchedEffect(key1 = gameTimeState) {
+
+    LaunchedEffect(gameTimeState) {
         if (gameTimeState > 0) {
             PlatformHelper.getInstance().vibrateLongMethod()
         }
@@ -111,75 +114,93 @@ fun LocalSpyGame(viewmodel: MainViewmodel) {
 
     Column(modifier = Modifier.fillMaxWidth(), horizontalAlignment = Alignment.CenterHorizontally) {
         // 游玩人数选择区
-        Row (
-            verticalAlignment =Alignment.CenterVertically,
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.Center,
             modifier = Modifier.background(MorandiGreen, shape = RoundedCornerShape(12.dp))
-                .fillMaxWidth().border(width = 4.dp, color = MaterialTheme.colorScheme.secondary, shape = RoundedCornerShape(12.dp)).padding(12.dp)
+                .fillMaxWidth().border(
+                    width = 4.dp,
+                    color = MaterialTheme.colorScheme.secondary,
+                    shape = RoundedCornerShape(12.dp)
+                ).padding(12.dp)
         ) {
             Text("选择游玩人数 $playerNum", modifier = Modifier.clickable {
                 showNumberPicker = true
-            },color = MaterialTheme.colorScheme.secondary)
+            }, color = MaterialTheme.colorScheme.secondary)
             // 当玩家数>=6时显示进阶配置选项
-            if (playerNum >= 6) {
-                // 状态控制：当前显示的卧底/空白卡选择器类型（0=隐藏，1=卧底，2=空白卡）
-                var showSpyNumberPicker by remember { mutableStateOf(0) }
-                // 最大卧底数计算（总人数的三分之一）
-                val maxSpyList = (1..playerNum / 3).map { "$it" }
 
-                // 从游戏状态获取当前配置值
-                val spyNumber = gameStateList.lastOrNull()?.spyNum ?: 1
-                val blackNum = gameStateList.lastOrNull()?.blackNum ?: 0
+            // 状态控制：当前显示的卧底/空白卡选择器类型（0=隐藏，1=卧底，2=空白卡）
+            var showSpyNumberPicker by remember { mutableStateOf(0) }
+            // 最大卧底数计算（总人数的三分之一）
+            val maxSpyList = (1..playerNum / 3).map { "$it" }
 
-                Spacer(Modifier.weight(1f))
+            // 从游戏状态获取当前配置值
+            val spyNumber = gameStateList.lastOrNull()?.spyNum ?: 1
+            val blackNum = gameStateList.lastOrNull()?.blackNum ?: 0
 
-                    // 卧底数量选择按钮
-                    Text("卧底人数 $spyNumber", modifier = Modifier.clickable {
-                        showSpyNumberPicker = 1
-                    }, color = MaterialTheme.colorScheme.error)
-                    Spacer(Modifier.weight(1f))
-                    // 空白卡数量选择按钮
-                    Text(text = "空白卡数量 $blackNum", modifier = Modifier.clickable {
-                        showSpyNumberPicker = 2
-                    })
+            Spacer(Modifier.weight(1f))
+
+            // 卧底数量选择按钮
+            Text("卧底人数 $spyNumber", modifier = Modifier.clickable {
+                showSpyNumberPicker = 1
+            }, color = MaterialTheme.colorScheme.error)
+            Spacer(Modifier.weight(1f))
+            // 空白卡数量选择按钮
+            Text(text = "空白卡数量 $blackNum", modifier = Modifier.clickable {
+                showSpyNumberPicker = 2
+            })
 
 
-                // 数值选择器组件（卧底/空白卡）
-                WeSingleColumnPicker(
-                    visible = showSpyNumberPicker != 0,
-                    title = if (showSpyNumberPicker == 1) "选择卧底人数" else "选择空白卡片数量",
-                    range = if (showSpyNumberPicker == 1) maxSpyList else (0..(gameStateList.lastOrNull()?.spyNum
-                        ?: 1)).map { "$it" },
-                    onCancel = { showSpyNumberPicker = 0 },
-                    onChange = {
-                        gameTimeState++
-                        when (showSpyNumberPicker) {
-                            1 -> {
-                                // 更新卧底数量时自动修正空白卡数值不超过新卧底数
-                                viewmodel.handleLocalGameIntent(
-                                    GameIntent.RefreshSpyNumber(
-                                        spyNum = maxSpyList[it].toInt(),
-                                        blackNum = if (blackNum <= spyNumber) blackNum else 0
-                                    )
+            // 数值选择器组件（卧底/空白卡）
+            WeSingleColumnPicker(
+                visible = showSpyNumberPicker != 0,
+                title = if (showSpyNumberPicker == 1) "选择卧底人数" else "选择空白卡片数量",
+                range = if (showSpyNumberPicker == 1) maxSpyList else (0..(gameStateList.lastOrNull()?.spyNum
+                    ?: 1)).map { "$it" },
+                onCancel = { showSpyNumberPicker = 0 },
+                onChange = {
+                    gameTimeState++
+                    when (showSpyNumberPicker) {
+                        1 -> {
+                            // 更新卧底数量时自动修正空白卡数值不超过新卧底数
+                            viewmodel.handleLocalGameIntent(
+                                GameIntent.RefreshSpyNumber(
+                                    spyNum = maxSpyList[it].toInt(),
+                                    blackNum = if (blackNum <= spyNumber) blackNum else 0
                                 )
-                            }
-
-                            2 -> {
-                                // 直接更新空白卡数量
-                                viewmodel.handleLocalGameIntent(
-                                    GameIntent.RefreshSpyNumber(
-                                        spyNum = spyNumber,
-                                        blackNum = it
-                                    )
-                                )
-                            }
+                            )
                         }
-                    },
-                    value = if (showSpyNumberPicker == 1) gameStateList.lastOrNull()?.spyNum
-                        ?: 1 else gameStateList.lastOrNull()?.blackNum ?: 0
-                )
-            }
+
+                        2 -> {
+                            // 直接更新空白卡数量
+                            viewmodel.handleLocalGameIntent(
+                                GameIntent.RefreshSpyNumber(
+                                    spyNum = spyNumber,
+                                    blackNum = it
+                                )
+                            )
+                        }
+                    }
+                },
+                value = if (showSpyNumberPicker == 1) gameStateList.lastOrNull()?.spyNum
+                    ?: 1 else gameStateList.lastOrNull()?.blackNum ?: 0
+            )
+
+            // 主人数选择器组件
+            WeSingleColumnPicker(
+                visible = showNumberPicker,
+                title = "选择游玩人数",
+                range = numberList,
+                onCancel = { showNumberPicker = false },
+                onChange = {
+                    gameTimeState++
+                    viewmodel.handleLocalGameIntent(GameIntent.RefreshPlayerNumber(numberList[it].toInt()))
+                },
+                value = numberList.indexOf(playerNum.toString())
+            )
+
         }
+
         // 游戏数据显示区
         if (gameStateList.isNotEmpty()) {
             Spacer(Modifier.height(8.dp))
@@ -195,19 +216,6 @@ fun LocalSpyGame(viewmodel: MainViewmodel) {
             )
         }
     }
-
-    // 主人数选择器组件
-    WeSingleColumnPicker(
-        visible = showNumberPicker,
-        title = "选择游玩人数",
-        range = numberList,
-        onCancel = { showNumberPicker = false },
-        onChange = {
-            gameTimeState++
-            viewmodel.handleLocalGameIntent(GameIntent.RefreshPlayerNumber(numberList[it].toInt()))
-        },
-        value = numberList.indexOf(playerNum.toString())
-    )
 }
 
 
@@ -297,9 +305,9 @@ fun GameGreetingView(key: Int, gameState: LocalSpyEntity, onStart: () -> Unit) {
                         color = if (realGameState.isSpy(currentSelect)) MaterialTheme.colorScheme.error
                         else MaterialTheme.colorScheme.primaryContainer
                     )
-                } else if(playerIdentityState.contains(currentSelect)){
+                } else if (playerIdentityState.contains(currentSelect)) {
                     WeBadge(
-                        if (realGameState.isSpy(currentSelect)) "卧底" else "平民" ,
+                        if (realGameState.isSpy(currentSelect)) "卧底" else "平民",
                         size = 12.dp,
                         fontSize = 10,
                         color = if (realGameState.isSpy(currentSelect)) MaterialTheme.colorScheme.error
