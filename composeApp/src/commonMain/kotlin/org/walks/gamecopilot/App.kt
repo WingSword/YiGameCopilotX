@@ -10,7 +10,6 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectTapGestures
-import androidx.compose.foundation.hoverable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -24,12 +23,12 @@ import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.wrapContentHeight
+import androidx.compose.foundation.layout.wrapContentSize
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material3.CenterAlignedTopAppBar
 import androidx.compose.material3.DrawerState
@@ -45,6 +44,7 @@ import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.material3.rememberDrawerState
 import androidx.compose.runtime.Composable
@@ -70,19 +70,15 @@ import androidx.lifecycle.viewmodel.MutableCreationExtras
 import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
 import androidx.navigation.NavHostController
-import androidx.navigation.compose.NavHost
-import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
-import org.jetbrains.compose.resources.Resource
 import org.jetbrains.compose.resources.painterResource
 import org.jetbrains.compose.ui.tooling.preview.Preview
-import org.walks.gamecopilot.event.NavigationEvent
 import org.walks.gamecopilot.intent.GameRoomIntent
+import org.walks.gamecopilot.navigation.NaviRoute
+import org.walks.gamecopilot.navigation.NavigationHost
 import org.walks.gamecopilot.theme.WeUITheme
-import org.walks.gamecopilot.ui.page.home.HomePage
-import org.walks.gamecopilot.ui.page.room.RoomPage
 import yigamecopilotx.composeapp.generated.resources.Icon_arrow_left
 import yigamecopilotx.composeapp.generated.resources.Res
 
@@ -93,11 +89,10 @@ fun App() {
     val viewModelFactory = viewModelFactory { initializer { MainViewmodel() } }
     val extras: CreationExtras = MutableCreationExtras()
     val viewModel = viewModelFactory.create(MainViewmodel::class, extras)
-
     WeUITheme {
         Surface(
-            modifier = Modifier.fillMaxSize().background(Color.White),
-            color = Color.White
+            modifier = Modifier.fillMaxSize(),
+            color = MaterialTheme.colorScheme.background
         ) {
             AppView(viewModel)
         }
@@ -111,36 +106,56 @@ fun AppView(viewmodel: MainViewmodel) {
     val navi = rememberNavController()
     val drawerState = rememberDrawerState(DrawerValue.Closed)
     val scope = rememberCoroutineScope()
-
+    // 修改 AppView 中的 ModalNavigationDrawer 部分
     ModalNavigationDrawer(
         drawerState = drawerState,
-        gesturesEnabled = drawerState.isOpen,
+        gesturesEnabled = true, // 允许手势操作
         drawerContent = {
             JellyDrawerContent(
                 drawerState = drawerState,
                 onClose = { scope.launch { drawerState.close() } },
-                modifier = Modifier.fillMaxHeight(0.85f)
+                modifier = Modifier.wrapContentSize()
+                    .background(MaterialTheme.colorScheme.background),
+                navi = navi
             )
-        }
+        },
+        scrimColor = Color.Transparent // 去掉默认遮罩
     ) {
-        Scaffold(
-            topBar = {
-                AppTopBar(navi, viewmodel,drawerState)
-            },
-            snackbarHost = {
-                SnackbarHost(hostState = snackState.value)
-            },
-        ) { inp ->
-            Column(
-                modifier = Modifier
-                    .padding(inp)
-                    .fillMaxWidth(),
-                horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.Center
-            ) {
-                NavigationHost(viewmodel, navi)
+        // 添加内容区域偏移动画
+        val contentOffset by animateDpAsState(
+            targetValue = if (drawerState.isOpen) 150.dp else 0.dp,
+            animationSpec = spring(stiffness = 300f, dampingRatio = 0.8f)
+        )
+
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .offset(x = contentOffset)
+        ) {
+            Scaffold(
+                topBar = {
+                    AppTopBar(navi, viewmodel, drawerState)
+                },
+                snackbarHost = {
+                    SnackbarHost(hostState = snackState.value)
+                },
+
+
+                ) { inp ->
+                Column(
+                    modifier = Modifier
+                        .padding(inp)
+                        .padding(horizontal = 10.dp)
+                        .fillMaxWidth(),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.Center
+                ) {
+                    NavigationHost(viewmodel, navi)
+                }
             }
-        }}
+        }
+    }
+
 
     LaunchedEffect(key1 = Unit) {
         viewmodel.topTipState.collect {
@@ -156,21 +171,18 @@ private fun isStartRoute(route: String?): Boolean {
     return route == "start" || route == null
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun JellyDrawerContent(
     drawerState: DrawerState,
     onClose: () -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    navi: NavHostController
 ) {
-
-    val list= listOf(
-        "首页",
-        "掷骰子",
-        "游戏房间",
-    )
+    val list = NaviRoute.entries.filter {
+        it.type == 0
+    }
     val offsetX by animateDpAsState(
-        targetValue = if (drawerState.isOpen) 0.dp else (-300).dp,
+        targetValue = if (drawerState.isOpen) 0.dp else (-200).dp,
         animationSpec = spring(
             dampingRatio = 0.6f,  // 增加阻尼比增强果冻感
             stiffness = 400f
@@ -179,29 +191,41 @@ fun JellyDrawerContent(
 
     Surface(
         modifier = modifier
-            .padding(top = 24.dp)
-            .width(300.dp)
-            .offset(x = offsetX)
-            .border(4.dp, MaterialTheme.colorScheme.primaryContainer, RoundedCornerShape(topEnd = 16.dp, bottomEnd = 16.dp)),
-        shadowElevation = 16.dp,
+            .padding(vertical = 24.dp)
+            .width(150.dp).fillMaxHeight()
+            .offset(x = offsetX),
+//            .border(
+//                4.dp,
+//                MaterialTheme.colorScheme.primaryContainer,
+//                RoundedCornerShape(topEnd = 16.dp, bottomEnd = 16.dp)
+//            ),
+        shadowElevation = 24.dp,
         shape = RoundedCornerShape(topEnd = 16.dp, bottomEnd = 16.dp),
-        color = MaterialTheme.colorScheme.secondaryContainer,
+        color = MaterialTheme.colorScheme.surface,
         contentColor = MaterialTheme.colorScheme.onSecondaryContainer
     ) {
-        LazyColumn(Modifier.padding(16.dp)) {
+        LazyColumn(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.wrapContentHeight()) {
             items(list.size) { index ->
-                val item=list[index]
+                val isSelected = navi.currentDestination?.route == list[index].route
+                val item = list[index]
                 var isPressed by remember { mutableStateOf(false) }
                 val scale = animateFloatAsState(
                     targetValue = if (isPressed) 0.95f else 1f,
                     animationSpec = spring(dampingRatio = 0.6f, stiffness = 400f)
                 )
-
-                Text(
-                    text = item.toString(),
+                TextButton(
+                    onClick = {
+                        navi.navigate(item.route)
+                        onClose()
+                    },
                     modifier = Modifier
                         .fillMaxWidth()
                         .padding(12.dp)
+                        .border(
+                            width = 4.dp,
+                            color = if (isSelected) MaterialTheme.colorScheme.primary else Color.Transparent,
+                            shape = CircleShape
+                        )
                         .pointerInput(Unit) {
                             detectTapGestures(
                                 onPress = {
@@ -211,11 +235,14 @@ fun JellyDrawerContent(
                                 }
                             )
                         }
-                        .graphicsLayer(scaleX = scale.value, scaleY = scale.value)
-                        .clickable { /* 处理点击 */ },
-                    fontSize = 18.sp,
-                    color = MaterialTheme.colorScheme.primary
-                )
+                        .graphicsLayer(scaleX = scale.value, scaleY = scale.value),
+                ) {
+                    Text(
+                        text = item.label,
+                        fontSize = 18.sp,
+                        color = MaterialTheme.colorScheme.primary
+                    )
+                }
             }
         }
 
@@ -225,7 +252,7 @@ fun JellyDrawerContent(
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun AppTopBar(navi: NavHostController, viewmodel: MainViewmodel,drawerState: DrawerState) {
+fun AppTopBar(navi: NavHostController, viewmodel: MainViewmodel, drawerState: DrawerState) {
     // 协程作用域：用于处理动画等异步操作
     val scope = rememberCoroutineScope()
     // 旋转动画：刷新按钮的旋转动画控制
@@ -287,7 +314,7 @@ fun AppTopBar(navi: NavHostController, viewmodel: MainViewmodel,drawerState: Dra
                         shape = CircleShape
                     ),
                 onClick = {
-                    if (!isStartRoute(current)) {
+                    if (navi.previousBackStackEntry?.destination?.route=="start") {
                         try {
                             navi.popBackStack()
                         } catch (e: Exception) {
@@ -297,7 +324,7 @@ fun AppTopBar(navi: NavHostController, viewmodel: MainViewmodel,drawerState: Dra
                         if (current == "start") {
                             viewmodel.handleRoomIntent(GameRoomIntent.LeaveGameRoom)
                         }
-                    }else{
+                    } else {
                         scope.launch {  // 新增抽屉开关逻辑
                             if (drawerState.isClosed) drawerState.open()
                             else drawerState.close()
@@ -364,7 +391,7 @@ fun AppTopBar(navi: NavHostController, viewmodel: MainViewmodel,drawerState: Dra
                 )
         },
         modifier = Modifier
-            .padding(24.dp)
+            .padding(top = 12.dp, start = 12.dp, end = 12.dp)
             .clip(RoundedCornerShape(20.dp)),
         colors = TopAppBarDefaults.centerAlignedTopAppBarColors(
             containerColor = Color.Transparent,
@@ -375,43 +402,4 @@ fun AppTopBar(navi: NavHostController, viewmodel: MainViewmodel,drawerState: Dra
     )
 }
 
-@Composable
-fun NavigationHost(viewmodel: MainViewmodel, navi: NavHostController) {
-    NavHost(navi, startDestination = "start") {
-        composable("start") {
-            HomePage(viewmodel)
-        }
-        composable("room") {
-            RoomPage(viewmodel)
-        }
-    }
 
-    LaunchedEffect(Unit) {
-        viewmodel.navigationEvents.collect { event ->
-
-            when (event) {
-                is NavigationEvent.NavigateTo -> {
-                    navi.navigate(event.route) {
-                        event.popUpToRoute?.let { route ->
-                            popUpTo(route) { inclusive = event.inclusive }
-                        }
-                    }
-                }
-
-                NavigationEvent.PopBackStack -> navi.popBackStack()
-                is NavigationEvent.PopUpTo -> navi.popBackStack(event.route, event.inclusive)
-            }
-
-        }
-    }
-
-}
-
-
-@Preview
-@Composable
-fun DefaultPreview() {
-    WeUITheme {
-        //GreetingView(1, "",4)
-    }
-}

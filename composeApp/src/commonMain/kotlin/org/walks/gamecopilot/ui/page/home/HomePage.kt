@@ -63,7 +63,7 @@ fun HomePage(viewmodel: MainViewmodel) {
     // 从ViewModel收集当前选择的游戏模式状态（转换为Compose可观察状态）
     val gameMode = viewmodel.startedGameMode.collectAsState()
 
-    Column(modifier = Modifier.padding(horizontal = 24.dp)) {
+    Column {
         /* 游戏模式选择列表组件
          * @param gameModeList 可用模式列表
          * @param selectedMode 当前选中模式索引
