@@ -6,6 +6,6 @@ package org.walks.gamecopilot.data.entity
  */
 data class RandomCardItem(
     val id: Int = 0,
-    val front:String="",
-    val back:String=""
+    var front:String="",
+    var back:String=""
 )

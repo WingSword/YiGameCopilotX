@@ -7,6 +7,8 @@ plugins {
     alias(libs.plugins.kotlinMultiplatform)
     alias(libs.plugins.androidLibrary)
     kotlin("plugin.serialization") version "1.9.0"
+    id("com.google.devtools.ksp") version "1.9.23-1.0.20"
+
 }
 
 kotlin {
@@ -48,9 +50,16 @@ kotlin {
             implementation(libs.ktor.serialization.kotlinx.json)
             implementation(libs.ktor.coroutines)
             api(libs.jetbrains.serialization.kotlinx.json)
+            // Room KMP 核心库
+            //implementation(libs.androidx.room.runtime)
+            // KSP 注解处理器（替代 kapt）
+            //implementation(libs.androidx.room.compiler)
+//            implementation(libs.mmkv)
+            implementation(libs.ctrip.mmkv.kotlin)
 
         }
         androidMain.dependencies {
+            implementation(libs.androidx.room.ktx)
             implementation(libs.io.ktor.ktor.client.android11)
         }
         iosMain.dependencies {

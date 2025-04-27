@@ -287,19 +287,7 @@ fun RandomModFilterChip(
     )
 }
 
-@Composable
-fun AddNewRandomDialog(isShow: Boolean, onDismiss: () -> Unit) {
-    if (isShow) {
-        Dialog(
-            onDismissRequest = {
-                onDismiss()
-            }
-        ) {
-            Text("新增随机卡片")
 
-        }
-    }
-}
 
 @Composable
 private fun AnimatedShuffleCard(

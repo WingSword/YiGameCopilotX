@@ -6,3 +6,5 @@ interface Platform {
 
 expect fun getPlatform(): Platform
 
+// 初始化（需平台适配）
+expect fun initMMKV(context: Any?)
