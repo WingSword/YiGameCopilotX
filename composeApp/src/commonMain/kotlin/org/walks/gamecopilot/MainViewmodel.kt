@@ -1,5 +1,6 @@
 package org.walks.gamecopilot
 
+import androidx.compose.runtime.mutableStateOf
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.flow.MutableSharedFlow
@@ -8,6 +9,10 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import kotlinx.serialization.encodeToString
+import kotlinx.serialization.json.Json
+import org.walks.gamecopilot.data.RandomCardItem
+import org.walks.gamecopilot.data.RandomListEntity
 import org.walks.gamecopilot.data.UserInfoEntity
 import org.walks.gamecopilot.data.entity.GameEntity
 import org.walks.gamecopilot.data.entity.LocalSpyEntity
@@ -17,6 +22,11 @@ import org.walks.gamecopilot.http.baseJsonConf
 import org.walks.gamecopilot.http.roomModule
 import org.walks.gamecopilot.intent.GameIntent
 import org.walks.gamecopilot.intent.GameRoomIntent
+import org.walks.gamecopilot.intent.RandomPageIntent
+import org.walks.gamecopilot.mmkv.MMKVUtils
+import org.walks.gamecopilot.mmkv.MMKV_RANDOM_CARDS_NAME_SETTING_KEY
+import org.walks.gamecopilot.mmkv.MMKV_RANDOM_CARDS_SETTING_KEY
+import org.walks.gamecopilot.ui.page.random.optimizedShuffle
 
 
 class MainViewmodel : ViewModel() {
@@ -37,6 +47,10 @@ class MainViewmodel : ViewModel() {
     private val _topTipState: MutableSharedFlow<String?> = MutableSharedFlow()
     var topTipState = _topTipState.asSharedFlow()
 
+    private val _currentRandomCardState = MutableStateFlow(RandomListEntity())
+    val currentRandomCardState: StateFlow<RandomListEntity> = _currentRandomCardState
+    private val _randomLabelsState = MutableStateFlow(listOf<String>())
+    val randomLabelsState: StateFlow<List<String>> = _randomLabelsState
 
     private var userId = ""
 
@@ -87,6 +101,97 @@ class MainViewmodel : ViewModel() {
             GameRoomIntent.DeleteGameRoom -> {
                 deleteRoom()
             }
+        }
+    }
+
+    fun handleRandomPageIntent(intent: RandomPageIntent) {
+        when (intent) {
+            is RandomPageIntent.OnRefresh -> {
+                with(currentRandomCardState.value) {
+                    val shuffledCards = this.list.map { it.front }.optimizedShuffle()
+                        .zip(this.list.map { it.back }.optimizedShuffle()) { front, back ->
+                            RandomCardItem( front = front, back = back)
+                        }
+
+                    val data = this.copy(
+                        list = shuffledCards
+                    )
+                    viewModelScope.launch { _currentRandomCardState.emit(data) }
+                }
+            }
+
+            is RandomPageIntent.OnAddNewRandom -> {
+                try {
+                    // 序列化卡片列表
+                    val jsonCards = Json.encodeToString(intent.cardList)
+                    // 保存到 MMKV
+                    MMKVUtils.apply {
+                        put(MMKV_RANDOM_CARDS_SETTING_KEY + intent.cardList.name, jsonCards)
+                        putSet(
+                            MMKV_RANDOM_CARDS_NAME_SETTING_KEY,
+                            getSet(MMKV_RANDOM_CARDS_NAME_SETTING_KEY)
+                                ?.plus(intent.cardList.name)
+                                ?: setOf(intent.cardList.name)
+                        )
+                    }
+                } catch (e: Exception) {
+                    e.printStackTrace()
+                    // 添加错误处理
+
+                }
+            }
+            is RandomPageIntent.OnChangeNewRandomLabel -> {
+                viewModelScope.launch {
+                    _randomLabelsState.emit(
+                        MMKVUtils.getSet(MMKV_RANDOM_CARDS_NAME_SETTING_KEY)?.toList() ?: emptyList()
+                    )
+                }
+            }
+
+            is RandomPageIntent.OnSelectLabel -> {
+                viewModelScope.launch {
+                    _randomLabelsState.emit(
+                        randomLabelsState.value.plus(intent.label)
+                    )
+                }
+                randomLabelChange()
+            }
+
+            RandomPageIntent.OnAddNewRandomDialogDelete -> TODO()
+            RandomPageIntent.OnAddNewRandomDialogDismiss -> TODO()
+            is RandomPageIntent.OnCancelLabel -> {
+                viewModelScope.launch {
+                    _randomLabelsState.emit(
+                        randomLabelsState.value.minus(intent.label)
+                    )
+                }
+                randomLabelChange()
+            }
+
+            RandomPageIntent.OnAddNewRandomDialogSave -> TODO()
+        }
+    }
+
+    private fun randomLabelChange() {
+        val selectedLabel = randomLabelsState.value
+        if (selectedLabel.isEmpty()) {
+            viewModelScope.launch {
+                _currentRandomCardState.emit(RandomListEntity())
+            }
+            return
+        }
+        try {
+            val jsonCard = Json.decodeFromString<RandomListEntity>(
+                MMKVUtils.get(
+                    MMKV_RANDOM_CARDS_SETTING_KEY + selectedLabel.firstOrNull(),
+                    ""
+                ).toString()
+            )
+            viewModelScope.launch {
+                _currentRandomCardState.emit(jsonCard)
+            }
+        } catch (e: Exception) {
+            // 如果发生异常，则使用默认值
         }
     }
 

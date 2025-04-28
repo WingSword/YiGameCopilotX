@@ -1,9 +1,14 @@
 package org.walks.gamecopilot.ui.page.random
 
+import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.slideInVertically
+import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -20,7 +25,7 @@ import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.GridItemSpan
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
-import androidx.compose.foundation.shape.CornerSize
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
@@ -37,6 +42,8 @@ import androidx.compose.material3.InputChipDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -49,21 +56,22 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalDensity
-import androidx.compose.ui.text.TextStyle
-import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.compose.ui.window.Dialog
 import com.yi.yigamecopilot.android.theme.MorandiBlue
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import org.walks.gamecopilot.MainViewmodel
 import org.walks.gamecopilot.PlatformHelper
-import org.walks.gamecopilot.data.entity.RandomCardItem
+import org.walks.gamecopilot.data.RandomCardItem
+import org.walks.gamecopilot.intent.RandomPageIntent
+import org.walks.gamecopilot.mmkv.MMKVUtils
+import org.walks.gamecopilot.mmkv.MMKV_RANDOM_CARDS_NAME_SETTING_KEY
 import kotlin.math.ceil
+import kotlin.random.Random
 
 /**
  *  Created by Wing at 09:47 on 2025/4/25
@@ -85,22 +93,21 @@ private const val MIN_SCALE = 0.8f
 @Composable
 fun RandomPage(viewmodel: MainViewmodel) {
     var addRandomDialogShow by remember { mutableStateOf(false) }
-    val cards = remember {
-        listOf(
-            RandomCardItem(1, "卡片1正面", "卡片1背面"),
-            RandomCardItem(2, "卡片2正面", "卡片2背面"),
-            RandomCardItem(3, "卡片3正面", "卡片3背面"),
-            RandomCardItem(1, "卡片1正面", "卡片1背面"),
-            RandomCardItem(2, "卡片2正面", "卡片2背面"),
-            RandomCardItem(3, "卡片3正面", "卡片3背面"),
-            RandomCardItem(1, "卡片1正面", "卡片1背面"),
-            RandomCardItem(2, "卡片2正面", "卡片2背面"),
-            RandomCardItem(3, "卡片3正面", "卡片3背面")
-        )
-    }
     var isShuffling by remember { mutableStateOf(false) }
     val scope = rememberCoroutineScope()
+    viewmodel.handleRandomPageIntent(RandomPageIntent.OnChangeNewRandomLabel)
+    // 修改为 mutableStateList 类型
+    var randomCardNames = viewmodel.randomLabelsState.value
+    var cards = viewmodel.currentRandomCardState.collectAsState().value.list
 
+    LaunchedEffect(viewmodel.currentRandomCardState.collectAsState().value){
+        PlatformHelper.getInstance().vibrateMethod()
+        isShuffling = !isShuffling
+        scope.launch {
+            delay(500L)
+            isShuffling = !isShuffling
+        }
+    }
 
     LazyVerticalGrid(columns = GridCells.Fixed(3), modifier = Modifier.fillMaxHeight()) {
         item(span = { GridItemSpan(3) }) {
@@ -112,47 +119,75 @@ fun RandomPage(viewmodel: MainViewmodel) {
                         addRandomDialogShow = true
                     }, "新增配置")
                 }
-                item {
-                    AssistChipRandom(icon = Icons.Sharp.Refresh, {
-                        PlatformHelper.getInstance().vibrateLongMethod()
-                        isShuffling = !isShuffling
-                        scope.launch {
-                            delay(500L)
-                            isShuffling = !isShuffling
-                            delay(500L)
-                            isShuffling = !isShuffling
-                            delay(500L)
-                            isShuffling = !isShuffling
-                        }
-                    }, "洗牌")
-                }
-                items(6) {
+
+
+                items(
+                    items = randomCardNames,
+                    key = { it.hashCode() } // 或使用唯一标识符
+                ) { item ->
                     RandomModFilterChip(
-                        label = "配置" + it, leadingIcon = {
+                        label = item, leadingIcon = {
                             Icon(
                                 Icons.Filled.Settings,
                                 contentDescription = "Localized description",
                                 Modifier.size(FilterChipDefaults.IconSize)
                             )
                         }, onclick = {
-
+                            if (it) {
+                                viewmodel.handleRandomPageIntent(RandomPageIntent.OnSelectLabel(item))
+                            } else {
+                                viewmodel.handleRandomPageIntent(RandomPageIntent.OnCancelLabel(item))
+                            }
                         }
                     )
                 }
+
             }
         }
-        items(cards) { card ->
-            AnimatedShuffleCard(
-                card = card,
-                isShuffling = isShuffling,
-                index = cards.indexOf(card),
-                total = cards.size
-            )
+        items(cards, key = { it.hashCode() }
+        ) { card ->
+            AnimatedVisibility(
+                visible = true,
+                enter = slideInVertically() + fadeIn(),
+                exit = slideOutHorizontally() + fadeOut()
+            ) {
+                AnimatedShuffleCard(
+                    card = card,
+                    isShuffling = isShuffling,
+                    index = cards.indexOf(card),
+                    total = cards.size
+                )
+            }
+
         }
+
+
     }
+    AddNewRandomDialog(addRandomDialogShow, onDismiss = { addRandomDialogShow = false }, onSave = {
+        addRandomDialogShow = false
+        viewmodel.handleRandomPageIntent(RandomPageIntent.OnAddNewRandom(it))
+        viewmodel.handleRandomPageIntent(RandomPageIntent.OnChangeNewRandomLabel)
+    })
+}
 
+// 创建扩展函数
+fun <T> List<T>.shuffledWithAnimation(): List<T> {
+    return this
+        .map { it to Random.nextFloat() }
+        .sortedBy { it.second }
+        .map { it.first }
+}
 
-    AddNewRandomDialog(addRandomDialogShow, onDismiss = { addRandomDialogShow = false })
+// 使用 Fisher-Yates 洗牌算法
+fun <T> List<T>.optimizedShuffle(): List<T> {
+    val list = this.toMutableList()
+    for (i in list.size - 1 downTo 1) {
+        val j = Random.nextInt(i + 1)
+        val temp = list[i]
+        list[i] = list[j]
+        list[j] = temp
+    }
+    return list
 }
 
 @Composable
@@ -167,8 +202,9 @@ fun FlippableCard(
     var flipped by remember { mutableStateOf(false) }
     val rotation = animateFloatAsState(
         targetValue = if (flipped) 180f else 0f,
-        animationSpec = tween(animationDuration), label = "cardRotation"
-    )
+        animationSpec = tween(animationDuration), label = "cardRotation",
+
+        )
 
     val cameraDistance = 12f * LocalDensity.current.density
 
@@ -180,8 +216,14 @@ fun FlippableCard(
             }
             .fillMaxWidth(0.33f)
             .aspectRatio(1.25f)
-            .shadow(4.dp, shape = RoundedCornerShape(cornerRadius,cornerRadius,0.dp,cornerRadius ))
-            .background(cardColor, shape = RoundedCornerShape(cornerRadius,cornerRadius,0.dp,cornerRadius))
+            .shadow(
+                4.dp,
+                shape = RoundedCornerShape(cornerRadius, cornerRadius, 0.dp, cornerRadius)
+            )
+            .background(
+                cardColor,
+                shape = RoundedCornerShape(cornerRadius, cornerRadius, 0.dp, cornerRadius)
+            )
             .clickable { flipped = !flipped }
     ) {
         // 正面内容（前90度可见）
@@ -221,6 +263,7 @@ private fun CardContent(
                     !isFront && rotation > 90f -> (rotation - 90f) / 90f
                     else -> 0f
                 }
+
             }
             .padding(10.dp)
     ) {
@@ -286,7 +329,6 @@ fun RandomModFilterChip(
         },
     )
 }
-
 
 
 @Composable
@@ -385,18 +427,19 @@ private fun AnimatedShuffleCard(
             back = {
                 Box(
                     modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.BottomCenter
-                ){
+                ) {
                     Text(
-                        ""+card.id+"",
+                        "" + card.id + "",
                         color = MaterialTheme.colorScheme.primary.copy(0.3f),
                         fontWeight = FontWeight.W900,
                         fontSize = 50.sp,
                         textAlign = TextAlign.End,
-                        modifier = Modifier.fillMaxWidth())
+                        modifier = Modifier.fillMaxWidth()
+                    )
                     Text(
                         card.back,
                         color = MaterialTheme.colorScheme.onPrimary.copy(0.9F),
-                                modifier = Modifier.fillMaxHeight()
+                        modifier = Modifier.fillMaxHeight()
                     )
                 }
 

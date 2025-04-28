@@ -76,6 +76,7 @@ import kotlinx.coroutines.launch
 import org.jetbrains.compose.resources.painterResource
 import org.jetbrains.compose.ui.tooling.preview.Preview
 import org.walks.gamecopilot.intent.GameRoomIntent
+import org.walks.gamecopilot.intent.RandomPageIntent
 import org.walks.gamecopilot.navigation.NaviRoute
 import org.walks.gamecopilot.navigation.NavigationHost
 import org.walks.gamecopilot.theme.WeUITheme
@@ -89,6 +90,7 @@ fun App() {
     val viewModelFactory = viewModelFactory { initializer { MainViewmodel() } }
     val extras: CreationExtras = MutableCreationExtras()
     val viewModel = viewModelFactory.create(MainViewmodel::class, extras)
+
     WeUITheme {
         Surface(
             modifier = Modifier.fillMaxSize(),
@@ -139,8 +141,6 @@ fun AppView(viewmodel: MainViewmodel) {
                 snackbarHost = {
                     SnackbarHost(hostState = snackState.value)
                 },
-
-
                 ) { inp ->
                 Column(
                     modifier = Modifier
@@ -360,12 +360,17 @@ fun AppTopBar(navi: NavHostController, viewmodel: MainViewmodel, drawerState: Dr
                             shape = CircleShape
                         ).rotate(rotation.value),
                     onClick = {
+
                         scope.launch {
                             rotation.animateTo(
                                 targetValue = 360f,
                                 animationSpec = tween(durationMillis = 500, easing = LinearEasing)
                             )
                             rotation.snapTo(0f) // 重置角度准备下次旋转
+                        }
+                        if (current==NaviRoute.RANDOM.route){
+                            viewmodel.handleRandomPageIntent(RandomPageIntent.OnRefresh)
+                            return@IconButton
                         }
                         viewmodel.handleRoomIntent(GameRoomIntent.RefreshRoomInfo)
                     },
@@ -374,13 +379,6 @@ fun AppTopBar(navi: NavHostController, viewmodel: MainViewmodel, drawerState: Dr
                         contentColor = MaterialTheme.colorScheme.onTertiaryContainer,
                     ),
                     content = {
-                        Text(
-                            text = viewmodel.roomEntityState.value.roomPlayerNum.toString(),
-                            color = MaterialTheme.colorScheme.onTertiaryContainer.copy(alpha = 0.5f),
-                            fontWeight = FontWeight.W900,
-                            textAlign = TextAlign.End,
-                            fontSize = 24.sp
-                        )
                         Icon(
                             modifier = Modifier.fillMaxSize(),
                             imageVector = Icons.Filled.Refresh,

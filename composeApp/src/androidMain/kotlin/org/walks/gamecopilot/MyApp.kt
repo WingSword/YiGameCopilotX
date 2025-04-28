@@ -11,5 +11,6 @@ class MyApp : Application() {
     override fun onCreate() {
         super.onCreate()
         PlatformHelper.init(applicationContext) // 初始化时注入 Context
+        initMMKV(applicationContext)
     }
 }
