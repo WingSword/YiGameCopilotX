@@ -1,6 +1,5 @@
 package org.walks.gamecopilot
 
-import androidx.compose.runtime.mutableStateOf
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.flow.MutableSharedFlow
@@ -11,7 +10,7 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
-import org.walks.gamecopilot.data.RandomCardItem
+import org.walks.gamecopilot.data.RandomItem
 import org.walks.gamecopilot.data.RandomListEntity
 import org.walks.gamecopilot.data.UserInfoEntity
 import org.walks.gamecopilot.data.entity.GameEntity
@@ -24,8 +23,8 @@ import org.walks.gamecopilot.intent.GameIntent
 import org.walks.gamecopilot.intent.GameRoomIntent
 import org.walks.gamecopilot.intent.RandomPageIntent
 import org.walks.gamecopilot.mmkv.MMKVUtils
-import org.walks.gamecopilot.mmkv.MMKV_RANDOM_CARDS_NAME_SETTING_KEY
 import org.walks.gamecopilot.mmkv.MMKV_RANDOM_CARDS_SETTING_KEY
+import org.walks.gamecopilot.mmkv.MMKV_RANDOM_LABEL_NAME_KEY
 import org.walks.gamecopilot.ui.page.random.optimizedShuffle
 
 
@@ -47,10 +46,13 @@ class MainViewmodel : ViewModel() {
     private val _topTipState: MutableSharedFlow<String?> = MutableSharedFlow()
     var topTipState = _topTipState.asSharedFlow()
 
-    private val _currentRandomCardState = MutableStateFlow(RandomListEntity())
-    val currentRandomCardState: StateFlow<RandomListEntity> = _currentRandomCardState
+    private val _currentRandomContentState = MutableStateFlow(RandomListEntity())
+    val currentRandomContentState: StateFlow<RandomListEntity> = _currentRandomContentState
     private val _randomLabelsState = MutableStateFlow(listOf<String>())
     val randomLabelsState: StateFlow<List<String>> = _randomLabelsState
+
+    private val _addRandomConfigDialogState = MutableSharedFlow<Boolean>()
+    val addRandomConfigDialogState = _addRandomConfigDialogState.asSharedFlow()
 
     private var userId = ""
 
@@ -107,31 +109,31 @@ class MainViewmodel : ViewModel() {
     fun handleRandomPageIntent(intent: RandomPageIntent) {
         when (intent) {
             is RandomPageIntent.OnRefresh -> {
-                with(currentRandomCardState.value) {
-                    val shuffledCards = this.list.map { it.front }.optimizedShuffle()
-                        .zip(this.list.map { it.back }.optimizedShuffle()) { front, back ->
-                            RandomCardItem( front = front, back = back)
+                with(currentRandomContentState.value) {
+                    val shuffledCards = this.list.map { it.second }.optimizedShuffle()
+                        .zip(this.list.map { it.first }.optimizedShuffle()) { front, back ->
+                            RandomItem( second = front, first = back)
                         }
 
                     val data = this.copy(
                         list = shuffledCards
                     )
-                    viewModelScope.launch { _currentRandomCardState.emit(data) }
+                    viewModelScope.launch { _currentRandomContentState.emit(data) }
                 }
             }
 
             is RandomPageIntent.OnAddNewRandom -> {
                 try {
                     // 序列化卡片列表
-                    val jsonCards = Json.encodeToString(intent.cardList)
+                    val jsonCards = Json.encodeToString(intent.randomListEntity)
                     // 保存到 MMKV
                     MMKVUtils.apply {
-                        put(MMKV_RANDOM_CARDS_SETTING_KEY + intent.cardList.name, jsonCards)
+                        put(MMKV_RANDOM_CARDS_SETTING_KEY + intent.randomListEntity.name, jsonCards)
                         putSet(
-                            MMKV_RANDOM_CARDS_NAME_SETTING_KEY,
-                            getSet(MMKV_RANDOM_CARDS_NAME_SETTING_KEY)
-                                ?.plus(intent.cardList.name)
-                                ?: setOf(intent.cardList.name)
+                            MMKV_RANDOM_LABEL_NAME_KEY,
+                            getSet(MMKV_RANDOM_LABEL_NAME_KEY)
+                                ?.plus(intent.randomListEntity.name)
+                                ?: setOf(intent.randomListEntity.name)
                         )
                     }
                 } catch (e: Exception) {
@@ -143,52 +145,46 @@ class MainViewmodel : ViewModel() {
             is RandomPageIntent.OnChangeNewRandomLabel -> {
                 viewModelScope.launch {
                     _randomLabelsState.emit(
-                        MMKVUtils.getSet(MMKV_RANDOM_CARDS_NAME_SETTING_KEY)?.toList() ?: emptyList()
+                        MMKVUtils.getSet(MMKV_RANDOM_LABEL_NAME_KEY)?.toList() ?: emptyList()
                     )
                 }
             }
 
             is RandomPageIntent.OnSelectLabel -> {
-                viewModelScope.launch {
-                    _randomLabelsState.emit(
-                        randomLabelsState.value.plus(intent.label)
-                    )
-                }
-                randomLabelChange()
+                randomLabelChange(intent.label)
             }
 
             RandomPageIntent.OnAddNewRandomDialogDelete -> TODO()
-            RandomPageIntent.OnAddNewRandomDialogDismiss -> TODO()
-            is RandomPageIntent.OnCancelLabel -> {
+            RandomPageIntent.OnAddNewRandomDialogShow ->{
                 viewModelScope.launch {
-                    _randomLabelsState.emit(
-                        randomLabelsState.value.minus(intent.label)
-                    )
+                    _addRandomConfigDialogState.emit(true)
                 }
-                randomLabelChange()
+
+            }
+            is RandomPageIntent.OnCancelLabel -> {
+                randomLabelChange("")
             }
 
             RandomPageIntent.OnAddNewRandomDialogSave -> TODO()
         }
     }
 
-    private fun randomLabelChange() {
-        val selectedLabel = randomLabelsState.value
+    private fun randomLabelChange(selectedLabel:String) {
         if (selectedLabel.isEmpty()) {
             viewModelScope.launch {
-                _currentRandomCardState.emit(RandomListEntity())
+                _currentRandomContentState.emit(RandomListEntity())
             }
             return
         }
         try {
             val jsonCard = Json.decodeFromString<RandomListEntity>(
                 MMKVUtils.get(
-                    MMKV_RANDOM_CARDS_SETTING_KEY + selectedLabel.firstOrNull(),
+                    MMKV_RANDOM_CARDS_SETTING_KEY + selectedLabel,
                     ""
                 ).toString()
             )
             viewModelScope.launch {
-                _currentRandomCardState.emit(jsonCard)
+                _currentRandomContentState.emit(jsonCard)
             }
         } catch (e: Exception) {
             // 如果发生异常，则使用默认值

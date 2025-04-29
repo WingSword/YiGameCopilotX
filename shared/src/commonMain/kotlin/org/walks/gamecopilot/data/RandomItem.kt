@@ -7,13 +7,14 @@ import kotlinx.serialization.Serializable
  *
  */
 @Serializable
-data class RandomCardItem(
+data class RandomItem(
     var id: Int = 0,
-    var front:String="",
-    var back:String=""
+    var second: String = "",
+    var first: String = ""
 )
+
 @Serializable
 data class RandomListEntity(
-    val list: List<RandomCardItem> = listOf(),
-    val name:String="",
+    val list: List<RandomItem> = listOf(),
+    val name: String = "",
 )

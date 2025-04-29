@@ -30,10 +30,12 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Refresh
+import androidx.compose.material.icons.sharp.Add
 import androidx.compose.material3.CenterAlignedTopAppBar
 import androidx.compose.material3.DrawerState
 import androidx.compose.material3.DrawerValue
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.IconButtonDefaults
@@ -108,6 +110,22 @@ fun AppView(viewmodel: MainViewmodel) {
     val navi = rememberNavController()
     val drawerState = rememberDrawerState(DrawerValue.Closed)
     val scope = rememberCoroutineScope()
+    var currentRoute by remember { mutableStateOf("") }
+
+    var floatButtonShow by remember { mutableStateOf(true) }
+    LaunchedEffect(navi) {
+        navi.currentBackStackEntryFlow.collect {
+            currentRoute = it.destination.route ?: ""
+        }
+    }
+
+// 根据路由变化触发副作用
+    LaunchedEffect(currentRoute) {
+        when (currentRoute) {
+            NaviRoute.RANDOM.route -> floatButtonShow=true
+            else->{floatButtonShow=false}
+        }
+    }
     // 修改 AppView 中的 ModalNavigationDrawer 部分
     ModalNavigationDrawer(
         drawerState = drawerState,
@@ -141,7 +159,26 @@ fun AppView(viewmodel: MainViewmodel) {
                 snackbarHost = {
                     SnackbarHost(hostState = snackState.value)
                 },
-                ) { inp ->
+                floatingActionButton = {
+                        if (floatButtonShow) {
+                            FloatingActionButton(
+                                onClick = {
+                                    viewmodel.handleRandomPageIntent(RandomPageIntent.OnAddNewRandomDialogShow)
+                                },
+                                modifier = Modifier
+                                    .wrapContentSize()
+                                    .padding(24.dp)
+                                    .clip(RoundedCornerShape(16.dp))
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Sharp.Add,
+                                    contentDescription = "添加",
+                                )
+                            }
+                        }
+
+                    }
+            ) { inp ->
                 Column(
                     modifier = Modifier
                         .padding(inp)
@@ -204,7 +241,10 @@ fun JellyDrawerContent(
         color = MaterialTheme.colorScheme.surface,
         contentColor = MaterialTheme.colorScheme.onSecondaryContainer
     ) {
-        LazyColumn(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.wrapContentHeight()) {
+        LazyColumn(
+            horizontalAlignment = Alignment.CenterHorizontally,
+            modifier = Modifier.wrapContentHeight()
+        ) {
             items(list.size) { index ->
                 val isSelected = navi.currentDestination?.route == list[index].route
                 val item = list[index]
@@ -314,7 +354,7 @@ fun AppTopBar(navi: NavHostController, viewmodel: MainViewmodel, drawerState: Dr
                         shape = CircleShape
                     ),
                 onClick = {
-                    if (navi.previousBackStackEntry?.destination?.route=="start") {
+                    if (navi.previousBackStackEntry?.destination?.route == "start") {
                         try {
                             navi.popBackStack()
                         } catch (e: Exception) {
@@ -368,7 +408,7 @@ fun AppTopBar(navi: NavHostController, viewmodel: MainViewmodel, drawerState: Dr
                             )
                             rotation.snapTo(0f) // 重置角度准备下次旋转
                         }
-                        if (current==NaviRoute.RANDOM.route){
+                        if (current == NaviRoute.RANDOM.route) {
                             viewmodel.handleRandomPageIntent(RandomPageIntent.OnRefresh)
                             return@IconButton
                         }

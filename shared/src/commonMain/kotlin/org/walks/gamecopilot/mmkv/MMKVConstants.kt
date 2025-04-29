@@ -5,6 +5,6 @@ package org.walks.gamecopilot.mmkv
  *
  */
 
-const val MMKV_RANDOM_CARDS_NAME_SETTING_KEY= "mmkv_random_cards_setting_name"
+const val MMKV_RANDOM_LABEL_NAME_KEY= "mmkv_random_cards_setting_name"
 const val MMKV_RANDOM_CARDS_SETTING_KEY = "mmkv_random_cards_setting_1"
 const val MMKV_RANDOM_CARDS_B_SETTING_KEY = "mmkv_random_cards_setting_2"

@@ -7,11 +7,11 @@ import org.walks.gamecopilot.data.RandomListEntity
  *
  */
 sealed class RandomPageIntent {
-    object OnRefresh : RandomPageIntent()
-    data class OnAddNewRandom(val cardList:RandomListEntity) : RandomPageIntent()
-    object OnAddNewRandomDialogDismiss : RandomPageIntent()
-    object OnAddNewRandomDialogSave : RandomPageIntent()
-    object OnAddNewRandomDialogDelete : RandomPageIntent()
+    data object OnRefresh : RandomPageIntent()
+    data class OnAddNewRandom(val randomListEntity:RandomListEntity) : RandomPageIntent()
+    data object OnAddNewRandomDialogShow : RandomPageIntent()
+    data object OnAddNewRandomDialogSave : RandomPageIntent()
+    data object OnAddNewRandomDialogDelete : RandomPageIntent()
     data object OnChangeNewRandomLabel : RandomPageIntent()
     data class OnSelectLabel(val label:String) : RandomPageIntent()
     data class OnCancelLabel(val label:String) : RandomPageIntent()

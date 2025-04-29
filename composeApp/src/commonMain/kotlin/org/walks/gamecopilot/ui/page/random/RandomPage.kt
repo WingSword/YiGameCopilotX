@@ -1,23 +1,23 @@
 package org.walks.gamecopilot.ui.page.random
 
-import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
-import androidx.compose.animation.fadeIn
-import androidx.compose.animation.fadeOut
-import androidx.compose.animation.slideInVertically
-import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyRow
@@ -30,9 +30,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Done
-import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.sharp.AddCircle
-import androidx.compose.material.icons.sharp.Refresh
 import androidx.compose.material3.AssistChip
 import androidx.compose.material3.AssistChipDefaults
 import androidx.compose.material3.FilterChip
@@ -63,13 +61,16 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.yi.yigamecopilot.android.theme.MorandiBlue
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
+import org.jetbrains.compose.resources.painterResource
 import org.walks.gamecopilot.MainViewmodel
 import org.walks.gamecopilot.PlatformHelper
-import org.walks.gamecopilot.data.RandomCardItem
+import org.walks.gamecopilot.RANDOM_PAGE_CONFIG_CATE_COIN
+import org.walks.gamecopilot.RANDOM_PAGE_CONFIG_CATE_DICE
+import org.walks.gamecopilot.data.RandomItem
 import org.walks.gamecopilot.intent.RandomPageIntent
-import org.walks.gamecopilot.mmkv.MMKVUtils
-import org.walks.gamecopilot.mmkv.MMKV_RANDOM_CARDS_NAME_SETTING_KEY
+import org.walks.gamecopilot.ui.animation.DiceAnimation
 import kotlin.math.ceil
 import kotlin.random.Random
 
@@ -97,10 +98,18 @@ fun RandomPage(viewmodel: MainViewmodel) {
     val scope = rememberCoroutineScope()
     viewmodel.handleRandomPageIntent(RandomPageIntent.OnChangeNewRandomLabel)
     // 修改为 mutableStateList 类型
-    var randomCardNames = viewmodel.randomLabelsState.value
-    var cards = viewmodel.currentRandomCardState.collectAsState().value.list
+    var randomLabelsList = viewmodel.randomLabelsState.value.asReversed()
+    var itemList = viewmodel.currentRandomContentState.collectAsState().value.list
+    var currentSelectLabel = viewmodel.currentRandomContentState.collectAsState().value.name
 
-    LaunchedEffect(viewmodel.currentRandomCardState.collectAsState().value){
+
+    LaunchedEffect(viewmodel.addRandomConfigDialogState) {
+        viewmodel.addRandomConfigDialogState.collectLatest {
+            addRandomDialogShow = it
+        }
+    }
+
+    LaunchedEffect(viewmodel.currentRandomContentState.collectAsState().value) {
         PlatformHelper.getInstance().vibrateMethod()
         isShuffling = !isShuffling
         scope.launch {
@@ -120,43 +129,53 @@ fun RandomPage(viewmodel: MainViewmodel) {
                     }, "新增配置")
                 }
 
-
                 items(
-                    items = randomCardNames,
+                    items = randomLabelsList,
                     key = { it.hashCode() } // 或使用唯一标识符
-                ) { item ->
+                ) { i ->
+                    val currentSelectLabelType = RandomCate.getCateByItem(i)
                     RandomModFilterChip(
-                        label = item, leadingIcon = {
+                        isSelected = currentSelectLabel == i,
+                        label = i.replaceFirst(currentSelectLabelType.key, ""), leadingIcon = {
                             Icon(
-                                Icons.Filled.Settings,
+                                painter = painterResource(
+                                    currentSelectLabelType.iconRes
+                                ),
                                 contentDescription = "Localized description",
                                 Modifier.size(FilterChipDefaults.IconSize)
                             )
                         }, onclick = {
-                            if (it) {
-                                viewmodel.handleRandomPageIntent(RandomPageIntent.OnSelectLabel(item))
+                            if (currentSelectLabel == i) {
+                                currentSelectLabel = ""
+                                viewmodel.handleRandomPageIntent(RandomPageIntent.OnCancelLabel(""))
                             } else {
-                                viewmodel.handleRandomPageIntent(RandomPageIntent.OnCancelLabel(item))
+                                currentSelectLabel = i
+                                viewmodel.handleRandomPageIntent(RandomPageIntent.OnSelectLabel(i))
                             }
+
                         }
                     )
                 }
 
             }
         }
-        items(cards, key = { it.hashCode() }
-        ) { card ->
-            AnimatedVisibility(
-                visible = true,
-                enter = slideInVertically() + fadeIn(),
-                exit = slideOutHorizontally() + fadeOut()
-            ) {
-                AnimatedShuffleCard(
-                    card = card,
-                    isShuffling = isShuffling,
-                    index = cards.indexOf(card),
-                    total = cards.size
-                )
+        items(itemList) { randomItem ->
+
+            val currentType = RandomCate.getCateByItem(currentSelectLabel)
+            when (currentType.key) {
+                RANDOM_PAGE_CONFIG_CATE_DICE -> {
+                    AnimatedShuffleDice(randomItem.first.toInt(), randomItem.second.toInt())
+                }
+
+                RANDOM_PAGE_CONFIG_CATE_COIN -> {}
+                else -> {
+                    AnimatedShuffleCard(
+                        card = randomItem,
+                        isShuffling = isShuffling,
+                        index = itemList.indexOf(randomItem),
+                        total = itemList.size
+                    )
+                }
             }
 
         }
@@ -168,6 +187,38 @@ fun RandomPage(viewmodel: MainViewmodel) {
         viewmodel.handleRandomPageIntent(RandomPageIntent.OnAddNewRandom(it))
         viewmodel.handleRandomPageIntent(RandomPageIntent.OnChangeNewRandomLabel)
     })
+}
+
+@OptIn(ExperimentalFoundationApi::class)
+@Composable
+fun AnimatedShuffleDice(
+    start: Int,
+    end: Int
+) {
+    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+        DiceAnimation(range = start..end)
+        Spacer(Modifier.height(4.dp))
+        Text(
+            text = "$start-$end",
+            color = MaterialTheme.colorScheme.secondary,
+            modifier = Modifier.border(
+                width = 2.dp,
+                color = MaterialTheme.colorScheme.secondary.copy(0.5f),
+                shape = RoundedCornerShape(8.dp)
+            ).padding(horizontal = 24.dp, vertical = 4.dp).combinedClickable(
+                onLongClickLabel = "长按删除",
+                onLongClick = {
+                    PlatformHelper.getInstance().vibrateMethod()
+
+                },
+                onClick = {
+                    PlatformHelper.getInstance().vibrateMethod()
+                }
+            )
+        )
+
+    }
+
 }
 
 // 创建扩展函数
@@ -293,19 +344,19 @@ fun RandomModFilterChip(
     label: String,
     leadingIcon: @Composable (() -> Unit)? = null,
     isEdit: Boolean = false,
+    isSelected: Boolean = false,
     onclick: (Boolean) -> Unit
 ) {
-    var selected by remember { mutableStateOf(false) }
+
     FilterChip(
         onClick = {
-            selected = !selected
-            onclick(selected)
+            onclick(false)
         },
         label = {
             Text(label)
         },
-        selected = selected,
-        leadingIcon = if (selected) {
+        selected = isSelected,
+        leadingIcon = if (isSelected) {
             {
                 Icon(
                     imageVector = Icons.Filled.Done,
@@ -323,7 +374,9 @@ fun RandomModFilterChip(
                 Icon(
                     Icons.Default.Close,
                     contentDescription = "Localized description",
-                    Modifier.size(InputChipDefaults.AvatarSize)
+                    Modifier.size(InputChipDefaults.AvatarSize).clickable {
+                        onclick(true)
+                    }
                 )
             }
         },
@@ -333,7 +386,7 @@ fun RandomModFilterChip(
 
 @Composable
 private fun AnimatedShuffleCard(
-    card: RandomCardItem,
+    card: RandomItem,
     isShuffling: Boolean,
     index: Int,
     total: Int
@@ -437,7 +490,7 @@ private fun AnimatedShuffleCard(
                         modifier = Modifier.fillMaxWidth()
                     )
                     Text(
-                        card.back,
+                        card.first,
                         color = MaterialTheme.colorScheme.onPrimary.copy(0.9F),
                         modifier = Modifier.fillMaxHeight()
                     )
@@ -445,7 +498,7 @@ private fun AnimatedShuffleCard(
 
 
             },
-            front = { Text(card.front, color = MorandiBlue) }
+            front = { Text(card.second, color = MorandiBlue) }
         )
     }
 }
