@@ -2,6 +2,7 @@ package org.walks.gamecopilot
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -26,6 +27,8 @@ import org.walks.gamecopilot.mmkv.MMKVUtils
 import org.walks.gamecopilot.mmkv.MMKV_RANDOM_CARDS_SETTING_KEY
 import org.walks.gamecopilot.mmkv.MMKV_RANDOM_LABEL_NAME_KEY
 import org.walks.gamecopilot.ui.page.random.optimizedShuffle
+import kotlin.time.Clock
+import kotlin.time.ExperimentalTime
 
 
 class MainViewmodel : ViewModel() {
@@ -106,20 +109,26 @@ class MainViewmodel : ViewModel() {
         }
     }
 
+    @OptIn(ExperimentalTime::class)
     fun handleRandomPageIntent(intent: RandomPageIntent) {
         when (intent) {
             is RandomPageIntent.OnRefresh -> {
-                with(currentRandomContentState.value) {
-                    val shuffledCards = this.list.map { it.second }.optimizedShuffle()
+                val shuffledCards = with(currentRandomContentState.value) {
+                    this.list.map { it.second }.optimizedShuffle()
                         .zip(this.list.map { it.first }.optimizedShuffle()) { front, back ->
-                            RandomItem( second = front, first = back)
+                            RandomItem(second = front, first = back)
                         }
-
-                    val data = this.copy(
-                        list = shuffledCards
-                    )
-                    viewModelScope.launch { _currentRandomContentState.emit(data) }
                 }
+
+                viewModelScope.launch {
+                    _currentRandomContentState.emit(
+                        currentRandomContentState.value.copy(
+                            list = shuffledCards,
+                            refreshTime =Clock.System.now().toEpochMilliseconds()
+                        )
+                    )
+                }
+
             }
 
             is RandomPageIntent.OnAddNewRandom -> {
@@ -142,6 +151,7 @@ class MainViewmodel : ViewModel() {
 
                 }
             }
+
             is RandomPageIntent.OnChangeNewRandomLabel -> {
                 viewModelScope.launch {
                     _randomLabelsState.emit(
@@ -155,12 +165,13 @@ class MainViewmodel : ViewModel() {
             }
 
             RandomPageIntent.OnAddNewRandomDialogDelete -> TODO()
-            RandomPageIntent.OnAddNewRandomDialogShow ->{
+            RandomPageIntent.OnAddNewRandomDialogShow -> {
                 viewModelScope.launch {
                     _addRandomConfigDialogState.emit(true)
                 }
 
             }
+
             is RandomPageIntent.OnCancelLabel -> {
                 randomLabelChange("")
             }
@@ -169,7 +180,7 @@ class MainViewmodel : ViewModel() {
         }
     }
 
-    private fun randomLabelChange(selectedLabel:String) {
+    private fun randomLabelChange(selectedLabel: String) {
         if (selectedLabel.isEmpty()) {
             viewModelScope.launch {
                 _currentRandomContentState.emit(RandomListEntity())

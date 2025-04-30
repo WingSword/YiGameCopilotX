@@ -109,7 +109,16 @@ fun RandomPage(viewmodel: MainViewmodel) {
         }
     }
 
-    LaunchedEffect(viewmodel.currentRandomContentState.collectAsState().value) {
+//    LaunchedEffect(viewmodel.currentRandomContentState.collectAsState().value.list) {
+//        PlatformHelper.getInstance().vibrateMethod()
+//        isShuffling = !isShuffling
+//        scope.launch {
+//            delay(500L)
+//            isShuffling = !isShuffling
+//        }
+//    }
+
+    LaunchedEffect(viewmodel.currentRandomContentState.collectAsState().value.refreshTime) {
         PlatformHelper.getInstance().vibrateMethod()
         isShuffling = !isShuffling
         scope.launch {
@@ -160,23 +169,16 @@ fun RandomPage(viewmodel: MainViewmodel) {
             }
         }
         items(itemList) { randomItem ->
-
             val currentType = RandomCate.getCateByItem(currentSelectLabel)
-            when (currentType.key) {
-                RANDOM_PAGE_CONFIG_CATE_DICE -> {
-                    AnimatedShuffleDice(randomItem.first.toInt(), randomItem.second.toInt())
-                }
 
-                RANDOM_PAGE_CONFIG_CATE_COIN -> {}
-                else -> {
-                    AnimatedShuffleCard(
-                        card = randomItem,
-                        isShuffling = isShuffling,
-                        index = itemList.indexOf(randomItem),
-                        total = itemList.size
-                    )
-                }
-            }
+            AnimatedShuffleContent(
+                card = randomItem,
+                isShuffling = isShuffling,
+                index = itemList.indexOf(randomItem),
+                total = itemList.size,
+                currentType
+            )
+
 
         }
 
@@ -193,10 +195,11 @@ fun RandomPage(viewmodel: MainViewmodel) {
 @Composable
 fun AnimatedShuffleDice(
     start: Int,
-    end: Int
+    end: Int,
+    roll: Boolean = false
 ) {
     Column(horizontalAlignment = Alignment.CenterHorizontally) {
-        DiceAnimation(range = start..end)
+        DiceAnimation(range = start..end, isRollingDice = roll)
         Spacer(Modifier.height(4.dp))
         Text(
             text = "$start-$end",
@@ -385,11 +388,12 @@ fun RandomModFilterChip(
 
 
 @Composable
-private fun AnimatedShuffleCard(
+private fun AnimatedShuffleContent(
     card: RandomItem,
     isShuffling: Boolean,
     index: Int,
-    total: Int
+    total: Int,
+    contentCate: RandomCate=RandomCate.Card
 ) {
     val density = LocalDensity.current.density
 
@@ -473,32 +477,41 @@ private fun AnimatedShuffleCard(
                 transformOrigin = androidx.compose.ui.graphics.TransformOrigin(0.5f, 0.5f)
             }
     ) {
-        FlippableCard(
-            modifier = Modifier
-                .aspectRatio(1f)
-                .padding(4.dp),
-            back = {
-                Box(
-                    modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.BottomCenter
-                ) {
-                    Text(
-                        "" + card.id + "",
-                        color = MaterialTheme.colorScheme.primary.copy(0.3f),
-                        fontWeight = FontWeight.W900,
-                        fontSize = 50.sp,
-                        textAlign = TextAlign.End,
-                        modifier = Modifier.fillMaxWidth()
-                    )
-                    Text(
-                        card.first,
-                        color = MaterialTheme.colorScheme.onPrimary.copy(0.9F),
-                        modifier = Modifier.fillMaxHeight()
-                    )
-                }
+        when (contentCate.key) {
+            RANDOM_PAGE_CONFIG_CATE_DICE -> {
+                AnimatedShuffleDice(card.first.toInt(), card.second.toInt(),isShuffling)
+            }
+
+            RANDOM_PAGE_CONFIG_CATE_COIN -> {}
+            else -> {
+                FlippableCard(
+                    modifier = Modifier
+                        .aspectRatio(1f)
+                        .padding(4.dp),
+                    back = {
+                        Box(
+                            modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.BottomCenter
+                        ) {
+                            Text(
+                                "" + card.id + "",
+                                color = MaterialTheme.colorScheme.primary.copy(0.3f),
+                                fontWeight = FontWeight.W900,
+                                fontSize = 50.sp,
+                                textAlign = TextAlign.End,
+                                modifier = Modifier.fillMaxWidth()
+                            )
+                            Text(
+                                card.first,
+                                color = MaterialTheme.colorScheme.onPrimary.copy(0.9F),
+                                modifier = Modifier.fillMaxHeight()
+                            )
+                        }
 
 
-            },
-            front = { Text(card.second, color = MorandiBlue) }
-        )
+                    },
+                    front = { Text(card.second, color = MorandiBlue) }
+                )
+            }
+        }
     }
 }

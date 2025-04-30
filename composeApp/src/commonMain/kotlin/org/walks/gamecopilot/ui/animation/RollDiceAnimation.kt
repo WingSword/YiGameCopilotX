@@ -10,6 +10,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.size
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
@@ -33,14 +34,18 @@ import yigamecopilotx.composeapp.generated.resources.icon_dice_roll
  *
  */
 @Composable
-fun DiceAnimation(modifier: Modifier = Modifier, range: IntRange = 1..6) {
+fun DiceAnimation(modifier: Modifier = Modifier, range: IntRange = 1..6,isRollingDice:Boolean) {
     var isRolling by remember { mutableStateOf(false) }
-    var currentValue by remember { mutableIntStateOf(1) }
+    var currentValue by remember { mutableIntStateOf(range.random()) }
     var displayValue by remember { mutableIntStateOf(currentValue) }
     val rotationX = remember { Animatable(0f) } // 改为 val
     val rotationY = remember { Animatable(0f) } // 改为 val
     val scope = rememberCoroutineScope()
 
+    LaunchedEffect(isRollingDice){
+        if(isRollingDice)
+        currentValue = range.random()
+    }
     LaunchedEffect(currentValue) {
         scope.launch {
             isRolling = true
