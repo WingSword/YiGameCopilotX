@@ -65,13 +65,15 @@ import yigamecopilotx.composeapp.generated.resources.Res
 import yigamecopilotx.composeapp.generated.resources.icon_card
 import yigamecopilotx.composeapp.generated.resources.icon_coin
 import yigamecopilotx.composeapp.generated.resources.icon_dice
+import yigamecopilotx.composeapp.generated.resources.icon_spy_one
 
 /**
  *  Created by Wing at 09:45 on 2025/4/27
  *
  */
 
-enum class RandomCate(val key: String, val iconRes: DrawableResource) {
+enum class RandomCate(val key: String, val iconRes: DrawableResource?) {
+    Empty("", null),
     Card(RANDOM_PAGE_CONFIG_CATE_CARD, Res.drawable.icon_card),
     Dice(RANDOM_PAGE_CONFIG_CATE_DICE, Res.drawable.icon_dice),
     Coin(RANDOM_PAGE_CONFIG_CATE_COIN, Res.drawable.icon_coin);
@@ -82,7 +84,7 @@ enum class RandomCate(val key: String, val iconRes: DrawableResource) {
                 RANDOM_PAGE_CONFIG_CATE_CARD -> Card
                 RANDOM_PAGE_CONFIG_CATE_DICE -> Dice
                 RANDOM_PAGE_CONFIG_CATE_COIN -> Coin
-                else -> Card
+                else -> Empty
             }
         }
 
@@ -94,7 +96,7 @@ enum class RandomCate(val key: String, val iconRes: DrawableResource) {
             else if (item.startsWith(RANDOM_PAGE_CONFIG_CATE_COIN))
                 RandomCate.Coin
             else
-                RandomCate.Card
+                RandomCate.Empty
         }
     }
 
@@ -132,23 +134,26 @@ fun AddNewRandomCateActionBar(select: String, onClick: (RandomCate) -> Unit) {
                 )
             )
 
-            Icon(
-                painter = painterResource(cate.iconRes),
-                contentDescription = null,
-                modifier = Modifier
-                    .size(40.dp)
-                    .padding(2.dp)
-                    .offset(y = animatedOffset)
-                    .border(
-                        width = animatedBorderWidth,
-                        color = if (select == cate.key) animatedBorderColor.copy(alpha = pulseAlpha) else MaterialTheme.colorScheme.secondary,
-                        shape = CircleShape
-                    )
-                    .padding(4.dp)
-                    .clickable { onClick(cate) },
-                tint = if (isSelected) Color.Unspecified
-                else MaterialTheme.colorScheme.secondary.copy(0.5f)
-            )
+            cate.iconRes?.let {
+                Icon(
+                    painter = painterResource(cate.iconRes),
+                    contentDescription = null,
+                    modifier = Modifier
+                        .size(40.dp)
+                        .padding(2.dp)
+                        .offset(y = animatedOffset)
+                        .border(
+                            width = animatedBorderWidth,
+                            color = if (select == cate.key) animatedBorderColor.copy(alpha = pulseAlpha) else MaterialTheme.colorScheme.secondary,
+                            shape = CircleShape
+                        )
+                        .padding(4.dp)
+                        .clickable { onClick(cate) },
+                    tint = if (isSelected) Color.Unspecified
+                    else MaterialTheme.colorScheme.secondary.copy(0.5f)
+                )
+            }
+
         }
     }
 }

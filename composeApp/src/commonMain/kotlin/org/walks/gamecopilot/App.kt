@@ -1,5 +1,6 @@
 package org.walks.gamecopilot
 
+import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.animateDpAsState
@@ -29,8 +30,10 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.sharp.Add
+import androidx.compose.material3.Button
 import androidx.compose.material3.CenterAlignedTopAppBar
 import androidx.compose.material3.DrawerState
 import androidx.compose.material3.DrawerValue
@@ -114,18 +117,23 @@ fun AppView(viewmodel: MainViewmodel) {
 
     var floatButtonShow by remember { mutableStateOf(true) }
     LaunchedEffect(navi) {
-        navi.currentBackStackEntryFlow.collect {
-            currentRoute = it.destination.route ?: ""
+        navi.currentBackStackEntryFlow.collect { entry ->
+            currentRoute = entry.destination.route ?: ""
+
+            currentRoute = entry.destination.route ?: ""
+            // 获取页面参数（示例参数名为"mode"）
+            //val pageMode = entry.arguments?.getString("mode")
+
+            // 复合条件判断（示例：当在RANDOM路由且mode=edit时显示）
+            floatButtonShow = when (currentRoute) {
+                NaviRoute.RANDOM.route -> true//pageMode == "edit"
+                // 添加其他路由条件...
+                else -> false
+            }
         }
     }
 
-// 根据路由变化触发副作用
-    LaunchedEffect(currentRoute) {
-        when (currentRoute) {
-            NaviRoute.RANDOM.route -> floatButtonShow=true
-            else->{floatButtonShow=false}
-        }
-    }
+
     // 修改 AppView 中的 ModalNavigationDrawer 部分
     ModalNavigationDrawer(
         drawerState = drawerState,
@@ -158,26 +166,62 @@ fun AppView(viewmodel: MainViewmodel) {
                 },
                 snackbarHost = {
                     SnackbarHost(hostState = snackState.value)
-                },
-                floatingActionButton = {
-                        if (floatButtonShow) {
-                            FloatingActionButton(
-                                onClick = {
-                                    viewmodel.handleRandomPageIntent(RandomPageIntent.OnAddNewRandomDialogShow)
-                                },
-                                modifier = Modifier
-                                    .wrapContentSize()
-                                    .padding(24.dp)
-                                    .clip(RoundedCornerShape(16.dp))
-                            ) {
-                                Icon(
-                                    imageVector = Icons.Sharp.Add,
-                                    contentDescription = "添加",
-                                )
+                }, floatingActionButton = {
+                    var isOpen by remember { mutableStateOf(false) }
+                    val rotation by animateFloatAsState(
+                        targetValue = if (isOpen) -45f else 0f,
+                        animationSpec = tween(durationMillis = 300)
+                    )
+                    if (floatButtonShow) {
+                        // 菜单项垂直排列
+                        LazyColumn(
+                            horizontalAlignment = Alignment.End,
+                            verticalArrangement = Arrangement.spacedBy(8.dp),
+
+                            modifier = Modifier.padding(bottom = 72.dp) // 给菜单按钮留出空间
+                        ) {
+                            item {
+                                AnimatedVisibility(isOpen) {
+                                    Button(
+                                        onClick = {
+                                            viewmodel.handleRandomPageIntent(RandomPageIntent.OnAddNewRandomDialogShow)
+                                            isOpen = false
+                                        },
+                                        modifier = Modifier
+
+                                    ) {
+                                        Text("新增配置")
+                                    }
+                                }
+                            }
+                            // 菜单项1
+                            item {
+                                AnimatedVisibility(isOpen) {
+                                    Button(
+                                        onClick = { /* 其他操作 */ },
+                                        modifier = Modifier
+                                    ) {
+                                        Text("临时添加")
+                                    }
+                                }
+                            }
+                            item {
+                                // 主按钮
+                                FloatingActionButton(
+                                    onClick = { isOpen = !isOpen },
+                                    modifier = Modifier
+                                        .padding(20.dp)
+                                        .wrapContentSize()
+                                        .rotate(rotation)
+                                        .clip(RoundedCornerShape(16.dp))
+                                ) {
+                                    Icon(Icons.Sharp.Add, "展开菜单")
+                                }
                             }
                         }
-
                     }
+                }
+
             ) { inp ->
                 Column(
                     modifier = Modifier

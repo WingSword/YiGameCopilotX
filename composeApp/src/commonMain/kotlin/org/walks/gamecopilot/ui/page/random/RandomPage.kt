@@ -1,5 +1,6 @@
 package org.walks.gamecopilot.ui.page.random
 
+import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.spring
@@ -12,6 +13,7 @@ import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxHeight
@@ -20,12 +22,15 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.wrapContentHeight
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.GridItemSpan
+import androidx.compose.foundation.lazy.grid.LazyHorizontalGrid
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
@@ -33,16 +38,20 @@ import androidx.compose.material.icons.filled.Done
 import androidx.compose.material.icons.sharp.AddCircle
 import androidx.compose.material3.AssistChip
 import androidx.compose.material3.AssistChipDefaults
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.FilterChipDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.InputChipDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.MutableIntState
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -53,13 +62,16 @@ import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.modifier.modifierLocalOf
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.navigation.NavHostController
 import com.yi.yigamecopilot.android.theme.MorandiBlue
+import com.yi.yigamecopilot.android.theme.MorandiGreen
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
@@ -71,6 +83,8 @@ import org.walks.gamecopilot.RANDOM_PAGE_CONFIG_CATE_DICE
 import org.walks.gamecopilot.data.RandomItem
 import org.walks.gamecopilot.intent.RandomPageIntent
 import org.walks.gamecopilot.ui.animation.DiceAnimation
+import yigamecopilotx.composeapp.generated.resources.Res
+import yigamecopilotx.composeapp.generated.resources.icon_card
 import kotlin.math.ceil
 import kotlin.random.Random
 
@@ -90,7 +104,6 @@ private const val SHUFFLE_DURATION = 1200
 private val CONTRACT_OFFSET = 96.dp
 private const val MIN_SCALE = 0.8f
 
-@OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun RandomPage(viewmodel: MainViewmodel) {
     var addRandomDialogShow by remember { mutableStateOf(false) }
@@ -102,21 +115,15 @@ fun RandomPage(viewmodel: MainViewmodel) {
     var itemList = viewmodel.currentRandomContentState.collectAsState().value.list
     var currentSelectLabel = viewmodel.currentRandomContentState.collectAsState().value.name
 
+    var randomContentDisplayState = remember {
+        mutableIntStateOf(0)
+    }
 
     LaunchedEffect(viewmodel.addRandomConfigDialogState) {
         viewmodel.addRandomConfigDialogState.collectLatest {
             addRandomDialogShow = it
         }
     }
-
-//    LaunchedEffect(viewmodel.currentRandomContentState.collectAsState().value.list) {
-//        PlatformHelper.getInstance().vibrateMethod()
-//        isShuffling = !isShuffling
-//        scope.launch {
-//            delay(500L)
-//            isShuffling = !isShuffling
-//        }
-//    }
 
     LaunchedEffect(viewmodel.currentRandomContentState.collectAsState().value.refreshTime) {
         PlatformHelper.getInstance().vibrateMethod()
@@ -125,17 +132,40 @@ fun RandomPage(viewmodel: MainViewmodel) {
             delay(500L)
             isShuffling = !isShuffling
         }
+
     }
 
     LazyVerticalGrid(columns = GridCells.Fixed(3), modifier = Modifier.fillMaxHeight()) {
+        val currentType = RandomCate.getCateByItem(currentSelectLabel)
+
         item(span = { GridItemSpan(3) }) {
             // 顶部操作栏
-            LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                item {
-                    AssistChipRandom(icon = Icons.Sharp.AddCircle, {
-                        PlatformHelper.getInstance().vibrateMethod()
-                        addRandomDialogShow = true
-                    }, "新增配置")
+            LazyHorizontalGrid(
+                rows = GridCells.Fixed(2),
+                horizontalArrangement = Arrangement.spacedBy(4.dp),
+                verticalArrangement = Arrangement.spacedBy(4.dp),
+                modifier = Modifier.height(88.dp)
+            ) {
+
+
+                if(currentType == RandomCate.Card){
+                    item {
+                        AnimatedVisibility(currentType == RandomCate.Card) {
+                            TextButton(
+                                colors = ButtonDefaults.textButtonColors(
+                                    containerColor = if (randomContentDisplayState.intValue == 0) MorandiBlue else MorandiGreen,
+
+                                    ), onClick = {
+                                    randomContentDisplayState.intValue =
+                                        if (randomContentDisplayState.intValue == 0) 1 else 0
+                                }) {
+                                Text("一键翻转")
+                            }
+                        }
+                    }
+                    item {
+
+                    }
                 }
 
                 items(
@@ -148,7 +178,7 @@ fun RandomPage(viewmodel: MainViewmodel) {
                         label = i.replaceFirst(currentSelectLabelType.key, ""), leadingIcon = {
                             Icon(
                                 painter = painterResource(
-                                    currentSelectLabelType.iconRes
+                                    currentSelectLabelType.iconRes?:Res.drawable.icon_card
                                 ),
                                 contentDescription = "Localized description",
                                 Modifier.size(FilterChipDefaults.IconSize)
@@ -168,18 +198,16 @@ fun RandomPage(viewmodel: MainViewmodel) {
 
             }
         }
-        items(itemList) { randomItem ->
-            val currentType = RandomCate.getCateByItem(currentSelectLabel)
 
+        items(itemList) { randomItem ->
             AnimatedShuffleContent(
                 card = randomItem,
                 isShuffling = isShuffling,
                 index = itemList.indexOf(randomItem),
                 total = itemList.size,
-                currentType
+                currentType,
+                randomContentDisplayState
             )
-
-
         }
 
 
@@ -251,9 +279,14 @@ fun FlippableCard(
     front: @Composable () -> Unit,
     cardColor: Color = Color.White,
     cornerRadius: Dp = 8.dp,
-    animationDuration: Int = 500
+    animationDuration: Int = 500,
+    flippedState: MutableIntState = mutableIntStateOf(0)
 ) {
-    var flipped by remember { mutableStateOf(false) }
+    var flipped by remember { mutableStateOf(true) }
+    LaunchedEffect(flippedState.value) {
+        flipped = flippedState.value != 0
+    }
+
     val rotation = animateFloatAsState(
         targetValue = if (flipped) 180f else 0f,
         animationSpec = tween(animationDuration), label = "cardRotation",
@@ -352,6 +385,21 @@ fun RandomModFilterChip(
 ) {
 
     FilterChip(
+        colors = FilterChipDefaults.filterChipColors(
+            containerColor = if (isSelected) {
+                MaterialTheme.colorScheme.primaryContainer
+            } else {
+                MaterialTheme.colorScheme.surfaceDim
+            },
+        ),
+        border = FilterChipDefaults.filterChipBorder(
+            enabled = true,
+            selected = true,
+            borderColor = Color.Transparent,
+            selectedBorderColor = Color.Transparent
+        ),
+        modifier = Modifier.height(44.dp),
+        shape = CircleShape,
         onClick = {
             onclick(false)
         },
@@ -393,7 +441,8 @@ private fun AnimatedShuffleContent(
     isShuffling: Boolean,
     index: Int,
     total: Int,
-    contentCate: RandomCate=RandomCate.Card
+    contentCate: RandomCate = RandomCate.Card,
+    randomState: MutableIntState
 ) {
     val density = LocalDensity.current.density
 
@@ -479,18 +528,20 @@ private fun AnimatedShuffleContent(
     ) {
         when (contentCate.key) {
             RANDOM_PAGE_CONFIG_CATE_DICE -> {
-                AnimatedShuffleDice(card.first.toInt(), card.second.toInt(),isShuffling)
+                AnimatedShuffleDice(card.first.toInt(), card.second.toInt(), isShuffling)
             }
 
             RANDOM_PAGE_CONFIG_CATE_COIN -> {}
             else -> {
+
                 FlippableCard(
                     modifier = Modifier
                         .aspectRatio(1f)
                         .padding(4.dp),
                     back = {
                         Box(
-                            modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.BottomCenter
+                            modifier = Modifier.fillMaxSize(),
+                            contentAlignment = Alignment.BottomCenter
                         ) {
                             Text(
                                 "" + card.id + "",
@@ -509,7 +560,8 @@ private fun AnimatedShuffleContent(
 
 
                     },
-                    front = { Text(card.second, color = MorandiBlue) }
+                    front = { Text(card.second, color = MorandiBlue) },
+                    flippedState = randomState
                 )
             }
         }
