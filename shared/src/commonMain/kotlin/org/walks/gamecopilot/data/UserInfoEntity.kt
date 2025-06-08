@@ -11,6 +11,9 @@ data class UserInfoEntity(
     val assignedWord: String? = null,
     val userId: String? = null,
     val role: String? = null,
-    val index: Int = 0
+    val index: Int = 0,
+    val userSession:String?=null,
+    val userStatus:Boolean=false,
+
 ) {
 }

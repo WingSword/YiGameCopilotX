@@ -21,7 +21,6 @@ import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextField
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -34,21 +33,23 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.navigation.NavHostController
 import com.yi.yigamecopilot.android.theme.MorandiColorList
 import kotlinx.coroutines.launch
 import org.jetbrains.compose.resources.DrawableResource
 import org.jetbrains.compose.resources.painterResource
 import org.walks.gamecopilot.MainViewmodel
 import org.walks.gamecopilot.PlatformHelper
+import org.walks.gamecopilot.awalong.AwalongEntrance
+import org.walks.gamecopilot.data.entity.GameMode
 import org.walks.gamecopilot.intent.GameIntent
 import yigamecopilotx.composeapp.generated.resources.Res
-import yigamecopilotx.composeapp.generated.resources.icon_spy_more
 import yigamecopilotx.composeapp.generated.resources.icon_spy_one
-import yigamecopilotx.composeapp.generated.resources.icon_spy_together
 
 /**
  * 首页主界面组件，包含游戏模式选择和对应模式的内容展示
@@ -57,9 +58,8 @@ import yigamecopilotx.composeapp.generated.resources.icon_spy_together
  *     - 处理本地游戏相关操作指令
  */
 @Composable
-fun HomePage(viewmodel: MainViewmodel) {
+fun HomePage(viewmodel: MainViewmodel,navi:NavHostController) {
     // 支持的三种游戏模式配置列表
-    val gameModeList = listOf("谁是卧底", "卧底本地版", "卧底快速版")
     // 从ViewModel收集当前选择的游戏模式状态（转换为Compose可观察状态）
     val gameMode = viewmodel.startedGameMode.collectAsState()
 
@@ -69,28 +69,40 @@ fun HomePage(viewmodel: MainViewmodel) {
          * @param selectedMode 当前选中模式索引
          * @param onSelect 模式切换回调，通过ViewModel处理游戏意图
          */
-        ModeSelectList(gameModeList, gameMode.value) { position ->
+        ModeSelectList(selectedPos = gameMode.value) { position ->
             viewmodel.handleLocalGameIntent(GameIntent.SwitchGameMode(position))
         }
 
         Spacer(Modifier.height(16.dp))
 
-        /* 根据选中模式显示对应内容区域 */
-        // 模式0：显示在线房间入口卡片
-        AnimatedVisibility(gameMode.value == 0) {
-            RoomEntranceCard(viewmodel)
+        Column(
+            modifier = Modifier.background(
+                shape = RoundedCornerShape(32.dp, 32.dp, 0.dp, 0.dp),
+                color = MaterialTheme.colorScheme.surface
+            ).weight(1f).fillMaxWidth().padding(top = 20.dp, start = 10.dp, end = 10.dp)
+        ) {
+            /* 根据选中模式显示对应内容区域 */
+            // 模式0：显示在线房间入口卡片
+            AnimatedVisibility(gameMode.value == 0) {
+                RoomEntranceCard(viewmodel)
+            }
+
+            // 模式1：显示本地卧底游戏组件
+            AnimatedVisibility(gameMode.value == 1) {
+                LocalSpyGame(viewmodel)
+            }
+
+            // 快速游戏
+            AnimatedVisibility(gameMode.value == 2) {
+                QuickSetting()
+            }
+
+            AnimatedVisibility(gameMode.value == 3) {
+                AwalongEntrance(viewmodel=viewmodel,navi = navi)
+            }
         }
 
-        // 模式1：显示本地卧底游戏组件
-        AnimatedVisibility(gameMode.value == 1) {
-            LocalSpyGame(viewmodel)
-        }
 
-        // 快速游戏
-        AnimatedVisibility(gameMode.value == 2) {
-            QuickSetting()
-
-        }
     }
 }
 
@@ -110,25 +122,29 @@ fun ModeCard(
                 width = 8.dp,
                 color = MaterialTheme.colorScheme.secondary,
                 shape = RoundedCornerShape(32.dp)
-            ).padding(16.dp),
+            ),
         contentAlignment = Alignment.BottomEnd
     ) {
-        Box(contentAlignment = Alignment.Center, modifier = Modifier.fillMaxSize()) {
+        Box(contentAlignment = Alignment.CenterStart, modifier = Modifier.fillMaxSize()) {
             Image(
                 painter = painterResource(res),
                 contentDescription = "",
-                alpha = 0.75f
+                alpha = 0.75f,
+                contentScale = ContentScale.Fit
             )
         }
-        Text(
-            text = title,
-            modifier = Modifier.fillMaxHeight(0.6f).fillMaxWidth(0.7f),
-            color = MaterialTheme.colorScheme.secondary.copy(alpha = 0.75f),
-            fontSize = 40.sp,
-            fontWeight = FontWeight.W900,
-            maxLines = 2,
-            textAlign = TextAlign.End
-        )
+        Box(modifier = Modifier.padding(16.dp)) {
+            Text(
+                text = title,
+                modifier = Modifier.fillMaxHeight(0.6f).fillMaxWidth(0.7f),
+                color = MaterialTheme.colorScheme.secondary.copy(alpha = 0.75f),
+                fontSize = 40.sp,
+                fontWeight = FontWeight.W900,
+                maxLines = 2,
+                textAlign = TextAlign.End
+            )
+        }
+
     }
 }
 
@@ -193,7 +209,11 @@ fun ModeCardNext(
  */
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
-fun ModeSelectList(list: List<String>, selectedPos: Int = 0, onItemClick: (Int) -> Unit) {
+fun ModeSelectList(
+    list: List<GameMode> = GameMode.entries,
+    selectedPos: Int = 0,
+    onItemClick: (Int) -> Unit
+) {
     // 创建分页状态管理，初始页设置为选中项位置，根据列表大小自动计算页数
     val pagerState = rememberPagerState(
         initialPage = selectedPos,
@@ -223,8 +243,8 @@ fun ModeSelectList(list: List<String>, selectedPos: Int = 0, onItemClick: (Int) 
                 // 当前选中页的渲染逻辑：显示完整卡片并触发回调
                 if (pagerState.currentPage == page) {
                     ModeCard(
-                        title = list[page],
-                        res = getResInHomeMode(page),
+                        title = list[page].title,
+                        res = list[page].icon,
                         background = MorandiColorList[page % MorandiColorList.size] // 循环使用颜色列表
                     )
                     onItemClick(pagerState.currentPage)
@@ -237,7 +257,7 @@ fun ModeSelectList(list: List<String>, selectedPos: Int = 0, onItemClick: (Int) 
                         }
                     }) {
                         ModeCardNext(
-                            title = list.getOrNull(page) ?: "",
+                            title = list[page].title,
                             background = MorandiColorList[page % MorandiColorList.size]
                         )
                     }
@@ -247,13 +267,4 @@ fun ModeSelectList(list: List<String>, selectedPos: Int = 0, onItemClick: (Int) 
     }
 }
 
-@Composable
-fun getResInHomeMode(mode:Int):DrawableResource{
-    return when(mode){
-        0->Res.drawable.icon_spy_together
-        1->Res.drawable.icon_spy_one
-        else->Res.drawable.icon_spy_more
-
-    }
-}
 

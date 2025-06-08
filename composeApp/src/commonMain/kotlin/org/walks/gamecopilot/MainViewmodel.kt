@@ -11,6 +11,9 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
+import org.walks.gamecopilot.awalong.AwalongConfig
+import org.walks.gamecopilot.awalong.AwalongIntent
+import org.walks.gamecopilot.awalong.data.AwalongGameState
 import org.walks.gamecopilot.data.RandomItem
 import org.walks.gamecopilot.data.RandomListEntity
 import org.walks.gamecopilot.data.UserInfoEntity
@@ -56,6 +59,14 @@ class MainViewmodel : ViewModel() {
 
     private val _addRandomConfigDialogState = MutableSharedFlow<Boolean>()
     val addRandomConfigDialogState = _addRandomConfigDialogState.asSharedFlow()
+
+    private val _awalongConfigState = MutableStateFlow<AwalongConfig>(
+        AwalongConfig.Standard_5
+    )
+    val awalongConfigState: StateFlow<AwalongConfig> = _awalongConfigState
+
+    private val _awalongGameState = MutableStateFlow<AwalongGameState>(AwalongGameState())
+    val awalongGameState: StateFlow<AwalongGameState> = _awalongGameState
 
     private var userId = ""
 
@@ -124,7 +135,7 @@ class MainViewmodel : ViewModel() {
                     _currentRandomContentState.emit(
                         currentRandomContentState.value.copy(
                             list = shuffledCards,
-                            refreshTime =Clock.System.now().toEpochMilliseconds()
+                            refreshTime = Clock.System.now().toEpochMilliseconds()
                         )
                     )
                 }
@@ -177,6 +188,50 @@ class MainViewmodel : ViewModel() {
             }
 
             RandomPageIntent.OnAddNewRandomDialogSave -> TODO()
+        }
+    }
+
+    @OptIn(ExperimentalTime::class)
+    fun handleAwalongGameIntent(intent: AwalongIntent) {
+        when (intent) {
+            is AwalongIntent.StartGame -> {
+                _awalongConfigState.update {
+                    intent.gameConfig
+                }
+                resetAwalongGameState()
+
+            }
+
+            AwalongIntent.RestartGame -> {
+               resetAwalongGameState()
+            }
+
+            is AwalongIntent.ChangeNickName -> {
+                _awalongGameState.update {
+                    it.copy(
+                        playTime = Clock.System.now().toEpochMilliseconds(),
+                        nickNameList = it.nickNameList.toMutableList().apply {
+                            this[intent.sn] = intent.nickName
+                        }
+                    )
+                }
+            }
+        }
+    }
+
+
+    @OptIn(ExperimentalTime::class)
+    private fun resetAwalongGameState() {
+        viewModelScope.launch {
+            _awalongGameState.emit(
+                AwalongGameState(
+                    playTime = Clock.System.now().toEpochMilliseconds(),
+                    roleList = awalongConfigState.value.role.optimizedShuffle().toMutableList(),
+                    dayList = mutableListOf(),
+                    nickNameList = (1..awalongConfigState.value.role.size).map { it.toString() }
+                        .toMutableList()
+                )
+            )
         }
     }
 
@@ -249,12 +304,9 @@ class MainViewmodel : ViewModel() {
     private fun enterGameRoom(roomId: String, roomKey: String, asOwner: Boolean = false) {
         viewModelScope.launch {
             val result =
-                if (asOwner) roomModule.createRoom(roomId, roomKey) else roomModule.joinRoom(
-                    roomId,
-                    roomKey
-                )
-            if (result.isSuccess()) {
-                userId = result.data ?: ""
+                if (asOwner) roomModule.createRoom(roomId, roomKey) else roomModule.createRoom(roomId, roomKey)
+            if (result!=null) {
+                userId = result.index.toString()
                 _roomEntityState.update {
                     it.copy(
                         roomId = roomId,
@@ -265,7 +317,7 @@ class MainViewmodel : ViewModel() {
                 refreshRoomGameInfo()
                 return@launch
             }
-            _topTipState.emit(result.msg ?: "加入房间失败")
+
         }
     }
 

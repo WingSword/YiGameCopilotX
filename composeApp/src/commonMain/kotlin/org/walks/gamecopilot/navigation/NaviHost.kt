@@ -7,6 +7,8 @@ import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import org.walks.gamecopilot.MainViewmodel
+import org.walks.gamecopilot.awalong.AwalongGamePage
+
 import org.walks.gamecopilot.event.NavigationEvent
 import org.walks.gamecopilot.ui.page.home.HomePage
 import org.walks.gamecopilot.ui.page.other.ErrorPage
@@ -27,9 +29,10 @@ fun NavigationHost(viewmodel: MainViewmodel, navi: NavHostController) {
         navEntries.forEach { naviEntry ->
             composable(naviEntry.route) {
                 when (naviEntry) {
-                    NaviRoute.HOME -> HomePage(viewmodel)
+                    NaviRoute.HOME -> HomePage(viewmodel,navi)
                     NaviRoute.ROOM -> RoomPage(viewmodel)
                     NaviRoute.RANDOM -> RandomPage(viewmodel)
+                    NaviRoute.AWALONG-> AwalongGamePage(viewmodel)
                     // 显式列出所有路由，移除else分支
                     // 当新增路由时编译器会提示需要补充分支
                     else-> ErrorPage()

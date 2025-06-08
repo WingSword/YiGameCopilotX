@@ -80,6 +80,7 @@ import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
 import org.jetbrains.compose.resources.painterResource
 import org.jetbrains.compose.ui.tooling.preview.Preview
+import org.walks.gamecopilot.awalong.AwalongIntent
 import org.walks.gamecopilot.intent.GameRoomIntent
 import org.walks.gamecopilot.intent.RandomPageIntent
 import org.walks.gamecopilot.navigation.NaviRoute
@@ -444,7 +445,6 @@ fun AppTopBar(navi: NavHostController, viewmodel: MainViewmodel, drawerState: Dr
                             shape = CircleShape
                         ).rotate(rotation.value),
                     onClick = {
-
                         scope.launch {
                             rotation.animateTo(
                                 targetValue = 360f,
@@ -457,6 +457,7 @@ fun AppTopBar(navi: NavHostController, viewmodel: MainViewmodel, drawerState: Dr
                             return@IconButton
                         }
                         viewmodel.handleRoomIntent(GameRoomIntent.RefreshRoomInfo)
+                        viewmodel.handleAwalongGameIntent(AwalongIntent.RestartGame)
                     },
                     colors = IconButtonDefaults.iconButtonColors(
                         containerColor = MaterialTheme.colorScheme.tertiaryContainer,
