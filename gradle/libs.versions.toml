@@ -10,6 +10,7 @@ fluentIconsExtended = "0.0.1-dev.8"
 fluent = "0.0.1-dev.8"
 kotlin = "2.1.20"
 kotlinx-coroutines = "1.9.0"
+kotlinxDatetime = "0.6.0"
 ktor = "3.0.1"
 logback = "1.5.7"
 mmkv = "2.2.0"
@@ -27,6 +28,7 @@ multiplatform-settings = "1.1.1"
 [libraries]
 fluent = { module = "com.konyaco:fluent", version.ref = "fluent" }
 fluent-icons-extended = { module = "com.konyaco:fluent-icons-extended", version.ref = "fluentIconsExtended" }
+kotlinx-datetime = { module = "org.jetbrains.kotlinx:kotlinx-datetime", version.ref = "kotlinxDatetime" }
 ktor-serialization-kotlinx-json = { module = "io.ktor:ktor-serialization-kotlinx-json", version.ref = "ktor" }
 ktor-client-okhttp = { module = "io.ktor:ktor-client-okhttp", version.ref = "ktor" }
 ktor-client-content-negotiation = { module = "io.ktor:ktor-client-content-negotiation", version.ref = "ktor" }

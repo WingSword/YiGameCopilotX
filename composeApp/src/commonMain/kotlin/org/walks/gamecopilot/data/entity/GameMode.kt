@@ -13,17 +13,17 @@ import yigamecopilotx.composeapp.generated.resources.icon_spy_together
  *
  */
 enum class GameMode(val title: String, val icon: DrawableResource) {
+    SPY_ONLINE(
+        title = "卧底在线版",
+        icon = Res.drawable.icon_spy_together
+    ),
     SPY_LOCAL(
         title = "卧底本地版",
         icon = Res.drawable.icon_spy_one,
 
     ),
-    SPY_ONLINE(
-        title = "卧底在线版",
-        icon = Res.drawable.icon_spy_together
-    ),
     SPY_QUICK(
-        title = "卧底快速版",
+        title = "敬请期待",
         icon = Res.drawable.icon_spy_more
     ),
 

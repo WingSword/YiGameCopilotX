@@ -41,6 +41,7 @@ val client by lazy {
         install(WebSockets) {
             // 可选配置心跳检测
             pingInterval = 20.seconds // 20秒心跳间隔
+
         }
     }
 }

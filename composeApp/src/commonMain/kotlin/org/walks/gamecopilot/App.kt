@@ -371,7 +371,7 @@ fun AppTopBar(navi: NavHostController, viewmodel: MainViewmodel, drawerState: Dr
                     ) {
                         Spacer(Modifier.weight(1f))
                         Text(
-                            text = "Play now",
+                            text =  viewmodel.roomEntityState.value.roomKey,
                             color = MaterialTheme.colorScheme.onTertiaryContainer.copy(alpha = 0.5f),
                             fontWeight = FontWeight.W900,
                             textAlign = TextAlign.End,
@@ -380,7 +380,7 @@ fun AppTopBar(navi: NavHostController, viewmodel: MainViewmodel, drawerState: Dr
                     }
 
                     Text(
-                        text = if (current == "room") roomTitle else "卧底游戏",
+                        text =  viewmodel.roomEntityState.value.roomId,
                         color = MaterialTheme.colorScheme.onTertiaryContainer,
                         fontSize = 14.sp,
                         fontWeight = FontWeight.W900
@@ -436,42 +436,48 @@ fun AppTopBar(navi: NavHostController, viewmodel: MainViewmodel, drawerState: Dr
         },
         actions = {
             if (!isStartRoute(current))
-                IconButton(
-                    modifier = Modifier
-                        .clip(CircleShape)
-                        .border(
-                            width = 2.dp,
-                            color = MaterialTheme.colorScheme.tertiaryContainer,
-                            shape = CircleShape
-                        ).rotate(rotation.value),
-                    onClick = {
-                        scope.launch {
-                            rotation.animateTo(
-                                targetValue = 360f,
-                                animationSpec = tween(durationMillis = 500, easing = LinearEasing)
+                if(current == NaviRoute.ROOM.route&&!viewmodel.roomEntityState.value.isRoomOwner){
+
+                }else{
+                    IconButton(
+                        modifier = Modifier
+                            .clip(CircleShape)
+                            .border(
+                                width = 2.dp,
+                                color = MaterialTheme.colorScheme.tertiaryContainer,
+                                shape = CircleShape
+                            ).rotate(rotation.value),
+                        onClick = {
+                            scope.launch {
+                                rotation.animateTo(
+                                    targetValue = 360f,
+                                    animationSpec = tween(durationMillis = 500, easing = LinearEasing)
+                                )
+                                rotation.snapTo(0f) // 重置角度准备下次旋转
+                            }
+                            if (current == NaviRoute.RANDOM.route) {
+                                viewmodel.handleRandomPageIntent(RandomPageIntent.OnRefresh)
+                                return@IconButton
+                            }
+
+                            viewmodel.handleRoomIntent(GameRoomIntent.StartGame)
+                            viewmodel.handleAwalongGameIntent(AwalongIntent.RestartGame)
+                        },
+                        colors = IconButtonDefaults.iconButtonColors(
+                            containerColor = MaterialTheme.colorScheme.tertiaryContainer,
+                            contentColor = MaterialTheme.colorScheme.onTertiaryContainer,
+                        ),
+                        content = {
+                            Icon(
+                                modifier = Modifier.fillMaxSize(),
+                                imageVector = Icons.Filled.Refresh,
+                                contentDescription = "刷新房间人数",
+                                tint = MaterialTheme.colorScheme.onSecondary.copy(alpha = 0.33f)
                             )
-                            rotation.snapTo(0f) // 重置角度准备下次旋转
                         }
-                        if (current == NaviRoute.RANDOM.route) {
-                            viewmodel.handleRandomPageIntent(RandomPageIntent.OnRefresh)
-                            return@IconButton
-                        }
-                        viewmodel.handleRoomIntent(GameRoomIntent.RefreshRoomInfo)
-                        viewmodel.handleAwalongGameIntent(AwalongIntent.RestartGame)
-                    },
-                    colors = IconButtonDefaults.iconButtonColors(
-                        containerColor = MaterialTheme.colorScheme.tertiaryContainer,
-                        contentColor = MaterialTheme.colorScheme.onTertiaryContainer,
-                    ),
-                    content = {
-                        Icon(
-                            modifier = Modifier.fillMaxSize(),
-                            imageVector = Icons.Filled.Refresh,
-                            contentDescription = "刷新房间人数",
-                            tint = MaterialTheme.colorScheme.onSecondary.copy(alpha = 0.33f)
-                        )
-                    }
-                )
+                    )
+                }
+
         },
         modifier = Modifier
             .padding(top = 12.dp, start = 12.dp, end = 12.dp)

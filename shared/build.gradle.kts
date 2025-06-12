@@ -53,6 +53,8 @@ kotlin {
             implementation(libs.ktor.serialization.kotlinx.json)
             implementation(libs.ktor.coroutines)
             api(libs.jetbrains.serialization.kotlinx.json)
+            implementation(libs.kotlinx.datetime)
+
             // Room KMP 核心库
             //implementation(libs.androidx.room.runtime)
             // KSP 注解处理器（替代 kapt）

@@ -3,22 +3,30 @@ package org.walks.gamecopilot.http
 import io.ktor.client.HttpClient
 import io.ktor.client.plugins.websocket.webSocketSession
 import io.ktor.client.request.url
-import io.ktor.util.logging.Logger
 import io.ktor.websocket.Frame
 import io.ktor.websocket.WebSocketSession
 import io.ktor.websocket.close
+import io.ktor.websocket.readReason
 import io.ktor.websocket.readText
-import kotlinx.io.IOException
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.channels.Channel
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.consumeAsFlow
+import kotlinx.coroutines.flow.receiveAsFlow
+import kotlinx.coroutines.launch
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 import org.walks.gamecopilot.GameLogger
-import org.walks.gamecopilot.data.RoomDataModel
-import org.walks.gamecopilot.data.RoomInfoEntity
-import org.walks.gamecopilot.data.WsDataEntity
 import org.walks.gamecopilot.data.WsMessage
 
 // 新建文件：RoomService.kt
-class RoomModule(private val httpClient: HttpClient) {
+class RoomModule(
+    private val httpClient: HttpClient, private val listener: WebSocketListener? = null
+) {
     // 定义常量以避免硬编码
     companion object {
         private const val ROOM_ID_KEY = "roomId"
@@ -32,150 +40,158 @@ class RoomModule(private val httpClient: HttpClient) {
         private const val DELETE_ROOM_URL = "/deleteRoom"
     }
 
-    suspend fun createRoom(roomId: String, password: String): WsDataEntity? {
-        if (webSocketSession == null) {
-            connect()
-        }
-        val session = webSocketSession
-        // 发送创建房间请求
-        session?.send(
-            Frame.Text(
-                Json.encodeToString(
-                    WsMessage(
-                        type = "CREATE_ROOM",
-                        roomId = roomId,
-                        passWord = password
-                    )
-                )
-            )
-        )
-
-        // 接收响应
-        return try {
-            val response = session?.incoming?.receive() as? Frame.Text
-                ?: throw IOException("Invalid response type")
-
-            Json.decodeFromString<WsDataEntity>(response.readText())
-        } catch (e: Exception) {
-            GameLogger.error("创建房间失败: ${e.message}")
-            null
-        }
-    }
-
-    suspend fun joinRoom(roomId: String, password: String): RoomDataModel<String> {
-        return (httpClient.safeGetRequest<RoomDataModel<String>>(
-            url = getUrl(JOIN_ROOM_URL),
-            params = mapOf(ROOM_ID_KEY to roomId, PASSWORD_KEY to password)
-        )).let {
-            val data = when (it) {
-                is Response.Success<*> -> {
-                    it.data as RoomDataModel<String>
-                }
-
-                is Response.Error -> {
-                    null
-                }
-            }
-            data ?: RoomDataModel(code = 0, msg = "加入房间失败")
-        }
-    }
-
-    suspend fun getRoomInfo(roomId: String, password: String): RoomDataModel<RoomInfoEntity> {
-        return (httpClient.safeGetRequest<RoomDataModel<RoomInfoEntity>>(
-            url = getUrl(ROOM_INFO_URL),
-            params = mapOf(ROOM_ID_KEY to roomId, PASSWORD_KEY to password)
-        )).let {
-            val data = when (it) {
-                is Response.Success<*> -> {
-                    it.data as? RoomDataModel<RoomInfoEntity>
-                }
-
-                is Response.Error -> {
-                    null
-                }
-            }
-            data ?: RoomDataModel(code = 0, msg = "获取房间信息失败")
-        }
-    }
-
-    suspend fun leaveRoom(roomId: String, password: String, userId: String): RoomDataModel<String> {
-        return (httpClient.safeGetRequest<RoomDataModel<String>>(
-            url = getUrl(LEAVE_ROOM_URL),
-            params = mapOf(ROOM_ID_KEY to roomId, PASSWORD_KEY to password, USER_ID to userId)
-        )).let {
-            val data = when (it) {
-                is Response.Success<*> -> {
-                    it.data as? RoomDataModel<String>
-                }
-
-                is Response.Error -> {
-                    null
-                }
-            }
-            data ?: RoomDataModel(code = 0, msg = "离开房间失败")
-        }
-    }
-
-    suspend fun startGame(
-        roomId: String,
-        password: String,
-        userId: String
-    ): RoomDataModel<String?> {
-        return (httpClient.safeGetRequest<RoomDataModel<String>>(
-            url = getUrl(START_GAME_URL),
-            params = mapOf(ROOM_ID_KEY to roomId, PASSWORD_KEY to password, USER_ID to userId)
-        )).let {
-            val data = when (it) {
-                is Response.Success<*> -> {
-                    it.data as? RoomDataModel<String?>
-                }
-
-                is Response.Error -> {
-                    null
-                }
-            }
-            data ?: RoomDataModel(code = 0, msg = "开始游戏失败")
-        }
-    }
-
-    suspend fun deleteRoom(
-        roomId: String,
-        password: String,
-        userId: String
-    ): RoomDataModel<String> {
-        return (httpClient.safeGetRequest<RoomDataModel<String>>(
-            url = getUrl(DELETE_ROOM_URL),
-            params = mapOf(ROOM_ID_KEY to roomId, PASSWORD_KEY to password, USER_ID to userId)
-        )).let {
-            val data = when (it) {
-                is Response.Success<*> -> {
-                    it.data as? RoomDataModel<String>
-                }
-
-                is Response.Error -> {
-                    null
-                }
-            }
-            data ?: RoomDataModel(code = 0, msg = "删除房间失败")
-        }
-    }
-
-
     // 新增WebSocket会话
     private var webSocketSession: WebSocketSession? = null
 
-    // 初始化连接
-    suspend fun connect() {
-        webSocketSession = wsClient.webSocketSession {
-            url(WSHOST) // 根据实际WebSocket端点调整
+    // 新增消息通道
+    private val _messageChannel = Channel<String>(Channel.BUFFERED)
+    val messages: Flow<String> = _messageChannel.receiveAsFlow()
+
+    // 新增状态管理
+    enum class ConnectionState { DISCONNECTED, CONNECTING, CONNECTED }
+
+    private val _connectionState = MutableStateFlow(ConnectionState.DISCONNECTED)
+    val connectionState: StateFlow<ConnectionState> = _connectionState
+
+    // 修改connect方法
+    suspend fun connect(): Boolean {
+        _connectionState.value = ConnectionState.CONNECTING
+        return try {
+            webSocketSession = wsClient.webSocketSession {
+                url(WSHOST)
+            }
+            _connectionState.value = ConnectionState.CONNECTED
+            startMessageListener()
+            GameLogger.info("WebSocket连接成功")
+            true
+        } catch (e: Exception) {
+            _connectionState.value = ConnectionState.DISCONNECTED
+            GameLogger.error("连接失败", e)
+            false
         }
     }
 
-    // 关闭连接
+    // 新增消息监听协程
+    private var messageJob: Job? = null
+    private fun startMessageListener() {
+        messageJob?.cancel()
+        messageJob = CoroutineScope(Dispatchers.Default).launch {
+            webSocketSession?.incoming?.consumeAsFlow()?.collect { frame ->
+                when (frame) {
+                    is Frame.Text -> {
+                        val text = frame.readText()
+                        _messageChannel.send(text)
+                    }
+
+                    is Frame.Binary -> {
+                        GameLogger.debug("收到二进制帧（暂不支持）")
+                    }
+
+                    is Frame.Close -> {
+                        GameLogger.debug("连接关闭: ${frame.readReason()}")
+                        disconnect()
+                    }
+
+                    else -> {}
+                }
+            }
+        }
+    }
+
+    // 修改disconnect方法
     suspend fun disconnect() {
+        messageJob?.cancel()
         webSocketSession?.close()
         webSocketSession = null
+        _connectionState.value = ConnectionState.DISCONNECTED
+        GameLogger.info("连接已断开")
+    }
+
+    suspend fun sendMessageWs(wsMessage: WsMessage) {
+        try {
+            webSocketSession?.send(
+                Frame.Text(
+                    Json.encodeToString(
+                        wsMessage
+                    )
+                )
+            )
+        } catch (e: Exception) {
+            GameLogger.error("发送消息失败: ${e.message}")
+        }
     }
 
 
+    suspend fun createRoom(roomId: String, password: String) {
+        // 先确保连接
+        if (webSocketSession == null) {
+            val connected = connect()
+            if (!connected) {
+                GameLogger.error("连接服务器失败")
+                return
+            }
+        }
+        sendMessageWs(
+            WsMessage(
+                type = "CREATE_ROOM",
+                roomId = roomId,
+                passWord = password
+            )
+        )
+    }
+
+    suspend fun joinRoom(roomId: String, password: String) {
+        // 先确保连接
+        if (webSocketSession == null) {
+            val connected = connect()
+            if (!connected) {
+                GameLogger.error("连接服务器失败")
+                return
+            }
+        }
+        sendMessageWs(
+            WsMessage(
+                type = "JOIN_ROOM",
+                roomId = roomId,
+                passWord = password
+            )
+        )
+    }
+
+    suspend fun leaveRoom(roomId: String, password: String) {
+        sendMessageWs(
+            WsMessage(
+                type = "QUIT_ROOM",
+                roomId = roomId,
+                passWord = password
+            )
+        )
+    }
+
+    suspend fun startGame(roomId: String, password: String) {
+        sendMessageWs(
+            WsMessage(
+                type = "START_GAME",
+                roomId = roomId,
+                passWord = password
+            )
+        )
+    }
+
+    suspend fun deleteRoom(roomId: String, password: String) {
+        sendMessageWs(
+            WsMessage(
+                type = "DELETE_ROOM",
+                roomId = roomId,
+                passWord = password
+            )
+        )
+    }
+
+}
+
+// 添加消息处理器接口
+interface WebSocketListener {
+    suspend fun onMessage(message: String)
+    fun onError(e: Throwable)
 }
