@@ -96,7 +96,7 @@ fun RoomPage(viewmodel: MainViewmodel) {
                     animationSpec = tween(durationMillis = 300)
                 )
             ) {
-                MemberList(memberList?:listOf())
+                MemberList(memberList?:listOf(),roomState.value.isRoomOwner)
             }
             FlopArea(roomState.value.assignedWord ?: "",roomState.value.updateTime)
 

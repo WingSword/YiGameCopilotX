@@ -104,6 +104,7 @@ private const val SHUFFLE_DURATION = 1200
 private val CONTRACT_OFFSET = 96.dp
 private const val MIN_SCALE = 0.8f
 
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun RandomPage(viewmodel: MainViewmodel) {
     var addRandomDialogShow by remember { mutableStateOf(false) }
@@ -118,6 +119,7 @@ fun RandomPage(viewmodel: MainViewmodel) {
     var randomContentDisplayState = remember {
         mutableIntStateOf(0)
     }
+    var isEditMode by remember { mutableStateOf(false) }
 
     LaunchedEffect(viewmodel.addRandomConfigDialogState) {
         viewmodel.addRandomConfigDialogState.collectLatest {
@@ -135,7 +137,9 @@ fun RandomPage(viewmodel: MainViewmodel) {
 
     }
 
-    LazyVerticalGrid(columns = GridCells.Fixed(3), modifier = Modifier.fillMaxHeight()) {
+    LazyVerticalGrid(
+        columns = GridCells.Fixed(3),
+        modifier = Modifier.fillMaxHeight().clickable { isEditMode = false }) {
         val currentType = RandomCate.getCateByItem(currentSelectLabel)
 
         item(span = { GridItemSpan(3) }) {
@@ -144,11 +148,13 @@ fun RandomPage(viewmodel: MainViewmodel) {
                 rows = GridCells.Fixed(2),
                 horizontalArrangement = Arrangement.spacedBy(4.dp),
                 verticalArrangement = Arrangement.spacedBy(4.dp),
-                modifier = Modifier.height(88.dp)
+                modifier = Modifier.height(88.dp).combinedClickable(onLongClick = {
+                    isEditMode=true
+                }, onClick = {})
             ) {
 
 
-                if(currentType == RandomCate.Card){
+                if (currentType == RandomCate.Card) {
                     item {
                         AnimatedVisibility(currentType == RandomCate.Card) {
                             TextButton(
@@ -173,27 +179,48 @@ fun RandomPage(viewmodel: MainViewmodel) {
                     key = { it.hashCode() } // 或使用唯一标识符
                 ) { i ->
                     val currentSelectLabelType = RandomCate.getCateByItem(i)
-                    RandomModFilterChip(
-                        isSelected = currentSelectLabel == i,
-                        label = i.replaceFirst(currentSelectLabelType.key, ""), leadingIcon = {
-                            Icon(
-                                painter = painterResource(
-                                    currentSelectLabelType.iconRes?:Res.drawable.icon_card
-                                ),
-                                contentDescription = "Localized description",
-                                Modifier.size(FilterChipDefaults.IconSize)
-                            )
-                        }, onclick = {
-                            if (currentSelectLabel == i) {
-                                currentSelectLabel = ""
-                                viewmodel.handleRandomPageIntent(RandomPageIntent.OnCancelLabel(""))
-                            } else {
-                                currentSelectLabel = i
-                                viewmodel.handleRandomPageIntent(RandomPageIntent.OnSelectLabel(i))
-                            }
 
-                        }
-                    )
+                        RandomModFilterChip(
+                            isSelected = currentSelectLabel == i,
+                            isEdit = isEditMode,
+                            label = i.replaceFirst(currentSelectLabelType.key, ""), leadingIcon = {
+                                Icon(
+                                    painter = painterResource(
+                                        currentSelectLabelType.iconRes ?: Res.drawable.icon_card
+                                    ),
+                                    contentDescription = "Localized description",
+                                    Modifier.size(FilterChipDefaults.IconSize)
+                                )
+                            }, onclick = {
+                                isEditMode=false
+                                if (currentSelectLabel == i) {
+                                    currentSelectLabel = ""
+                                    viewmodel.handleRandomPageIntent(
+                                        RandomPageIntent.OnCancelLabel(
+                                            ""
+                                        )
+                                    )
+                                } else {
+                                    currentSelectLabel = i
+                                    viewmodel.handleRandomPageIntent(
+                                        RandomPageIntent.OnSelectLabel(
+                                            i
+                                        )
+                                    )
+                                }
+                            },
+                            onDelete = {
+                                viewmodel.handleRandomPageIntent(
+                                    RandomPageIntent.DeleteRandomConfig(
+                                        i
+                                    )
+                                )
+
+                                isEditMode = false
+                            }
+                        )
+
+
                 }
 
             }
@@ -375,13 +402,15 @@ fun AssistChipRandom(icon: ImageVector, onclick: () -> Unit, text: String) {
     )
 }
 
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun RandomModFilterChip(
     label: String,
     leadingIcon: @Composable (() -> Unit)? = null,
     isEdit: Boolean = false,
     isSelected: Boolean = false,
-    onclick: (Boolean) -> Unit
+    onclick: (Boolean) -> Unit,
+    onDelete: () -> Unit
 ) {
 
     FilterChip(
@@ -426,7 +455,7 @@ fun RandomModFilterChip(
                     Icons.Default.Close,
                     contentDescription = "Localized description",
                     Modifier.size(InputChipDefaults.AvatarSize).clickable {
-                        onclick(true)
+                        onDelete()
                     }
                 )
             }

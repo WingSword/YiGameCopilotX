@@ -11,12 +11,13 @@ data class AwalongGameState(
     val roleList: MutableList<AwalongRole> = mutableListOf(),
     val dayList: MutableList<AwalongGameDayEntity> = mutableListOf(),
     val isPublic: Boolean = false,
-    val nickNameList:MutableList<String> = mutableListOf()
+    val nickNameList: MutableList<String> = mutableListOf()
 )
 
 data class AwalongGameDayEntity(
     val day: Int = 1,
-    val mainTask: Map<Int, Boolean>,
-    val taskResult:Boolean,
-    val murderTask: Int? = null,
+    val mainTask: Map<Int, Int> = mutableMapOf(),
+    val taskResult: Boolean=false,
+    val murderTask: Int = -1,
+    var captain: Int = -1,
 )

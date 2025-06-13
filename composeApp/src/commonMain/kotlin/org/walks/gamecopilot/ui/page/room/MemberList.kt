@@ -45,7 +45,7 @@ import org.walks.gamecopilot.data.UserInfoEntity
 
 
 @Composable
-fun MemberList(itemList: List<UserInfoEntity>) {
+fun MemberList(itemList: List<UserInfoEntity>,isOwner:Boolean) {
     val scrollState = rememberLazyGridState()
     var showIdentity by remember { mutableStateOf(false) }
     var showAll by remember { mutableStateOf(false) }
@@ -67,42 +67,42 @@ fun MemberList(itemList: List<UserInfoEntity>) {
         state = scrollState
     ) {
         item(span = { GridItemSpan(3) }) {
-            Row {
-                TextButton(onClick = {
-                    showIdentity = !showIdentity
-                }) {
-                    Text(
-                        text = if (showIdentity) "取消" else "检视结果",
-                        fontSize = 20.sp,
-                        fontWeight = FontWeight.W900,
-                        color = MaterialTheme.colorScheme.onPrimaryContainer,
-                        modifier = Modifier.border(
-                            2.dp,
-                            MaterialTheme.colorScheme.secondaryContainer,
-                            shape = CircleShape
-                        ).padding(8.dp)
-                    )
-                }
-                AnimatedVisibility(showIdentity) {
+            if(isOwner){
+                Row {
                     TextButton(onClick = {
-                        showAll = true
+                        showIdentity = !showIdentity
                     }) {
                         Text(
-                            text = "查看所有玩家身份",
+                            text = if (showIdentity) "取消" else "检视结果",
                             fontSize = 20.sp,
                             fontWeight = FontWeight.W900,
                             color = MaterialTheme.colorScheme.onPrimaryContainer,
                             modifier = Modifier.border(
                                 2.dp,
-                                MaterialTheme.colorScheme.primaryContainer,
+                                MaterialTheme.colorScheme.secondaryContainer,
                                 shape = CircleShape
                             ).padding(8.dp)
                         )
                     }
+                    AnimatedVisibility(showIdentity) {
+                        TextButton(onClick = {
+                            showAll = true
+                        }) {
+                            Text(
+                                text = "查看所有玩家身份",
+                                fontSize = 20.sp,
+                                fontWeight = FontWeight.W900,
+                                color = MaterialTheme.colorScheme.onPrimaryContainer,
+                                modifier = Modifier.border(
+                                    2.dp,
+                                    MaterialTheme.colorScheme.primaryContainer,
+                                    shape = CircleShape
+                                ).padding(8.dp)
+                            )
+                        }
+                    }
                 }
             }
-
-
         }
         items(itemList.size) {
             Column {

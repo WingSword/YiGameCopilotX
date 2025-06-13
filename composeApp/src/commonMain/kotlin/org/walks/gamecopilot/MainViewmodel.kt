@@ -17,6 +17,7 @@ import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 import org.walks.gamecopilot.awalong.AwalongConfig
 import org.walks.gamecopilot.awalong.AwalongIntent
+import org.walks.gamecopilot.awalong.data.AwalongGameDayEntity
 import org.walks.gamecopilot.awalong.data.AwalongGameState
 import org.walks.gamecopilot.data.RandomItem
 import org.walks.gamecopilot.data.RandomListEntity
@@ -204,7 +205,33 @@ class MainViewmodel : ViewModel() {
                 randomLabelChange(intent.label)
             }
 
-            RandomPageIntent.OnAddNewRandomDialogDelete -> TODO()
+            is RandomPageIntent.DeleteRandomConfig -> {
+                randomLabelChange("")
+                val list=randomLabelsState.value.minus(intent.name)
+                _randomLabelsState.update {
+                    mutableListOf()
+                }
+                _randomLabelsState.update {
+                   list
+                }
+
+                try {
+                    // 保存到 MMKV
+                    MMKVUtils.apply {
+                        remove(MMKV_RANDOM_CARDS_SETTING_KEY + intent.name)
+                        putSet(
+                            MMKV_RANDOM_LABEL_NAME_KEY,
+                            getSet(MMKV_RANDOM_LABEL_NAME_KEY)
+                                ?.minus(intent.name)?:setOf()
+
+                        )
+                    }
+                } catch (e: Exception) {
+                    e.printStackTrace()
+                    // 添加错误处理
+
+                }
+            }
             RandomPageIntent.OnAddNewRandomDialogShow -> {
                 viewModelScope.launch {
                     _addRandomConfigDialogState.emit(true)
@@ -245,6 +272,26 @@ class MainViewmodel : ViewModel() {
                     )
                 }
             }
+
+            is AwalongIntent.CheckTask -> {
+                viewModelScope.launch {
+                    _awalongGameState.update {
+                        it.copy(
+                            playTime = Clock.System.now().toEpochMilliseconds(),
+                            dayList = it.dayList.apply {
+                                if (this.find { it.day == intent.task.day } == null) {
+                                    add(intent.task)
+                                } else {
+                                    set(
+                                        this.indexOfFirst { it.day == intent.task.day },
+                                        intent.task
+                                    )
+                                }
+                            }
+                        )
+                    }
+                }
+            }
         }
     }
 
@@ -254,9 +301,19 @@ class MainViewmodel : ViewModel() {
         viewModelScope.launch {
             _awalongGameState.emit(
                 AwalongGameState(
-                    playTime = Clock.System.now().toEpochMilliseconds(),
+                    playTime = awalongGameState.value.playTime+1,
                     roleList = awalongConfigState.value.role.optimizedShuffle().toMutableList(),
-                    dayList = mutableListOf(),
+                    dayList = mutableListOf<AwalongGameDayEntity>().apply {
+                        awalongConfigState.value.process.forEachIndexed { index, i ->
+                            this.add(
+                                AwalongGameDayEntity(
+                                    day = index,
+                                    captain = awalongConfigState.value.role.indices.random(),
+                                )
+                            )
+                        }
+                    }
+                ,
                     nickNameList = (1..awalongConfigState.value.role.size).map { it.toString() }
                         .toMutableList()
                 )

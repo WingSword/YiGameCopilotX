@@ -10,13 +10,17 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 
 /**
  *  Created by Wing at 16:42 on 2025/3/28
@@ -24,7 +28,7 @@ import androidx.compose.ui.unit.dp
  */
 
 @Composable
-fun DiceFace(value: Int,background: Color=MaterialTheme.colorScheme.primary) {
+fun DiceFace(value: Int, background: Color = MaterialTheme.colorScheme.primary) {
     Box(
         modifier = Modifier
             .height(100.dp)
@@ -39,17 +43,20 @@ fun DiceFace(value: Int,background: Color=MaterialTheme.colorScheme.primary) {
                 Dot(offset = Offset(-0.3f, -0.3f))
                 Dot(offset = Offset(0.3f, 0.3f))
             }
+
             3 -> {
                 Dot(offset = Offset(-0.3f, -0.3f))
                 Dot(offset = Offset(0f, 0f))
                 Dot(offset = Offset(0.3f, 0.3f))
             }
+
             4 -> {
                 Dot(offset = Offset(-0.3f, -0.3f))
                 Dot(offset = Offset(0.3f, -0.3f))
                 Dot(offset = Offset(-0.3f, 0.3f))
                 Dot(offset = Offset(0.3f, 0.3f))
             }
+
             5 -> {
                 Dot(offset = Offset(-0.3f, -0.3f))
                 Dot(offset = Offset(0.3f, -0.3f))
@@ -57,6 +64,7 @@ fun DiceFace(value: Int,background: Color=MaterialTheme.colorScheme.primary) {
                 Dot(offset = Offset(-0.3f, 0.3f))
                 Dot(offset = Offset(0.3f, 0.3f))
             }
+
             6 -> {
                 Dot(offset = Offset(-0.3f, -0.3f))
                 Dot(offset = Offset(0.3f, -0.3f))
@@ -65,12 +73,22 @@ fun DiceFace(value: Int,background: Color=MaterialTheme.colorScheme.primary) {
                 Dot(offset = Offset(-0.3f, 0.3f))
                 Dot(offset = Offset(0.3f, 0.3f))
             }
+
+            else -> {
+                Text(
+                    value.toString(),
+                    fontWeight = FontWeight.W900,
+                    color = MaterialTheme.colorScheme.primary.copy(0.5f),
+                    textAlign = TextAlign.End,
+                    fontSize = 50.sp
+                )
+            }
         }
     }
 }
 
 @Composable
-private fun Dot(color: Color=MaterialTheme.colorScheme.primary,offset: Offset,size: Dp=8.dp) {
+private fun Dot(color: Color = MaterialTheme.colorScheme.primary, offset: Offset, size: Dp = 8.dp) {
     Box(
         modifier = Modifier
             .offset(
