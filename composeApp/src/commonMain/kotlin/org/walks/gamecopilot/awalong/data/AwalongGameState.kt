@@ -17,7 +17,7 @@ data class AwalongGameState(
 data class AwalongGameDayEntity(
     val day: Int = 1,
     val mainTask: Map<Int, Int> = mutableMapOf(),
-    val taskResult: Boolean=false,
+    val taskResult: Int=0,
     val murderTask: Int = -1,
     var captain: Int = -1,
 )

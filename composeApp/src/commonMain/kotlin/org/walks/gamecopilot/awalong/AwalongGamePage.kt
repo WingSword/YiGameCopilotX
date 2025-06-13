@@ -21,6 +21,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.GridItemSpan
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
@@ -34,6 +35,8 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.sharp.Check
 import androidx.compose.material.icons.sharp.CheckCircle
+import androidx.compose.material.icons.sharp.Clear
+import androidx.compose.material.icons.sharp.Close
 import androidx.compose.material.icons.sharp.Edit
 import androidx.compose.material.icons.sharp.Info
 import androidx.compose.material3.ButtonDefaults
@@ -68,6 +71,7 @@ import com.yi.yigamecopilot.android.theme.AnSe
 import com.yi.yigamecopilot.android.theme.CangSe
 import com.yi.yigamecopilot.android.theme.Chi
 import com.yi.yigamecopilot.android.theme.GoldanColorList
+import com.yi.yigamecopilot.android.theme.KuHuang
 import com.yi.yigamecopilot.android.theme.MoSe
 import com.yi.yigamecopilot.android.theme.MorandiBlue
 import com.yi.yigamecopilot.android.theme.QiHei
@@ -191,29 +195,70 @@ fun AwalongGamePage(viewmodel: MainViewmodel) {
     gameConfig.process.forEachIndexed { index, taskNum ->
         pages.add({
             PageContent(
-                "第${index + 1}日",
+                "",
                 gameRule = gameConfig.description,
                 bgColor = GoldanColorList[index % 5],
                 content = {
-                    PageDayTask(
-                        viewmodel.awalongGameState.value.roleList,
-                        viewmodel.awalongGameState.value.nickNameList, gameConfig.process[index],
-                        viewmodel.awalongGameState.value.dayList.getOrNull(index),
-                        onCheck = { map, result ,cap->
-                            viewmodel.handleAwalongGameIntent(
-                                AwalongIntent.CheckTask(
-                                    AwalongGameDayEntity(
-                                        day = index,
-                                        mainTask = map,
-                                        taskResult = result,
-                                        murderTask = -1,
-                                        captain = cap
+                    Box(contentAlignment = Alignment.BottomCenter) {
+                        PageDayTask(
+                            viewmodel.awalongGameState.value.roleList,
+                            viewmodel.awalongGameState.value.nickNameList,
+                            gameConfig.process[index],
+                            viewmodel.awalongGameState.value.dayList.getOrNull(index),
+                            onCheck = { map, result, cap ->
+                                viewmodel.handleAwalongGameIntent(
+                                    AwalongIntent.CheckTask(
+                                        AwalongGameDayEntity(
+                                            day = index,
+                                            mainTask = map,
+                                            taskResult = result,
+                                            murderTask = -1,
+                                            captain = cap
+                                        )
                                     )
                                 )
-                            )
 
+                            }
+                        )
+
+                        LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.padding(bottom = 24.dp)) {
+                            item {
+                                Text("第${index+1}日任务进度：", color = MaterialTheme.colorScheme.secondary)
+                            }
+                            items(viewmodel.awalongGameState.value.dayList.size) {
+                                val day = viewmodel.awalongGameState.value.dayList.getOrNull(it)
+                                Box(
+                                    modifier = Modifier.size(18.dp).border(
+                                        2.dp,
+                                        if (index == it) KuHuang else Color.White,
+                                        CircleShape
+                                    )
+                                        .background(
+                                            color = if (index == it) KuHuang else Color.Transparent,
+                                            CircleShape
+                                        )
+                                        ,
+                                ){
+                                    when (day?.taskResult) {
+                                        1 -> Icon(
+                                            imageVector = Icons.Sharp.Check,
+                                            modifier = Modifier.size(18.dp),
+                                            contentDescription = "",
+                                            tint = ZhuQing
+                                        )
+
+                                        -1 -> Icon(
+                                            imageVector = Icons.Sharp.Close,
+                                            modifier = Modifier.size(18.dp),
+                                            contentDescription = "",
+                                            tint = Chi
+                                        )
+                                    }
+                                }
+                            }
                         }
-                    )
+                    }
+
                 })
         })
     }
@@ -243,16 +288,16 @@ private fun PageDayTask(
     nicknameList: List<String>,
     taskNum: Int,
     dayEntity: AwalongGameDayEntity?,
-    onCheck: (Map<Int, Int>, Boolean,Int) -> Unit
+    onCheck: (Map<Int, Int>, Int, Int) -> Unit
 ) {
     var process by remember { mutableStateOf(0) }
-    var result by remember { mutableStateOf(false) }
+    var result by remember { mutableStateOf(0) }
     var taskPlayer = remember { mutableStateListOf<Int>() }
 
     val taskCaptain = remember { mutableStateOf(dayEntity?.captain) }
     if (dayEntity != null) {
         taskPlayer.addAll(dayEntity.mainTask.keys)
-        if (dayEntity.mainTask.values.size==taskNum&&!dayEntity.mainTask.values.contains(0)) {
+        if (dayEntity.mainTask.values.size == taskNum && !dayEntity.mainTask.values.contains(0)) {
             process = 2
         }
         result = dayEntity.taskResult
@@ -269,7 +314,8 @@ private fun PageDayTask(
         LazyVerticalGrid(
             columns = GridCells.Fixed(3),
             horizontalArrangement = Arrangement.spacedBy(8.dp),
-            verticalArrangement = Arrangement.spacedBy(8.dp)
+            verticalArrangement = Arrangement.spacedBy(8.dp),
+            modifier = Modifier.fillMaxSize()
         ) {
             items(roleList.size) {
                 Box(
@@ -339,10 +385,10 @@ private fun PageDayTask(
                 } else if (process == 1) {
                     TextButton(
                         onClick = {
-                            if (!taskMap.values.contains(0)) {
-                                result = !taskMap.values.contains(-1)
+                            if (!taskMap.values.contains(0) && taskMap.values.size == taskNum) {
+                                result = if (taskMap.values.contains(-1)) -1 else 1
                                 process = 2
-                                onCheck(taskMap, result,roleList.indices.random())
+                                onCheck(taskMap, result, roleList.indices.random())
                             }
                         },
                         shape = CircleShape,
@@ -352,14 +398,13 @@ private fun PageDayTask(
                         Text("开始验证")
                     }
                 } else {
-
                     TextButton(
                         onClick = { },
                         shape = CircleShape,
                         modifier = Modifier.fillMaxWidth(),
-                        colors = ButtonDefaults.buttonColors(containerColor = if (result) ZhuQing else Chi)
+                        colors = ButtonDefaults.buttonColors(containerColor = if (result == 1) ZhuQing else Chi)
                     ) {
-                        Text(if (result) "任务完成" else "任务失败")
+                        Text(if (result == 1) "任务完成" else "任务失败")
                     }
                 }
 
@@ -412,10 +457,12 @@ private fun PageDayZero(
         mutableStateOf(nicknameList)
     }
     var showGameRole by remember { mutableStateOf<AwalongRole?>(null) }
-    var roles= remember { mutableStateListOf<AwalongRole>().apply {
-        this.addAll(roleList)
-    } }
-    val nickList= remember { mutableStateListOf(nicknameList) }
+    var roles = remember {
+        mutableStateListOf<AwalongRole>().apply {
+            this.addAll(roleList)
+        }
+    }
+    val nickList = remember { mutableStateListOf(nicknameList) }
     LazyColumn(verticalArrangement = Arrangement.spacedBy(12.dp)) {
 
         items(roles.size) { index ->

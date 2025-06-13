@@ -82,6 +82,7 @@ import org.walks.gamecopilot.RANDOM_PAGE_CONFIG_CATE_COIN
 import org.walks.gamecopilot.RANDOM_PAGE_CONFIG_CATE_DICE
 import org.walks.gamecopilot.data.RandomItem
 import org.walks.gamecopilot.intent.RandomPageIntent
+import org.walks.gamecopilot.ui.animation.CoinFlipAnimation
 import org.walks.gamecopilot.ui.animation.DiceAnimation
 import yigamecopilotx.composeapp.generated.resources.Res
 import yigamecopilotx.composeapp.generated.resources.icon_card
@@ -560,7 +561,20 @@ private fun AnimatedShuffleContent(
                 AnimatedShuffleDice(card.first.toInt(), card.second.toInt(), isShuffling)
             }
 
-            RANDOM_PAGE_CONFIG_CATE_COIN -> {}
+            RANDOM_PAGE_CONFIG_CATE_COIN -> {
+                CoinFlipAnimation(
+                    onFlipComplete = { result ->
+                        // 处理硬币翻转结果
+                        PlatformHelper.getInstance().vibrateMethod()
+                    },
+                    modifier = Modifier
+                        .aspectRatio(1f)
+                        .padding(4.dp),
+                    isShuffling,
+                    card.first,
+                    card.second
+                )
+            }
             else -> {
 
                 FlippableCard(
