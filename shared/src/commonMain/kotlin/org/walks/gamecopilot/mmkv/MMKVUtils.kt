@@ -38,6 +38,32 @@ object MMKVUtils {
         }
     }
 
+    fun getString(key: String, default: String): String{
+        return kv.takeString(key,default)
+    }
+
+    fun getInt(key: String, default: Int): Int{
+        return kv.takeInt(key,default)
+    }
+
+    fun getFloat(key: String, default: Float): Float{
+        return kv.takeFloat(key,default)
+    }
+
+    fun getLong(key: String, default: Long): Long{
+        return kv.takeLong(key,default)
+    }
+
+    fun getBoolean(key: String, default: Boolean): Boolean{
+
+        return kv.takeBoolean(key,default)
+    }
+
+    fun getDouble(key: String, default: Double): Double{
+        return kv.takeDouble(key,default)
+    }
+
+
     fun putSet(key: String, value: Set<String>){
         kv[key] = value
     }

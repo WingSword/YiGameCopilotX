@@ -1,5 +1,6 @@
 package org.walks.gamecopilot.data.entity
 
+import org.walks.gamecopilot.getWordMapBySelectedGroups
 import org.walks.gamecopilot.wordMap
 
 data class GameEntity(
@@ -16,7 +17,8 @@ data class LocalSpyEntity(
     var totalPlayerNumber: Int = 1,
     var spyWord: String = "",
     var spies: List<Int> = listOf(),
-    var blackNum: Int = 0
+    var blackNum: Int = 0,
+    var selectedWordGroups: Set<String> = WordGroupManager.getDefaultSelectedGroups()
 ) {
     fun refreshGame(){
         getUniqueRandomBatch()
@@ -33,6 +35,16 @@ data class LocalSpyEntity(
     }
 
     private fun optNewGameWord() {
+        val selectedWordMap = getWordMapBySelectedGroups(selectedWordGroups)
+        if (selectedWordMap.isEmpty()) {
+            // 如果没有选中任何词组，使用默认词库
+            optNewGameWordWithMap(wordMap)
+        } else {
+            optNewGameWordWithMap(selectedWordMap)
+        }
+    }
+    
+    private fun optNewGameWordWithMap(wordMap: MutableMap<String, String>) {
         val n = (0..1).random()
         val randomIndex = (0..<wordMap.size).random()
         if (n == 0) {

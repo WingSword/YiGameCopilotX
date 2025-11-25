@@ -330,10 +330,10 @@ class MainViewmodel : ViewModel() {
         }
         try {
             val jsonCard = Json.decodeFromString<RandomListEntity>(
-                MMKVUtils.get(
+                MMKVUtils.getString(
                     MMKV_RANDOM_CARDS_SETTING_KEY + selectedLabel,
                     ""
-                ).toString()
+                )
             )
             viewModelScope.launch {
                 _currentRandomContentState.emit(jsonCard)
@@ -464,6 +464,21 @@ class MainViewmodel : ViewModel() {
             // region 游戏模式切换处理
             is GameIntent.SwitchGameMode -> {
                 _startedGameMode.value = intent.mode
+            }
+
+            is GameIntent.RefreshWordGroups -> {
+                val timeEntity = gameEntity.value.timeEntityList.lastOrNull() ?: return
+                _gameEntity.update {
+                    it.copy(
+                        timeEntityList = mutableListOf(
+                            timeEntity.copy(
+                                selectedWordGroups = intent.selectedGroups
+                            ).apply {
+                                refreshGame()
+                            }
+                        )
+                    )
+                }
             }
 
             is GameIntent.StartGame -> {

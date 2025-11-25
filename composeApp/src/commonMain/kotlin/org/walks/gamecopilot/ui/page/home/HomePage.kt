@@ -6,6 +6,7 @@ import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
@@ -87,9 +88,12 @@ fun HomePage(viewmodel: MainViewmodel,navi:NavHostController) {
                 RoomEntranceCard(viewmodel)
             }
 
-            // 模式1：显示本地卧底游戏组件
+            // 模式1：显示本地卧底游戏入口
             AnimatedVisibility(gameMode.value == 1) {
-                LocalSpyGame(viewmodel)
+                LocalSpyGameEntrance(onClick = {
+                    // 导航到本地卧底游戏页面
+                    navi.navigate("localSpy")
+                })
             }
 
             // 快速游戏
@@ -103,6 +107,49 @@ fun HomePage(viewmodel: MainViewmodel,navi:NavHostController) {
         }
 
 
+    }
+}
+
+/**
+ * 本地卧底游戏入口组件
+ * @param onClick 点击回调函数
+ */
+@Composable
+fun LocalSpyGameEntrance(onClick: () -> Unit) {
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(200.dp)
+            .clip(RoundedCornerShape(16.dp))
+            .background(
+                color = MaterialTheme.colorScheme.primaryContainer,
+                shape = RoundedCornerShape(16.dp)
+            )
+            .border(
+                width = 2.dp,
+                color = MaterialTheme.colorScheme.primary,
+                shape = RoundedCornerShape(16.dp)
+            )
+            .clickable { onClick() },
+        contentAlignment = Alignment.Center
+    ) {
+        Column(
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.Center
+        ) {
+            Text(
+                text = "本地卧底游戏",
+                style = MaterialTheme.typography.headlineMedium,
+                fontWeight = FontWeight.Bold,
+                color = MaterialTheme.colorScheme.onPrimaryContainer
+            )
+            Spacer(modifier = Modifier.height(8.dp))
+            Text(
+                text = "点击开始游戏",
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.7f)
+            )
+        }
     }
 }
 
