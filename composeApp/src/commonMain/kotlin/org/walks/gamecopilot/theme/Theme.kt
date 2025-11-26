@@ -34,35 +34,48 @@ import com.yi.yigamecopilot.android.theme.PrimaryColor
 
 private val DarkColorScheme = darkColorScheme(
     primary = PrimaryColor,
-    onPrimary = FontColorDark,
-    secondary = Color.LightGray,
-    onSecondary = FontSecondaryColorDark,
+    onPrimary = Color.Black, // 确保主色上的文字清晰可见
+    secondary = MorandiBrown,
+    onSecondary = Color.Black, // 次要颜色上的文字使用黑色确保对比度
     background = BackgroundColorDark,
-    onBackground = OnBackgroundColorDark,
-    surface = Color.Black,
-    onSurface = BackgroundColorDark,
+    onBackground = FontColorDark, // 背景上的文字使用深色主题文字色
+    surface = Color(0xFF1E1E1E), // 使用稍微亮一点的表面色而不是纯黑
+    onSurface = FontColorDark, // 表面上的文字使用深色主题文字色
     error = DangerColorDark,
-    errorContainer = OnBackgroundColorDark,
+    errorContainer = Color(0xFF3D1A1A), // 错误容器使用深红色调
+    onError = Color.White, // 错误色上的文字使用白色
+    onErrorContainer = Color(0xFFFFB4B4), // 错误容器上的文字使用浅红色
     outline = BorderColorDark,
     primaryContainer = CardColorDark,
-    secondaryContainer = MorandiBrown
-
+    onPrimaryContainer = Color.Black, // 主容器上的文字使用黑色
+    secondaryContainer = MorandiBrown,
+    onSecondaryContainer = Color.Black, // 次容器上的文字使用黑色
+    surfaceVariant = Color(0xFF2A2A2A), // 表面变体色
+    onSurfaceVariant = FontSecondaryColorDark, // 表面变体上的文字
+    scrim = Color.Black.copy(alpha = 0.5f) // 遮罩色
 )
 
 private val LightColorScheme = lightColorScheme(
     primary = PrimaryColor,
-    onPrimary = FontColorLight,
-    secondary = Color.DarkGray,
-    onSecondary = FontSecondaryColorLight,
+    onPrimary = Color.White, // 主色上的文字使用白色确保对比度
+    secondary = Color(0xFF6B7280), // 使用更合适的灰色作为次要色
+    onSecondary = Color.White, // 次要颜色上的文字使用白色
     background = BackgroundColorLight,
-    onBackground = OnBackgroundColorLight,
+    onBackground = Color(0xFF1C1C1C), // 背景上的文字使用深色确保可读性
     surface = Color.White,
-    onSurface = BackgroundColorLight,
+    onSurface = Color(0xFF1C1C1C), // 表面上的文字使用深色
     error = DangerColorLight,
-    errorContainer = Color(0xffFFFBE6),
+    errorContainer = Color(0xFFFFF3F3), // 错误容器使用浅红色调
+    onError = Color.White, // 错误色上的文字使用白色
+    onErrorContainer = Color(0xFF7F1D1D), // 错误容器上的文字使用深红色
     outline = BorderColorLight,
     primaryContainer = CardColorLight,
-    secondaryContainer = Color(0xFFF6B550)
+    onPrimaryContainer = Color.White, // 主容器上的文字使用白色
+    secondaryContainer = Color(0xFFF6B550),
+    onSecondaryContainer = Color(0xFF1C1C1C), // 次容器上的文字使用深色
+    surfaceVariant = Color(0xFFF5F5F5), // 表面变体色
+    onSurfaceVariant = Color(0xFF6B7280), // 表面变体上的文字
+    scrim = Color.Black.copy(alpha = 0.5f) // 遮罩色
 )
 
 

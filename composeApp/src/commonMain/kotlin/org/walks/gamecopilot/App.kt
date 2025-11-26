@@ -163,7 +163,10 @@ fun AppView(viewmodel: MainViewmodel) {
         ) {
             Scaffold(
                 topBar = {
-                    AppTopBar(navi, viewmodel, drawerState)
+                    // 只在一级页面显示全局TopBar，二级页面自行实现
+                    if (isStartRoute(currentRoute) || currentRoute == NaviRoute.RANDOM.route || currentRoute == NaviRoute.ROOM.route) {
+                        AppTopBar(navi, viewmodel, drawerState)
+                    }
                 },
                 snackbarHost = {
                     SnackbarHost(hostState = snackState.value)

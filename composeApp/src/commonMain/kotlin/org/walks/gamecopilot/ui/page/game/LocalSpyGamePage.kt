@@ -1,5 +1,6 @@
 package org.walks.gamecopilot.ui.page.game
 
+
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.Animatable
@@ -26,17 +27,23 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Refresh
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -68,15 +75,20 @@ import androidx.compose.ui.window.DialogProperties
 import com.yi.yigamecopilot.android.theme.MorandiColorList
 import com.yi.yigamecopilot.android.theme.MorandiGreen
 import kotlinx.coroutines.launch
+import org.jetbrains.compose.resources.painterResource
 import org.walks.gamecopilot.MainViewmodel
 import org.walks.gamecopilot.PlatformHelper
 import org.walks.gamecopilot.data.entity.LocalSpyEntity
 import org.walks.gamecopilot.data.entity.WordGroupManager
-import org.walks.gamecopilot.data.entity.WordGroup
+import org.walks.gamecopilot.getWordMapBySelectedGroups
 import org.walks.gamecopilot.intent.GameIntent
 import org.walks.gamecopilot.ui.badge.WeBadge
+import org.walks.gamecopilot.ui.component.WordGroupSelector
 import org.walks.gamecopilot.ui.picker.WeSingleColumnPicker
 import org.walks.gamecopilot.ui.widget.FlipCard
+import yigamecopilotx.composeapp.generated.resources.Res
+import yigamecopilotx.composeapp.generated.resources.icon_info
+
 
 /**
  *  Created by Wing at 20:53 on 2025/3/25
@@ -100,14 +112,25 @@ fun LocalSpyGamePage(viewmodel: MainViewmodel, onBack: () -> Unit) {
     var gameTimeState by remember { mutableIntStateOf(0) }
 
     // 从ViewModel获取当前游戏状态数据
-    val gameStateList = viewmodel.gameEntity.collectAsState().value.timeEntityList
+    val gameEntity = viewmodel.gameEntity.collectAsState().value
+    val currentGame = gameEntity.currentGame
 
     // 当前玩家总数，默认取最近一次记录或4人
-    val playerNum = gameStateList.lastOrNull()?.totalPlayerNumber ?: 4
+    val playerNum = currentGame?.totalPlayerNumber ?: 4
     // 状态控制：控制人数选择器弹窗的显示状态
     var showNumberPicker by remember { mutableStateOf(false) }
     // 可选的游玩人数范围（4-12人）
     val numberList = (4..16).map { it.toString() }
+
+    // 状态控制：词汇查看弹窗的显示状态
+    var showWordsDialog by remember { mutableStateOf(false) }
+
+    // 获取全局选中的词组
+    val selectedWordGroups = gameEntity.globalSelectedWordGroups
+    // 获取当前选中词组的所有词汇
+    val currentWords = remember(selectedWordGroups) {
+        getWordMapBySelectedGroups(selectedWordGroups)
+    }
 
 
     LaunchedEffect(gameTimeState) {
@@ -116,24 +139,58 @@ fun LocalSpyGamePage(viewmodel: MainViewmodel, onBack: () -> Unit) {
         }
     }
 
-    Column(modifier = Modifier.fillMaxWidth()) {
+    Column(modifier = Modifier.fillMaxWidth().padding(top = 8.dp, end = 16.dp)) {
         // 顶部导航栏
         Row(
-            modifier = Modifier.fillMaxWidth().padding(16.dp),
-            verticalAlignment = Alignment.CenterVertically
+            modifier = Modifier.fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.SpaceBetween
         ) {
-            IconButton(onClick = onBack) {
-                Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "返回")
+            Row(
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                IconButton(onClick = onBack) {
+                    Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "返回")
+                }
+                Spacer(modifier = Modifier.width(8.dp))
+                Column {
+                    Text(
+                        text = "🕵️ 本地卧底",
+                        style = MaterialTheme.typography.headlineSmall,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.primary
+                    )
+                    Text(
+                        text = "找出隐藏的卧底，保护平民身份",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
             }
-            Spacer(modifier = Modifier.width(8.dp))
-            Text(
-                text = "本地卧底游戏",
-                style = MaterialTheme.typography.headlineSmall,
-                fontWeight = FontWeight.Bold
+
+            // 词汇查看按钮
+            Icon(
+                painter = painterResource(Res.drawable.icon_info),
+                contentDescription = "查看词汇",
+                tint = Color.Unspecified,
+                modifier = Modifier.size(32.dp).clickable {
+                    showWordsDialog = true
+                }
             )
+
         }
 
-        Spacer(modifier = Modifier.height(16.dp))
+        Spacer(modifier = Modifier.height(8.dp))
+
+        // 词库选择区 - 独立于游戏配置，优先显示
+        WordGroupSelector(
+            selectedGroupIds = selectedWordGroups,
+            onGroupsChanged = { groupIds ->
+                viewmodel.handleGameIntent(GameIntent.RefreshWordGroups(groupIds))
+            }
+        )
+
+        Spacer(modifier = Modifier.height(8.dp))
 
         // 游玩人数选择区
         Row(
@@ -157,8 +214,8 @@ fun LocalSpyGamePage(viewmodel: MainViewmodel, onBack: () -> Unit) {
             val maxSpyList = (1..playerNum / 3).map { "$it" }
 
             // 从游戏状态获取当前配置值
-            val spyNumber = gameStateList.lastOrNull()?.spyNum ?: 1
-            val blackNum = gameStateList.lastOrNull()?.blackNum ?: 0
+            val spyNumber = currentGame?.spyNum ?: 1
+            val blackNum = currentGame?.blackNum ?: 0
 
             Spacer(Modifier.weight(1f))
 
@@ -177,7 +234,7 @@ fun LocalSpyGamePage(viewmodel: MainViewmodel, onBack: () -> Unit) {
             WeSingleColumnPicker(
                 visible = showSpyNumberPicker != 0,
                 title = if (showSpyNumberPicker == 1) "选择卧底人数" else "选择空白卡片数量",
-                range = if (showSpyNumberPicker == 1) maxSpyList else (0..(gameStateList.lastOrNull()?.spyNum
+                range = if (showSpyNumberPicker == 1) maxSpyList else (0..(currentGame?.spyNum
                     ?: 1)).map { "$it" },
                 onCancel = { showSpyNumberPicker = 0 },
                 onChange = {
@@ -185,7 +242,7 @@ fun LocalSpyGamePage(viewmodel: MainViewmodel, onBack: () -> Unit) {
                     when (showSpyNumberPicker) {
                         1 -> {
                             // 更新卧底数量时自动修正空白卡数值不超过新卧底数
-                            viewmodel.handleLocalGameIntent(
+                            viewmodel.handleGameIntent(
                                 GameIntent.RefreshSpyNumber(
                                     spyNum = maxSpyList[it].toInt(),
                                     blackNum = if (blackNum <= spyNumber) blackNum else 0
@@ -195,7 +252,7 @@ fun LocalSpyGamePage(viewmodel: MainViewmodel, onBack: () -> Unit) {
 
                         2 -> {
                             // 直接更新空白卡数量
-                            viewmodel.handleLocalGameIntent(
+                            viewmodel.handleGameIntent(
                                 GameIntent.RefreshSpyNumber(
                                     spyNum = spyNumber,
                                     blackNum = it
@@ -204,8 +261,8 @@ fun LocalSpyGamePage(viewmodel: MainViewmodel, onBack: () -> Unit) {
                         }
                     }
                 },
-                value = if (showSpyNumberPicker == 1) gameStateList.lastOrNull()?.spyNum
-                    ?: 1 else gameStateList.lastOrNull()?.blackNum ?: 0
+                value = if (showSpyNumberPicker == 1) (currentGame?.spyNum
+                    ?: 1) else (currentGame?.blackNum ?: 0)
             )
 
             // 主人数选择器组件
@@ -216,38 +273,119 @@ fun LocalSpyGamePage(viewmodel: MainViewmodel, onBack: () -> Unit) {
                 onCancel = { showNumberPicker = false },
                 onChange = {
                     gameTimeState++
-                    viewmodel.handleLocalGameIntent(GameIntent.RefreshPlayerNumber(numberList[it].toInt()))
+                    viewmodel.handleGameIntent(GameIntent.RefreshPlayerNumber(numberList[it].toInt()))
                 },
                 value = numberList.indexOf(playerNum.toString())
             )
 
         }
 
-        Spacer(Modifier.height(8.dp))
 
-        // 词组选择区
-        WordGroupSelector(
-            selectedGroupIds = gameStateList.lastOrNull()?.selectedWordGroups 
-                ?: WordGroupManager.getDefaultSelectedGroups(),
-            onGroupsChanged = { groupIds ->
-                gameTimeState++
-                viewmodel.handleLocalGameIntent(GameIntent.RefreshWordGroups(groupIds))
-            }
-        )
-
-        // 游戏数据显示区
-        if (gameStateList.isNotEmpty()) {
+        // 游戏数据显示区 - 只有当选择了人数时才显示
+        if (currentGame != null) {
             Spacer(Modifier.height(8.dp))
 
             // 游戏结果显示组件，key控制强制刷新
             GameGreetingView(
                 key = gameTimeState,
-                gameStateList.last(),
+                currentGame,
                 onStart = {
-                    viewmodel.handleLocalGameIntent(GameIntent.StartGame)
+                    viewmodel.handleGameIntent(GameIntent.StartGame)
                     gameTimeState++
                 }
             )
+        }
+
+    }
+
+    // 词汇查看弹窗
+    if (showWordsDialog) {
+        Dialog(
+            onDismissRequest = { showWordsDialog = false },
+            properties = DialogProperties(
+                usePlatformDefaultWidth = false
+            )
+        ) {
+            Card(
+                modifier = Modifier
+                    .fillMaxWidth(0.9f)
+                    .fillMaxHeight(0.7f),
+                shape = RoundedCornerShape(16.dp),
+                colors = CardDefaults.cardColors(
+                    containerColor = MaterialTheme.colorScheme.surface
+                )
+            ) {
+                Column(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(16.dp)
+                ) {
+                    // 弹窗标题
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(
+                            text = "当前可用词汇 (${currentWords.size}个)",
+                            style = MaterialTheme.typography.titleLarge,
+                            fontWeight = FontWeight.Bold
+                        )
+
+                        IconButton(
+                            onClick = { showWordsDialog = false }
+                        ) {
+                            Icon(
+                                Icons.AutoMirrored.Filled.ArrowBack,
+                                contentDescription = "关闭"
+                            )
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.height(16.dp))
+
+                    // 词汇列表
+                    LazyColumn(
+                        modifier = Modifier.fillMaxSize(),
+                        verticalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        items(currentWords.entries.toList()) { (spyWord, normalWord) ->
+                            Card(
+                                modifier = Modifier.fillMaxWidth(),
+                                shape = RoundedCornerShape(8.dp),
+                                colors = CardDefaults.cardColors(
+                                    containerColor = MaterialTheme.colorScheme.surfaceVariant
+                                )
+                            ) {
+                                Row(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .padding(12.dp),
+                                    horizontalArrangement = Arrangement.SpaceBetween,
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Column(
+                                        modifier = Modifier.weight(1f)
+                                    ) {
+                                        Text(
+                                            text = "卧底词: $spyWord",
+                                            style = MaterialTheme.typography.bodyMedium,
+                                            fontWeight = FontWeight.Medium,
+                                            color = MaterialTheme.colorScheme.error
+                                        )
+                                        Spacer(modifier = Modifier.height(4.dp))
+                                        Text(
+                                            text = "平民词: $normalWord",
+                                            style = MaterialTheme.typography.bodyMedium,
+                                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                                        )
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
         }
     }
 }
@@ -577,7 +715,7 @@ fun WordGroupSelector(
     onGroupsChanged: (Set<String>) -> Unit
 ) {
     val availableGroups = WordGroupManager.getAllGroups()
-    
+
     Column(
         modifier = Modifier
             .fillMaxWidth()
@@ -598,9 +736,9 @@ fun WordGroupSelector(
             fontWeight = FontWeight.Bold,
             color = MaterialTheme.colorScheme.onSurfaceVariant
         )
-        
+
         Spacer(modifier = Modifier.height(12.dp))
-        
+
         // 动态布局：根据词组数量调整列数
         val groupCount = availableGroups.size
         val columns = when {
@@ -608,7 +746,7 @@ fun WordGroupSelector(
             groupCount <= 6 -> 3
             else -> 4
         }
-        
+
         LazyVerticalGrid(
             columns = GridCells.Fixed(columns),
             horizontalArrangement = Arrangement.spacedBy(8.dp),
@@ -618,7 +756,7 @@ fun WordGroupSelector(
             items(availableGroups.size) { index ->
                 val (groupId, group) = availableGroups.entries.elementAt(index)
                 val isSelected = selectedGroupIds.contains(groupId)
-                
+
                 Box(
                     modifier = Modifier
                         .clickable {
@@ -662,9 +800,9 @@ fun WordGroupSelector(
                 }
             }
         }
-        
+
         Spacer(modifier = Modifier.height(8.dp))
-        
+
         Text(
             text = "已选择 ${selectedGroupIds.size} 个词库",
             style = MaterialTheme.typography.bodySmall,

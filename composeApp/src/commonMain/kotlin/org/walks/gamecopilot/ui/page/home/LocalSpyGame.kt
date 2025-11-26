@@ -64,7 +64,6 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import com.yi.yigamecopilot.android.theme.MorandiColorList
-import com.yi.yigamecopilot.android.theme.MorandiGreen
 import kotlinx.coroutines.launch
 import org.walks.gamecopilot.MainViewmodel
 import org.walks.gamecopilot.PlatformHelper
@@ -96,10 +95,11 @@ fun LocalSpyGame(viewmodel: MainViewmodel) {
     var gameTimeState by remember { mutableIntStateOf(0) }
 
     // 从ViewModel获取当前游戏状态数据
-    val gameStateList = viewmodel.gameEntity.collectAsState().value.timeEntityList
+    val gameEntity = viewmodel.gameEntity.collectAsState().value
+    val currentGame = gameEntity.currentGame
 
-    // 当前玩家总数，默认取最近一次记录或4人
-    val playerNum = gameStateList.lastOrNull()?.totalPlayerNumber ?: 4
+    // 当前玩家总数，默认取当前游戏配置或4人
+    val playerNum = currentGame?.totalPlayerNumber ?: 4
     // 状态控制：控制人数选择器弹窗的显示状态
     var showNumberPicker by remember { mutableStateOf(false) }
     // 可选的游玩人数范围（4-12人）
@@ -117,7 +117,7 @@ fun LocalSpyGame(viewmodel: MainViewmodel) {
         Row(
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.Center,
-            modifier = Modifier.background(MorandiGreen, shape = RoundedCornerShape(12.dp))
+            modifier = Modifier.background(MaterialTheme.colorScheme.primaryContainer, shape = RoundedCornerShape(12.dp))
                 .fillMaxWidth().border(
                     width = 4.dp,
                     color = MaterialTheme.colorScheme.secondary,
@@ -135,8 +135,8 @@ fun LocalSpyGame(viewmodel: MainViewmodel) {
             val maxSpyList = (1..playerNum / 3).map { "$it" }
 
             // 从游戏状态获取当前配置值
-            val spyNumber = gameStateList.lastOrNull()?.spyNum ?: 1
-            val blackNum = gameStateList.lastOrNull()?.blackNum ?: 0
+            val spyNumber = currentGame?.spyNum ?: 1
+            val blackNum = currentGame?.blackNum ?: 0
 
             Spacer(Modifier.weight(1f))
 
@@ -155,7 +155,7 @@ fun LocalSpyGame(viewmodel: MainViewmodel) {
             WeSingleColumnPicker(
                 visible = showSpyNumberPicker != 0,
                 title = if (showSpyNumberPicker == 1) "选择卧底人数" else "选择空白卡片数量",
-                range = if (showSpyNumberPicker == 1) maxSpyList else (0..(gameStateList.lastOrNull()?.spyNum
+                range = if (showSpyNumberPicker == 1) maxSpyList else (0..(currentGame?.spyNum
                     ?: 1)).map { "$it" },
                 onCancel = { showSpyNumberPicker = 0 },
                 onChange = {
@@ -163,7 +163,7 @@ fun LocalSpyGame(viewmodel: MainViewmodel) {
                     when (showSpyNumberPicker) {
                         1 -> {
                             // 更新卧底数量时自动修正空白卡数值不超过新卧底数
-                            viewmodel.handleLocalGameIntent(
+                            viewmodel.handleGameIntent(
                                 GameIntent.RefreshSpyNumber(
                                     spyNum = maxSpyList[it].toInt(),
                                     blackNum = if (blackNum <= spyNumber) blackNum else 0
@@ -173,7 +173,7 @@ fun LocalSpyGame(viewmodel: MainViewmodel) {
 
                         2 -> {
                             // 直接更新空白卡数量
-                            viewmodel.handleLocalGameIntent(
+                            viewmodel.handleGameIntent(
                                 GameIntent.RefreshSpyNumber(
                                     spyNum = spyNumber,
                                     blackNum = it
@@ -182,8 +182,8 @@ fun LocalSpyGame(viewmodel: MainViewmodel) {
                         }
                     }
                 },
-                value = if (showSpyNumberPicker == 1) gameStateList.lastOrNull()?.spyNum
-                    ?: 1 else gameStateList.lastOrNull()?.blackNum ?: 0
+                value = if (showSpyNumberPicker == 1) currentGame?.spyNum
+                    ?: 1 else currentGame?.blackNum ?: 0
             )
 
             // 主人数选择器组件
@@ -194,7 +194,7 @@ fun LocalSpyGame(viewmodel: MainViewmodel) {
                 onCancel = { showNumberPicker = false },
                 onChange = {
                     gameTimeState++
-                    viewmodel.handleLocalGameIntent(GameIntent.RefreshPlayerNumber(numberList[it].toInt()))
+                    viewmodel.handleGameIntent(GameIntent.RefreshPlayerNumber(numberList[it].toInt()))
                 },
                 value = numberList.indexOf(playerNum.toString())
             )
@@ -202,15 +202,15 @@ fun LocalSpyGame(viewmodel: MainViewmodel) {
         }
 
         // 游戏数据显示区
-        if (gameStateList.isNotEmpty()) {
+        if (currentGame != null) {
             Spacer(Modifier.height(8.dp))
 
             // 游戏结果显示组件，key控制强制刷新
             GameGreetingView(
                 key = gameTimeState,
-                gameStateList.last(),
+                gameState = currentGame,
                 onStart = {
-                    viewmodel.handleLocalGameIntent(GameIntent.StartGame)
+                    viewmodel.handleGameIntent(GameIntent.StartGame)
                     gameTimeState++
                 }
             )

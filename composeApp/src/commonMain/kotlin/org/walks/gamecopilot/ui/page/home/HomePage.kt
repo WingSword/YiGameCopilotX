@@ -71,7 +71,7 @@ fun HomePage(viewmodel: MainViewmodel,navi:NavHostController) {
          * @param onSelect 模式切换回调，通过ViewModel处理游戏意图
          */
         ModeSelectList(selectedPos = gameMode.value) { position ->
-            viewmodel.handleLocalGameIntent(GameIntent.SwitchGameMode(position))
+            viewmodel.handleGameIntent(GameIntent.SwitchGameMode(position))
         }
 
         Spacer(Modifier.height(16.dp))

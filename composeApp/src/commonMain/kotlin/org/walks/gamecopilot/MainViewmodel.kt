@@ -45,7 +45,7 @@ class MainViewmodel : ViewModel() {
     private val _startedGameMode = MutableStateFlow<Int>(0)
     val startedGameMode: StateFlow<Int> = _startedGameMode
 
-    private val _gameEntity = MutableStateFlow(GameEntity(0, mutableListOf()))
+    private val _gameEntity = MutableStateFlow(GameEntity())
     val gameEntity: StateFlow<GameEntity> = _gameEntity
 
     private val _roomEntityState = MutableStateFlow(WsRoomDataEntity())
@@ -247,6 +247,81 @@ class MainViewmodel : ViewModel() {
         }
     }
 
+    fun handleGameIntent(intent: GameIntent) {
+        when (intent) {
+            is GameIntent.SwitchGameMode -> {
+                _startedGameMode.value = intent.mode
+            }
+            
+            is GameIntent.RefreshPlayerNumber -> {
+                _gameEntity.update { current ->
+                    current.copy(
+                        currentGame = current.currentGame?.copy(
+                            totalPlayerNumber = intent.num
+                        ) ?: LocalSpyEntity(totalPlayerNumber = intent.num)
+                    )
+                }
+            }
+            
+            is GameIntent.RefreshSpyNumber -> {
+                _gameEntity.update { current ->
+                    current.copy(
+                        currentGame = current.currentGame?.copy(
+                            spyNum = intent.spyNum,
+                            blackNum = intent.blackNum
+                        ) ?: LocalSpyEntity(spyNum = intent.spyNum, blackNum = intent.blackNum)
+                    )
+                }
+            }
+            
+            is GameIntent.RefreshWordGroups -> {
+                _gameEntity.update { current ->
+                    current.copy(
+                        globalSelectedWordGroups = intent.selectedGroups
+                    )
+                }
+            }
+            
+            GameIntent.StartGame -> {
+                startNewLocalSpyGame()
+            }
+        }
+    }
+    
+    private fun startNewLocalSpyGame() {
+        _gameEntity.update { current ->
+            // 保存当前游戏到历史记录
+            if (current.currentGame != null) {
+                saveCurrentGameToHistory(current.currentGame, current.gameCount)
+            }
+            
+            // 创建新游戏
+            val newGame = LocalSpyEntity(
+                totalPlayerNumber = current.currentGame?.totalPlayerNumber ?: 4,
+                spyNum = current.currentGame?.spyNum ?: 1,
+                blackNum = current.currentGame?.blackNum ?: 0
+            )
+            
+            // 刷新游戏词汇
+            newGame.refreshGame(current.globalSelectedWordGroups)
+            
+            current.copy(
+                currentGame = newGame,
+                gameCount = current.gameCount + 1
+            )
+        }
+    }
+    
+    private fun saveCurrentGameToHistory(game: LocalSpyEntity, currentCount: Int) {
+        try {
+            val historyKey = "local_spy_game_history_${currentCount}"
+            val gameJson = Json.encodeToString(game)
+            MMKVUtils.put(historyKey, gameJson)
+        } catch (e: Exception) {
+            GameLogger.error("保存游戏历史失败", e)
+        }
+    }
+
     @OptIn(ExperimentalTime::class)
     fun handleAwalongGameIntent(intent: AwalongIntent) {
         when (intent) {
@@ -385,13 +460,11 @@ class MainViewmodel : ViewModel() {
 
             // 处理创建结果
             createResult?.let {
-                GameLogger.debug("房间创建成功: ${roomId}")
+                GameLogger.debug("房间创建成功: $roomId")
             } ?: run {
                 GameLogger.error("房间创建失败")
                 clearRoomState()
-
                 emitNavigationEvent(NavigationEvent.NavigateTo(route = NaviRoute.HOME.route))
-
             }
         }
     }
@@ -423,73 +496,7 @@ class MainViewmodel : ViewModel() {
     }
 
 
-    /**
-     * 处理本地游戏相关意图的分发函数
-     * @param intent 游戏操作意图对象，包含具体的游戏行为指令
-     */
-    fun handleLocalGameIntent(intent: GameIntent) {
-        when (intent) {
-            // region 刷新玩家数量处理
-            is GameIntent.RefreshPlayerNumber -> {
-                _gameEntity.update { entity ->
-                    entity.copy(
-                        timeEntityList = mutableListOf(
-                            LocalSpyEntity(
-                                totalPlayerNumber = intent.num
-                            ).apply {
-                                refreshGame()
-                            }
-                        )
-                    )
-                }
-            }
 
-            // region 刷新间谍数量处理
-            is GameIntent.RefreshSpyNumber -> {
-                val timeEntity = gameEntity.value.timeEntityList.lastOrNull() ?: return
-                _gameEntity.update {
-                    it.copy(
-                        timeEntityList = mutableListOf(
-                            timeEntity.copy(
-                                spyNum = intent.spyNum,
-                                blackNum = intent.blackNum
-                            ).apply {
-                                refreshGame()
-                            }
-                        )
-                    )
-                }
-            }
-
-            // region 游戏模式切换处理
-            is GameIntent.SwitchGameMode -> {
-                _startedGameMode.value = intent.mode
-            }
-
-            is GameIntent.RefreshWordGroups -> {
-                val timeEntity = gameEntity.value.timeEntityList.lastOrNull() ?: return
-                _gameEntity.update {
-                    it.copy(
-                        timeEntityList = mutableListOf(
-                            timeEntity.copy(
-                                selectedWordGroups = intent.selectedGroups
-                            ).apply {
-                                refreshGame()
-                            }
-                        )
-                    )
-                }
-            }
-
-            is GameIntent.StartGame -> {
-                when (startedGameMode.value) {
-                    1 -> {
-                        restartLocalSpyGame()
-                    }
-                }
-            }
-        }
-    }
 
     // 在 common 代码中调用
     fun vibrateLong() = PlatformHelper.getInstance().vibrateLongMethod()
@@ -498,16 +505,5 @@ class MainViewmodel : ViewModel() {
         PlatformHelper.getInstance().vibrateMethod()
     }
 
-    private fun restartLocalSpyGame() {
-        val timeEntity = _gameEntity.value.timeEntityList.lastOrNull() ?: return
-        _gameEntity.update { entity ->
-            entity.copy(
-                timeEntityList = entity.timeEntityList.also {
-                    it.add(timeEntity.apply {
-                        refreshGame()
-                    })
-                }
-            )
-        }
-    }
+
 }

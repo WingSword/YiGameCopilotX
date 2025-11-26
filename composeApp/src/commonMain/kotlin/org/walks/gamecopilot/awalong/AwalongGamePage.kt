@@ -25,7 +25,6 @@ import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.GridItemSpan
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
-import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
@@ -35,10 +34,8 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.sharp.Check
 import androidx.compose.material.icons.sharp.CheckCircle
-import androidx.compose.material.icons.sharp.Clear
 import androidx.compose.material.icons.sharp.Close
 import androidx.compose.material.icons.sharp.Edit
-import androidx.compose.material.icons.sharp.Info
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -49,7 +46,6 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
@@ -83,6 +79,7 @@ import org.walks.gamecopilot.MainViewmodel
 import org.walks.gamecopilot.awalong.data.AwalongGameDayEntity
 import yigamecopilotx.composeapp.generated.resources.Res
 import yigamecopilotx.composeapp.generated.resources.icon_captain
+import yigamecopilotx.composeapp.generated.resources.icon_info
 
 /**
  *  Created by Wing at 17:39 on 2025/5/20
@@ -147,9 +144,9 @@ private fun PageContent(
 
             Row {
                 Icon(
-                    imageVector = Icons.Sharp.Info,
+                    painter = painterResource(Res.drawable.icon_info),
                     contentDescription = null,
-                    tint = Color.White,
+                    tint = Color.Unspecified,
                     modifier = Modifier.clickable {
                         showHelp = !showHelp
                     }

@@ -5,7 +5,9 @@ import org.walks.gamecopilot.wordMap
 
 data class GameEntity(
     val gameMode: Int = 0,
-    val timeEntityList: MutableList<LocalSpyEntity> = mutableListOf()
+    val currentGame: LocalSpyEntity = LocalSpyEntity(),
+    val gameCount: Int = 0, // 游戏局数
+    val globalSelectedWordGroups: Set<String> = WordGroupManager.getDefaultSelectedGroups() // 全局词库选择
 ) {
 
 }
@@ -14,15 +16,14 @@ data class GameEntity(
 data class LocalSpyEntity(
     var gameWord: String = "",
     var spyNum: Int = 1,
-    var totalPlayerNumber: Int = 1,
+    var totalPlayerNumber: Int = 4,
     var spyWord: String = "",
     var spies: List<Int> = listOf(),
-    var blackNum: Int = 0,
-    var selectedWordGroups: Set<String> = WordGroupManager.getDefaultSelectedGroups()
+    var blackNum: Int = 0
 ) {
-    fun refreshGame(){
+    fun refreshGame(selectedWordGroups: Set<String> = WordGroupManager.getDefaultSelectedGroups()){
         getUniqueRandomBatch()
-        optNewGameWord()
+        optNewGameWord(selectedWordGroups)
     }
 
     // 基于洗牌法的安全实现
@@ -34,7 +35,7 @@ data class LocalSpyEntity(
         spies = (1..totalPlayerNumber).shuffled().take(spyNum)
     }
 
-    private fun optNewGameWord() {
+    private fun optNewGameWord(selectedWordGroups: Set<String>) {
         val selectedWordMap = getWordMapBySelectedGroups(selectedWordGroups)
         if (selectedWordMap.isEmpty()) {
             // 如果没有选中任何词组，使用默认词库
