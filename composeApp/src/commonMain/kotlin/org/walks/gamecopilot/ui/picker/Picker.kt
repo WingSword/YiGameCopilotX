@@ -7,8 +7,9 @@ import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.gestures.snapping.rememberSnapFlingBehavior
-import androidx.compose.foundation.isSystemInDarkTheme
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
@@ -18,10 +19,11 @@ import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -30,19 +32,33 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Brush
-import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.yi.yigamecopilot.android.theme.PrimaryColor
 import org.walks.gamecopilot.PlatformHelper
 import org.walks.gamecopilot.ui.button.ButtonType
 import org.walks.gamecopilot.ui.button.WeButton
 import org.walks.gamecopilot.ui.popup.WePopup
-import kotlin.math.roundToInt
+
+/**
+ * 增强版选择器组件配置
+ */
+data class PickerConfig(
+    val height: Int = 280,
+    val itemHeight: Int = 56,
+    val animationDuration: Int = 150,
+    val showDivider: Boolean = true,
+    val enableVibration: Boolean = true,
+    val confirmText: String = "确定",
+    val cancelText: String = "取消"
+)
 
 @Composable
 fun WePicker(
@@ -50,6 +66,7 @@ fun WePicker(
     ranges: Array<List<String>>,
     values: Array<Int>,
     title: String? = null,
+    config: PickerConfig = PickerConfig(),
     onCancel: () -> Unit,
     onColumnValueChange: ((column: Int, value: Int, values: Array<Int>) -> Unit)? = null,
     onValuesChange: (Array<Int>) -> Unit
@@ -59,47 +76,57 @@ fun WePicker(
     WePopup(
         visible,
         title = title,
-        enterTransition = fadeIn(tween(150)) + slideInVertically(tween(150)) { it / 3 },
-        exitTransition = fadeOut(tween(150)) + slideOutVertically(tween(150)) { it / 3 },
+        enterTransition = fadeIn(tween(config.animationDuration)) + slideInVertically(tween(config.animationDuration)) { it / 3 },
+        exitTransition = fadeOut(tween(config.animationDuration)) + slideOutVertically(tween(config.animationDuration)) { it / 3 },
         draggable = false,
         onClose = onCancel
     ) {
-        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+        Column(
+            horizontalAlignment = Alignment.CenterHorizontally,
+            modifier = Modifier.padding(horizontal = 20.dp)
+        ) {
             Box(
                 modifier = Modifier
-                    .height(280.dp)
-                    .drawIndicator(
-                        if (isSystemInDarkTheme()) {
-                            Color(0xff202020)
-                        } else {
-                            Color(0xFFF7F7F7)
-                        }
+                    .height(config.height.dp)
+                    .clip(RoundedCornerShape(16.dp))
+                    .background(MaterialTheme.colorScheme.surfaceVariant)
+                    .border(
+                        width = 1.dp,
+                        color = MaterialTheme.colorScheme.outline.copy(alpha = 0.3f),
+                        shape = RoundedCornerShape(16.dp)
                     )
+                    .drawIndicator()
             ) {
                 // 可选列表
-                Row(verticalAlignment = Alignment.CenterVertically) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    modifier = Modifier.padding(horizontal = 8.dp)
+                ) {
                     ranges.forEachIndexed { index, options ->
                         ColumnItem(
                             options = options,
-                            index = localValues[index]
+                            index = localValues[index],
+                            config = config
                         ) {
-                            PlatformHelper.getInstance().vibrateMethod()
+                            if (config.enableVibration) {
+                                PlatformHelper.getInstance().vibrateMethod()
+                            }
                             localValues[index] = it
                             onColumnValueChange?.invoke(index, it, localValues.copyOf())
                         }
                     }
                 }
                 // 遮罩层
-                Mask()
+                Mask(config)
             }
 
-            Spacer(modifier = Modifier.height(56.dp))
+            Spacer(modifier = Modifier.height(24.dp))
             // 操作栏
-            ActionBar(onCancel) {
+            ActionBar(config, onCancel) {
                 onValuesChange(localValues)
                 onCancel()
             }
-            Spacer(modifier = Modifier.height(20.dp))
+            Spacer(modifier = Modifier.height(16.dp))
         }
     }
 }
@@ -109,20 +136,17 @@ fun WePicker(
 private fun RowScope.ColumnItem(
     options: List<String>,
     index: Int,
+    config: PickerConfig,
     onChange: (Int) -> Unit
 ) {
-    val itemHeight = 56.dp
-    val verticalPadding = remember { (280.dp - itemHeight) / 2 }
+    val itemHeight = config.itemHeight.dp
+    val verticalPadding = remember { (config.height.dp - itemHeight) / 2 }
     val listState = rememberLazyListState(index)
-
-
 
     LaunchedEffect(listState) {
         snapshotFlow { listState.firstVisibleItemIndex }
             .collect {
                 onChange(it)
-                if (it != index) {
-                }
             }
     }
 
@@ -133,82 +157,86 @@ private fun RowScope.ColumnItem(
         horizontalAlignment = Alignment.CenterHorizontally,
         flingBehavior = rememberSnapFlingBehavior(listState)
     ) {
-        items(options) {
+        items(options) { item ->
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(itemHeight),
+                    .height(itemHeight)
+                    .padding(horizontal = 12.dp),
                 contentAlignment = Alignment.Center
             ) {
-                Text(text = it, color = MaterialTheme.colorScheme.onPrimary, fontSize = 17.sp)
+                Text(
+                    text = item,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    fontSize = 17.sp,
+                    fontWeight = FontWeight.Medium
+                )
             }
         }
     }
 }
 
 @Composable
-private fun Mask() {
+private fun Mask(config: PickerConfig) {
     @Composable
-    fun ColumnScope.MaskItem(lightColors: List<Color>, darkColors: List<Color>) {
+    fun ColumnScope.MaskItem() {
         Box(
             modifier = Modifier
                 .fillMaxWidth()
                 .weight(1f)
                 .background(
                     Brush.verticalGradient(
-                        colors = if (isSystemInDarkTheme()) {
-                            darkColors
-                        } else {
-                            lightColors
-                        }
+                        colors = listOf(
+                            MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.95f),
+                            MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.6f)
+                        )
                     )
                 )
         )
     }
 
     Column {
-        MaskItem(
-            lightColors = listOf(
-                Color(255, 255, 255, (255 * 0.95).roundToInt()),
-                Color(255, 255, 255, (255 * 0.6).roundToInt())
-            ),
-            darkColors = listOf(
-                Color(25, 25, 25, (25 * 0.95).roundToInt()),
-                Color(25, 25, 25, (25 * 0.6).roundToInt())
-            )
-        )
-        Box(modifier = Modifier.height(56.dp))
-        MaskItem(
-            lightColors = listOf(
-                Color(255, 255, 255, (255 * 0.6).roundToInt()),
-                Color(255, 255, 255, (255 * 0.95).roundToInt())
-            ),
-            darkColors = listOf(
-                Color(25, 25, 25, (25 * 0.6).roundToInt()),
-                Color(25, 25, 25, (25 * 0.95).roundToInt())
-            )
-        )
+        MaskItem()
+        Box(modifier = Modifier.height(config.itemHeight.dp))
+        MaskItem()
     }
 }
 
 @Composable
-private fun Modifier.drawIndicator(color: Color) = this.drawBehind {
+private fun Modifier.drawIndicator() = this.drawBehind {
     drawRoundRect(
-        color,
+        color = PrimaryColor.copy(alpha = 0.1f),
         topLeft = Offset(0f, size.height / 2 - 56.dp.toPx() / 2),
         size = Size(size.width, 56.dp.toPx()),
-        cornerRadius = CornerRadius(6.dp.toPx())
+        cornerRadius = CornerRadius(0.dp.toPx())
+    )
+    // 添加选中指示器边框
+    drawRoundRect(
+        color = PrimaryColor.copy(alpha = 0.3f),
+        topLeft = Offset(0f, size.height / 2 - 56.dp.toPx() / 2),
+        size = Size(size.width, 56.dp.toPx()),
+        cornerRadius = CornerRadius(0.dp.toPx()),
+        style = androidx.compose.ui.graphics.drawscope.Stroke(width = 1.dp.toPx())
     )
 }
 
 @Composable
-private fun ActionBar(onCancel: () -> Unit, onConfirm: () -> Unit) {
-    Row {
-        WeButton(text = "取消", type = ButtonType.PLAIN, width = 144.dp) {
+private fun ActionBar(config: PickerConfig, onCancel: () -> Unit, onConfirm: () -> Unit) {
+    Row(
+        horizontalArrangement = Arrangement.spacedBy(16.dp),
+        modifier = Modifier.fillMaxWidth()
+    ) {
+        WeButton(
+            text = config.cancelText, 
+            type = ButtonType.PLAIN, 
+            modifier = Modifier.weight(1f)
+        ) {
             onCancel()
         }
-        Spacer(modifier = Modifier.width(20.dp))
-        WeButton(text = "确定", width = 144.dp) {
+        WeButton(
+            text = config.confirmText, 
+            modifier = Modifier.weight(1f)
+        ) {
             onConfirm()
         }
     }

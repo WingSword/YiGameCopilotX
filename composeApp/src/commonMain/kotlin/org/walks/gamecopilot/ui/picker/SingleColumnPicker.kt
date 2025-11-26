@@ -13,15 +13,17 @@ fun WeSingleColumnPicker(
     title: String? = null,
     range: List<String>,
     value: Int,
+    config: PickerConfig = PickerConfig(),
     onChange: (Int) -> Unit,
     onCancel: () -> Unit
 ) {
     WePicker(
-        visible,
-        arrayOf(range),
-        arrayOf(value),
-        title,
-        onCancel
+        visible = visible,
+        ranges = arrayOf(range),
+        values = arrayOf(value),
+        title = title,
+        config = config,
+        onCancel = onCancel
     ) {
         onChange(it.first())
     }
@@ -35,6 +37,7 @@ interface SingleColumnPickerState {
         title: String? = null,
         range: List<String>,
         value: Int,
+        config: PickerConfig = PickerConfig(),
         onChange: (Int) -> Unit
     )
 
@@ -51,6 +54,7 @@ fun rememberSingleColumnPickerState(): SingleColumnPickerState {
             title = props.title,
             range = props.range,
             value = props.value,
+            config = props.config,
             onChange = props.onChange,
             onCancel = { state.hide() }
         )
@@ -68,9 +72,10 @@ private class SingleColumnPickerStateImpl : SingleColumnPickerState {
         title: String?,
         range: List<String>,
         value: Int,
+        config: PickerConfig,
         onChange: (Int) -> Unit
     ) {
-        props = SingleColumnPickerProps(title, range, value, onChange)
+        props = SingleColumnPickerProps(title, range, value, config, onChange)
         visible = true
     }
 
@@ -83,5 +88,6 @@ private data class SingleColumnPickerProps(
     val title: String? = null,
     val range: List<String>,
     val value: Int,
+    val config: PickerConfig,
     val onChange: (Int) -> Unit
 )

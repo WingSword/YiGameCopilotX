@@ -8,7 +8,6 @@ import androidx.compose.animation.core.tween
 import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.Orientation
 import androidx.compose.foundation.gestures.draggable
 import androidx.compose.foundation.gestures.rememberDraggableState
@@ -48,7 +47,6 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
-
 import kotlinx.coroutines.delay
 import org.walks.gamecopilot.clickableWithoutRipple
 import kotlin.math.roundToInt
@@ -138,7 +136,7 @@ fun WePopup(
                         }
                     )
                     .clip(RoundedCornerShape(topStart = 12.dp, topEnd = 12.dp))
-                    .background(MaterialTheme.colorScheme.onBackground)
+                    .background(MaterialTheme.colorScheme.background)
                     .clickableWithoutRipple { }
                     .padding(padding)
                     .onSizeChanged {
@@ -221,7 +219,7 @@ private fun PopupTitle(title: String) {
     ) {
         Text(
             text = title,
-            color = MaterialTheme.colorScheme.onPrimary,
+            color = MaterialTheme.colorScheme.primary,
             fontSize = 17.sp,
             fontWeight = FontWeight.Bold
         )

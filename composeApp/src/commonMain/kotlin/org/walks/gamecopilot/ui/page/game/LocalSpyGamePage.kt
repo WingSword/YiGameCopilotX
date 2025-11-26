@@ -15,6 +15,7 @@ import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.ExperimentalFoundationApi
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.LocalIndication
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -87,6 +88,7 @@ import org.walks.gamecopilot.ui.component.WordGroupSelector
 import org.walks.gamecopilot.ui.picker.WeSingleColumnPicker
 import org.walks.gamecopilot.ui.widget.FlipCard
 import yigamecopilotx.composeapp.generated.resources.Res
+import yigamecopilotx.composeapp.generated.resources.icon_cardindex
 import yigamecopilotx.composeapp.generated.resources.icon_info
 
 
@@ -460,11 +462,13 @@ fun GameGreetingView(key: Int, gameState: LocalSpyEntity, onStart: () -> Unit) {
             })
     }
 
+
     Column(horizontalAlignment = Alignment.CenterHorizontally) {
         /* 玩家选择区域布局 */
         LocalPlayerSelectArea(
             playerNum = realGameState.totalPlayerNumber,
             getWatchedTime = { watchedTimeList[it] },
+
             badge = { currentSelect ->
                 // 不同状态下的徽章显示逻辑
                 if (identityDisPlayState.value == IDENTITY_SHOW_ALL) {
@@ -546,9 +550,12 @@ fun LocalPlayerSelectArea(
     playerNum: Int = 4,
     getWatchedTime: (Int) -> Int,
     badge: @Composable (Int) -> Unit = {},
+    identity: Int=0,
     onClick: (Int) -> Unit,
     onLongClick: (Int) -> Unit
 ) {
+    var identityState by remember { mutableStateOf("") }
+
     // 创建4列的垂直网格布局
     LazyVerticalGrid(
         GridCells.Fixed(4),
@@ -575,19 +582,7 @@ fun LocalPlayerSelectArea(
                 // 玩家头像容器，包含点击交互和状态显示
                 Box(
                     modifier = Modifier
-                        .width(66.dp).height(66.dp)
-                        .clip(RoundedCornerShape(16.dp))
-                        .background(
-                            color = when {
-                                interactionState.value is PressInteraction.Press ->
-                                    MaterialTheme.colorScheme.primary.copy(alpha = 0.1f)
-
-                                watchedTime >= 1 -> MaterialTheme.colorScheme.surface
-                                else -> MaterialTheme.colorScheme.primary
-                            },
-
-                            )
-                        .border(BorderStroke(4.dp, borderColor), RoundedCornerShape(16.dp))
+                        .size(100.dp)
                         .combinedClickable(
                             onLongClick = { onLongClick(currentPlayer) },
                             onClick = { onClick(currentPlayer) },
@@ -595,14 +590,24 @@ fun LocalPlayerSelectArea(
                             indication = LocalIndication.current
                         )
                         .padding(vertical = 8.dp),
-                    contentAlignment = Alignment.Center
+                    contentAlignment = Alignment.BottomStart
                 ) {
+                    Image(
+                        painter = painterResource(Res.drawable.icon_cardindex),
+                        contentDescription = "Card index icon"
+                    )
+                    Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.TopCenter){
+                       Text("卧底我滴我滴", modifier = Modifier.padding(top = 10.dp), style = MaterialTheme.typography.labelSmall)
+                    }
+
                     // 玩家序号文字显示，根据观看状态改变颜色
                     Text(
                         text = currentPlayer.toString(),
                         color = if (watchedTime >= 1) Color.LightGray
-                        else MaterialTheme.colorScheme.onPrimary,
-                        style = MaterialTheme.typography.bodyLarge
+                        else MaterialTheme.colorScheme.secondary,
+                        style = MaterialTheme.typography.bodyMedium,
+                        modifier = Modifier.padding(start = 20.dp, bottom = 4.dp),
+                        fontWeight = FontWeight.SemiBold
                     )
                 }
                 // 显示玩家对应的徽章组件
