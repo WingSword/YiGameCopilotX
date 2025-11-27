@@ -2,15 +2,16 @@ package org.walks.gamecopilot.ui.page.game
 
 
 import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.core.Animatable
-import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.VisibilityThreshold
+import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
+import androidx.compose.animation.slideInHorizontally
 import androidx.compose.animation.slideInVertically
+import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.ExperimentalFoundationApi
@@ -33,14 +34,15 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
+import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.filled.Refresh
+import androidx.compose.material.icons.filled.Create
+import androidx.compose.material.icons.filled.KeyboardArrowUp
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
@@ -56,7 +58,6 @@ import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -72,7 +73,6 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import com.yi.yigamecopilot.android.theme.MorandiColorList
-import kotlinx.coroutines.launch
 import org.jetbrains.compose.resources.painterResource
 import org.walks.gamecopilot.MainViewmodel
 import org.walks.gamecopilot.PlatformHelper
@@ -106,6 +106,7 @@ const val IDENTITY_SHOW_ALL = -3
  * @param viewmodel MainViewmodel - 游戏主视图模型，用于处理业务逻辑和数据存储
  * @param onBack 返回回调函数
  */
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun LocalSpyGamePage(viewmodel: MainViewmodel, onBack: () -> Unit) {
     // 游戏状态控制：用于强制刷新游戏问候视图的key值
@@ -124,6 +125,22 @@ fun LocalSpyGamePage(viewmodel: MainViewmodel, onBack: () -> Unit) {
 
     // 状态控制：词汇查看弹窗的显示状态
     var showWordsDialog by remember { mutableStateOf(false) }
+
+    // 状态控制：词库选择区域的折叠状态
+    var isWordLibraryExpanded by remember { mutableStateOf(true) }
+
+    // 状态控制：公布所有身份
+    var showAllIdentities by remember { mutableStateOf(false) }
+
+    // 状态控制：所有玩家是否都已查看身份
+    var allPlayersViewed by remember { mutableStateOf(false) }
+
+    // 游戏开始后自动折叠词库区域
+    LaunchedEffect(gameTimeState) {
+        if (gameTimeState > 0) {
+            isWordLibraryExpanded = false
+        }
+    }
 
     // 获取全局选中的词组
     val selectedWordGroups = gameEntity.globalSelectedWordGroups
@@ -167,6 +184,81 @@ fun LocalSpyGamePage(viewmodel: MainViewmodel, onBack: () -> Unit) {
                     )
                 }
             }
+
+            // 右侧按钮组
+            Row(
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                // 词汇选择按钮 - 只在词库区域隐藏时显示
+                AnimatedVisibility(
+                    visible = !isWordLibraryExpanded,
+                    enter = slideInHorizontally(
+                        initialOffsetX = { it },
+                        animationSpec = tween(durationMillis = 300)
+                    ) + fadeIn(animationSpec = tween(durationMillis = 300)),
+                    exit = slideOutHorizontally(
+                        targetOffsetX = { it },
+                        animationSpec = tween(durationMillis = 300)
+                    ) + fadeOut(animationSpec = tween(durationMillis = 300))
+                ) {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        modifier = Modifier
+                            .clickable { isWordLibraryExpanded = true }
+                            .background(
+                                color = MaterialTheme.colorScheme.primaryContainer,
+                                shape = RoundedCornerShape(20.dp)
+                            )
+                            .padding(horizontal = 12.dp, vertical = 6.dp)
+                    ) {
+                        Icon(
+                            painter = painterResource(Res.drawable.icon_info),
+                            contentDescription = "词汇选择",
+                            tint = Color.Unspecified, // 使用原色
+                            modifier = Modifier.size(16.dp)
+                        )
+                        Spacer(modifier = Modifier.width(4.dp))
+                        Text(
+                            text = "词汇选择",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onPrimaryContainer,
+                            fontWeight = FontWeight.Medium
+                        )
+                    }
+                }
+
+                Spacer(modifier = Modifier.width(8.dp))
+
+                // 折叠控制按钮 - 只在词库区域展开时显示
+                AnimatedVisibility(
+                    visible = isWordLibraryExpanded,
+                    enter = slideInHorizontally(
+                        initialOffsetX = { it },
+                        animationSpec = tween(durationMillis = 300)
+                    ) + fadeIn(animationSpec = tween(durationMillis = 300)),
+                    exit = slideOutHorizontally(
+                        targetOffsetX = { it },
+                        animationSpec = tween(durationMillis = 300)
+                    ) + fadeOut(animationSpec = tween(durationMillis = 300))
+                ) {
+                    IconButton(
+                        onClick = { isWordLibraryExpanded = false },
+                        modifier = Modifier.size(32.dp)
+                    ) {
+                        val rotationAngle by animateFloatAsState(
+                            targetValue = if (isWordLibraryExpanded) 0f else 180f,
+                            animationSpec = tween(durationMillis = 300),
+                            label = "arrow_rotation"
+                        )
+                        Icon(
+                            imageVector = Icons.Filled.KeyboardArrowUp,
+                            contentDescription = "折叠词库",
+                            modifier = Modifier.rotate(rotationAngle),
+                            tint = MaterialTheme.colorScheme.primary
+                        )
+                    }
+                }
+            }
         }
 
         Spacer(modifier = Modifier.height(8.dp))
@@ -192,42 +284,70 @@ fun LocalSpyGamePage(viewmodel: MainViewmodel, onBack: () -> Unit) {
                     modifier = Modifier.padding(bottom = 16.dp)
                 )
 
-                // 词库选择区域
-                Column(
-                    modifier = Modifier.padding(bottom = 20.dp)
-                ) {
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Text(
-                            text = "词库选择",
-                            style = MaterialTheme.typography.bodyMedium,
-                            fontWeight = FontWeight.Medium,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                // 词库选择区域 - 可折叠
+                AnimatedVisibility(
+                    visible = isWordLibraryExpanded,
+                    enter = slideInVertically(
+                        initialOffsetY = { -it / 2 }, // 从上方1/2位置滑入
+                        animationSpec = tween(
+                            durationMillis = 400,
+                            easing = androidx.compose.animation.core.EaseOutQuart
                         )
+                    ) + fadeIn(
+                        animationSpec = tween(
+                            durationMillis = 400,
+                            easing = androidx.compose.animation.core.EaseOutQuart
+                        )
+                    ),
+                    exit = slideOutVertically(
+                        targetOffsetY = { -it / 2 }, // 向上方1/2位置滑出
+                        animationSpec = tween(
+                            durationMillis = 300,
+                            easing = androidx.compose.animation.core.EaseInQuart
+                        )
+                    ) + fadeOut(
+                        animationSpec = tween(
+                            durationMillis = 300,
+                            easing = androidx.compose.animation.core.EaseInQuart
+                        )
+                    )
+                ) {
+                    Column(
+                        modifier = Modifier.padding(bottom = 20.dp)
+                    ) {
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Text(
+                                text = "词库选择",
+                                style = MaterialTheme.typography.bodyMedium,
+                                fontWeight = FontWeight.Medium,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
 
-                        // 词汇查看按钮
-                        Icon(
-                            painter = painterResource(Res.drawable.icon_info),
-                            contentDescription = "查看词汇",
-                            tint = Color.Unspecified,
-                            modifier = Modifier.size(24.dp).clickable {
-                                showWordsDialog = true
+                            // 词汇查看按钮 - 使用原色
+                            Icon(
+                                painter = painterResource(Res.drawable.icon_info),
+                                contentDescription = "查看词汇",
+                                tint = Color.Unspecified, // 使用原色
+                                modifier = Modifier.size(24.dp).clickable {
+                                    showWordsDialog = true
+                                }
+                            )
+                        }
+
+                        Spacer(modifier = Modifier.height(12.dp))
+
+                        // 词库选择内容
+                        WordGroupSelectorContent(
+                            selectedGroupIds = selectedWordGroups,
+                            onGroupsChanged = { groupIds ->
+                                viewmodel.handleGameIntent(GameIntent.RefreshWordGroups(groupIds))
                             }
                         )
                     }
-
-                    Spacer(modifier = Modifier.height(12.dp))
-
-                    // 词库选择内容
-                    WordGroupSelectorContent(
-                        selectedGroupIds = selectedWordGroups,
-                        onGroupsChanged = { groupIds ->
-                            viewmodel.handleGameIntent(GameIntent.RefreshWordGroups(groupIds))
-                        }
-                    )
                 }
 
                 // 分割线
@@ -252,12 +372,6 @@ fun LocalSpyGamePage(viewmodel: MainViewmodel, onBack: () -> Unit) {
                         modifier = Modifier.weight(3f),
                         verticalArrangement = Arrangement.spacedBy(4.dp)
                     ) {
-                        Text(
-                            text = "游戏设置",
-                            style = MaterialTheme.typography.bodyMedium,
-                            fontWeight = FontWeight.Medium,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        )
 
                         // 游戏状态控制：当前显示的卧底/空白卡选择器类型（0=隐藏，1=卧底，2=空白卡）
                         var showSpyNumberPicker by remember { mutableStateOf(0) }
@@ -335,13 +449,6 @@ fun LocalSpyGamePage(viewmodel: MainViewmodel, onBack: () -> Unit) {
                         modifier = Modifier.weight(2f),
                         horizontalAlignment = Alignment.CenterHorizontally
                     ) {
-                        Text(
-                            text = "游戏控制",
-                            style = MaterialTheme.typography.bodyMedium,
-                            fontWeight = FontWeight.Medium,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            modifier = Modifier.padding(bottom = 8.dp)
-                        )
 
                         // 开始游戏按钮 - 大尺寸
                         GameControlButton(
@@ -354,19 +461,138 @@ fun LocalSpyGamePage(viewmodel: MainViewmodel, onBack: () -> Unit) {
                                 if (gameTimeState > 0) {
                                     gameTimeState++
                                 }
+                                // 重新开始时重置身份公布状态
+                                showAllIdentities = false
                             },
                             color = if (gameTimeState == 0) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.secondary
                         )
 
                         Spacer(modifier = Modifier.height(12.dp))
 
-                        // 游戏状态提示
-                        Text(
-                            text = if (gameTimeState == 0) "配置完成，开始游戏" else "游戏进行中",
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            textAlign = TextAlign.Center
-                        )
+                        // 游戏状态提示区域 - 统一的状态显示组件
+                        AnimatedVisibility(
+                            visible = gameTimeState > 0,
+                            enter = slideInVertically(
+                                initialOffsetY = { it },
+                                animationSpec = tween(durationMillis = 300)
+                            ) + fadeIn(animationSpec = tween(durationMillis = 300)),
+                            exit = slideOutVertically(
+                                targetOffsetY = { -it },
+                                animationSpec = tween(durationMillis = 300)
+                            ) + fadeOut(animationSpec = tween(durationMillis = 300))
+                        ) {
+                            Box(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .height(50.dp)
+                                    .let { modifier ->
+                                        if (allPlayersViewed && !showAllIdentities) {
+                                            modifier.combinedClickable(
+                                                onLongClick = {
+                                                    PlatformHelper.getInstance().vibrateLongMethod()
+                                                    showAllIdentities = true
+                                                },
+                                                onClick = {
+                                                    PlatformHelper.getInstance().vibrateMethod()
+                                                }
+                                            )
+                                                .background(
+                                                    color = MaterialTheme.colorScheme.error.copy(
+                                                        alpha = 0.1f
+                                                    ),
+                                                    shape = RoundedCornerShape(8.dp)
+                                                )
+                                                .border(
+                                                    width = 1.dp,
+                                                    color = MaterialTheme.colorScheme.error.copy(
+                                                        alpha = 0.3f
+                                                    ),
+                                                    shape = RoundedCornerShape(8.dp)
+                                                )
+                                        } else {
+                                            modifier.background(
+                                                color = MaterialTheme.colorScheme.primaryContainer.copy(
+                                                    alpha = 0.3f
+                                                ),
+                                                shape = RoundedCornerShape(8.dp)
+                                            )
+                                        }
+                                    },
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Row(
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.Center
+                                ) {
+                                    // 根据状态显示不同的图标和文字
+                                    if (allPlayersViewed && !showAllIdentities) {
+                                        // 长按公布所有身份状态
+                                        Icon(
+                                            imageVector = Icons.Filled.Create,
+                                            contentDescription = "公布所有身份",
+                                            tint = MaterialTheme.colorScheme.error,
+                                            modifier = Modifier.size(18.dp)
+                                        )
+                                        Spacer(modifier = Modifier.width(6.dp))
+                                        Text(
+                                            text = "长按公布所有身份",
+                                            style = MaterialTheme.typography.bodySmall,
+                                            color = MaterialTheme.colorScheme.error,
+                                            fontWeight = FontWeight.Medium
+                                        )
+                                    } else if (showAllIdentities) {
+                                        // 游戏结束状态
+                                        Box(
+                                            modifier = Modifier
+                                                .size(8.dp)
+                                                .background(
+                                                    color = MaterialTheme.colorScheme.error,
+                                                    shape = RoundedCornerShape(4.dp)
+                                                )
+                                        )
+                                        Spacer(modifier = Modifier.width(6.dp))
+                                        Text(
+                                            text = "游戏已结束",
+                                            style = MaterialTheme.typography.bodySmall,
+                                            color = MaterialTheme.colorScheme.error,
+                                            fontWeight = FontWeight.Medium
+                                        )
+                                    } else {
+                                        // 游戏进行中状态
+                                        Box(
+                                            modifier = Modifier
+                                                .size(8.dp)
+                                                .background(
+                                                    color = MaterialTheme.colorScheme.primary,
+                                                    shape = RoundedCornerShape(4.dp)
+                                                )
+                                        )
+                                        Spacer(modifier = Modifier.width(6.dp))
+                                        Text(
+                                            text = "游戏进行中",
+                                            style = MaterialTheme.typography.bodySmall,
+                                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                            fontWeight = FontWeight.Medium
+                                        )
+                                    }
+                                }
+                            }
+                        }
+
+                        // 游戏未开始时的提示
+                        AnimatedVisibility(
+                            visible = gameTimeState == 0,
+                            enter = fadeIn(animationSpec = tween(durationMillis = 300)),
+                            exit = fadeOut(animationSpec = tween(durationMillis = 300))
+                        ) {
+                            Text(
+                                text = "配置完成，开始游戏",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                textAlign = TextAlign.Center,
+                                fontWeight = FontWeight.Medium
+                            )
+                        }
                     }
                 }
 
@@ -395,10 +621,9 @@ fun LocalSpyGamePage(viewmodel: MainViewmodel, onBack: () -> Unit) {
             GameGreetingView(
                 key = gameTimeState,
                 gameState = currentGame,
-                onStart = {
-                    viewmodel.handleGameIntent(GameIntent.StartGame)
-                    gameTimeState++
-                }
+                showAllIdentities = showAllIdentities,
+                onShowAllIdentitiesChange = { showAllIdentities = it },
+                onAllPlayersViewed = { allPlayersViewed = it }
             )
         }
 
@@ -459,10 +684,12 @@ fun LocalSpyGamePage(viewmodel: MainViewmodel, onBack: () -> Unit) {
                                         (spyWord == currentGame.gameWord && normalWord == currentGame.spyWord)
                             }
                         }
-                    
-                    LazyColumn(
+
+                    LazyVerticalGrid(
+                        columns = GridCells.Fixed(2),
                         modifier = Modifier.fillMaxSize(),
-                        verticalArrangement = Arrangement.spacedBy(8.dp)
+                        verticalArrangement = Arrangement.spacedBy(8.dp),
+                        horizontalArrangement = Arrangement.spacedBy(4.dp)
                     ) {
                         items(availableWords) { (spyWord, normalWord) ->
                             Card(
@@ -483,14 +710,14 @@ fun LocalSpyGamePage(viewmodel: MainViewmodel, onBack: () -> Unit) {
                                         modifier = Modifier.weight(1f)
                                     ) {
                                         Text(
-                                            text = "卧底词: $spyWord",
+                                            text = spyWord,
                                             style = MaterialTheme.typography.bodyMedium,
                                             fontWeight = FontWeight.Medium,
                                             color = MaterialTheme.colorScheme.error
                                         )
                                         Spacer(modifier = Modifier.height(4.dp))
                                         Text(
-                                            text = "平民词: $normalWord",
+                                            text = normalWord,
                                             style = MaterialTheme.typography.bodyMedium,
                                             color = MaterialTheme.colorScheme.onSurfaceVariant
                                         )
@@ -623,22 +850,33 @@ private fun WordGroupItem(
  *
  * @param key 重组标识键，用于控制派生状态和记忆值的更新时机
  * @param gameState 当前游戏状态实体，包含玩家身份信息和游戏配置
+ * @param showAllIdentities 是否显示所有身份
+ * @param onShowAllIdentitiesChange 显示所有身份状态变化回调
  */
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
-fun GameGreetingView(key: Int, gameState: LocalSpyEntity, onStart: () -> Unit) {
+fun GameGreetingView(
+    key: Int,
+    gameState: LocalSpyEntity,
+    showAllIdentities: Boolean = false,
+    onShowAllIdentitiesChange: (Boolean) -> Unit = {},
+    onAllPlayersViewed: (Boolean) -> Unit = {}
+) {
     // 当前选中玩家索引（1-based）
     var currentSelectPlayer by remember { mutableIntStateOf(1) }
-    // 身份显示状态机（默认隐藏）
+    // 身份显示状态机（默认隐藏，但可以由外部控制）
     val identityDisPlayState = remember { mutableStateOf(IDENTITY_DISMISS) }
+
+    // 监听外部showAllIdentities状态
+    LaunchedEffect(showAllIdentities) {
+        if (showAllIdentities) {
+            identityDisPlayState.value = IDENTITY_SHOW_ALL
+        }
+    }
     //单个玩家身份展示状态
     val playerIdentityState = remember {
         mutableStateListOf<Int>()
     }
-    // 协程作用域：用于处理动画等异步操作
-    val scope = rememberCoroutineScope()
-    // 旋转动画：刷新按钮的旋转动画控制
-    val rotation = remember { Animatable(0f) }
 
     // 派生游戏状态（根据key变化重置）
     val realGameState by remember(key) {
@@ -656,36 +894,15 @@ fun GameGreetingView(key: Int, gameState: LocalSpyEntity, onStart: () -> Unit) {
             watchedTimeList[it] = 0
         }
         playerIdentityState.clear()
+        onAllPlayersViewed(false)
     }
-    Row(verticalAlignment = Alignment.CenterVertically) {
-        Text(
-            text = if ((watchedTimeList.filter { it > 0 }).size >= gameState.totalPlayerNumber
-                && identityDisPlayState.value != IDENTITY_SHOW_ALL
-            ) "长按公布所有身份" else "选择编号查看",
-            color = MaterialTheme.colorScheme.secondary,
-            modifier = Modifier.combinedClickable(onLongClick = {
-                PlatformHelper.getInstance().vibrateLongMethod()
-                identityDisPlayState.value = IDENTITY_SHOW_ALL
-                PlatformHelper.getInstance().vibrateLongMethod()
-            }) {
-                /* 点击事件占位 */
-            })
-        // 刷新按钮：带旋转动画的重新开始功能
-        Icon(
-            imageVector = Icons.Filled.Refresh,
-            contentDescription = "重新开始",
-            tint = MaterialTheme.colorScheme.secondary,
-            modifier = Modifier.rotate(rotation.value).clickable {
-                onStart()
-                scope.launch {
-                    rotation.animateTo(
-                        targetValue = 360f,
-                        animationSpec = tween(durationMillis = 500, easing = LinearEasing)
-                    )
-                    rotation.snapTo(0f) // 重置角度准备下次旋转
-                }
-            })
+
+    // 监听玩家查看状态，当所有玩家都查看过身份时通知外部
+    LaunchedEffect(watchedTimeList) {
+        val allViewed = (watchedTimeList.filter { it > 0 }).size >= gameState.totalPlayerNumber
+        onAllPlayersViewed(allViewed)
     }
+
 
 
     Column(horizontalAlignment = Alignment.CenterHorizontally) {
@@ -1048,22 +1265,11 @@ fun GameControlButton(
             ),
         contentAlignment = Alignment.Center
     ) {
-        Column(
-            horizontalAlignment = Alignment.CenterHorizontally
-        ) {
-            Text(
-                text = text,
-                style = MaterialTheme.typography.titleMedium,
-                color = MaterialTheme.colorScheme.onPrimary,
-                fontWeight = FontWeight.Bold
-            )
-            Spacer(modifier = Modifier.height(4.dp))
-            Icon(
-                imageVector = Icons.Filled.Refresh,
-                contentDescription = text,
-                tint = MaterialTheme.colorScheme.onPrimary,
-                modifier = Modifier.size(20.dp)
-            )
-        }
+        Text(
+            text = text,
+            style = MaterialTheme.typography.titleMedium,
+            color = MaterialTheme.colorScheme.onPrimary,
+            fontWeight = FontWeight.Bold
+        )
     }
 }
