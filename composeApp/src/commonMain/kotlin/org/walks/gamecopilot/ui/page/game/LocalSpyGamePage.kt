@@ -2,7 +2,6 @@ package org.walks.gamecopilot.ui.page.game
 
 
 import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.Spring
@@ -22,7 +21,6 @@ import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
-import androidx.compose.foundation.interaction.PressInteraction
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -74,7 +72,6 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import com.yi.yigamecopilot.android.theme.MorandiColorList
-import com.yi.yigamecopilot.android.theme.MorandiGreen
 import kotlinx.coroutines.launch
 import org.jetbrains.compose.resources.painterResource
 import org.walks.gamecopilot.MainViewmodel
@@ -83,13 +80,14 @@ import org.walks.gamecopilot.data.entity.LocalSpyEntity
 import org.walks.gamecopilot.data.entity.WordGroupManager
 import org.walks.gamecopilot.getWordMapBySelectedGroups
 import org.walks.gamecopilot.intent.GameIntent
-import org.walks.gamecopilot.ui.badge.WeBadge
-import org.walks.gamecopilot.ui.component.WordGroupSelector
 import org.walks.gamecopilot.ui.picker.WeSingleColumnPicker
 import org.walks.gamecopilot.ui.widget.FlipCard
 import yigamecopilotx.composeapp.generated.resources.Res
+import yigamecopilotx.composeapp.generated.resources.icon_asterisk
 import yigamecopilotx.composeapp.generated.resources.icon_cardindex
+import yigamecopilotx.composeapp.generated.resources.icon_cardindex_notitle
 import yigamecopilotx.composeapp.generated.resources.icon_info
+import yigamecopilotx.composeapp.generated.resources.icon_star
 
 
 /**
@@ -118,7 +116,7 @@ fun LocalSpyGamePage(viewmodel: MainViewmodel, onBack: () -> Unit) {
     val currentGame = gameEntity.currentGame
 
     // 当前玩家总数，默认取最近一次记录或4人
-    val playerNum = currentGame?.totalPlayerNumber ?: 4
+    val playerNum = currentGame.totalPlayerNumber
     // 状态控制：控制人数选择器弹窗的显示状态
     var showNumberPicker by remember { mutableStateOf(false) }
     // 可选的游玩人数范围（4-12人）
@@ -169,128 +167,234 @@ fun LocalSpyGamePage(viewmodel: MainViewmodel, onBack: () -> Unit) {
                     )
                 }
             }
-
-            // 词汇查看按钮
-            Icon(
-                painter = painterResource(Res.drawable.icon_info),
-                contentDescription = "查看词汇",
-                tint = Color.Unspecified,
-                modifier = Modifier.size(32.dp).clickable {
-                    showWordsDialog = true
-                }
-            )
-
         }
 
         Spacer(modifier = Modifier.height(8.dp))
 
-        // 词库选择区 - 独立于游戏配置，优先显示
-        WordGroupSelector(
-            selectedGroupIds = selectedWordGroups,
-            onGroupsChanged = { groupIds ->
-                viewmodel.handleGameIntent(GameIntent.RefreshWordGroups(groupIds))
-            }
-        )
-
-        Spacer(modifier = Modifier.height(8.dp))
-
-        // 游玩人数选择区
-        Row(
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.Center,
-            modifier = Modifier.background(MorandiGreen, shape = RoundedCornerShape(12.dp))
-                .fillMaxWidth().border(
-                    width = 4.dp,
-                    color = MaterialTheme.colorScheme.secondary,
-                    shape = RoundedCornerShape(12.dp)
-                ).padding(12.dp)
+        // 游戏配置区域 - 统一的卡片样式，包含词库选择
+        Card(
+            modifier = Modifier.fillMaxWidth(),
+            shape = RoundedCornerShape(16.dp),
+            colors = CardDefaults.cardColors(
+                containerColor = MaterialTheme.colorScheme.surfaceVariant
+            ),
+            elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
         ) {
-            Text("选择游玩人数 $playerNum", modifier = Modifier.clickable {
-                showNumberPicker = true
-            }, color = MaterialTheme.colorScheme.secondary)
-            // 当玩家数>=6时显示进阶配置选项
+            Column(
+                modifier = Modifier.padding(20.dp)
+            ) {
+                // 区域标题
+                Text(
+                    text = "游戏配置",
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.padding(bottom = 16.dp)
+                )
 
-            // 状态控制：当前显示的卧底/空白卡选择器类型（0=隐藏，1=卧底，2=空白卡）
-            var showSpyNumberPicker by remember { mutableStateOf(0) }
-            // 最大卧底数计算（总人数的三分之一）
-            val maxSpyList = (1..playerNum / 3).map { "$it" }
+                // 词库选择区域
+                Column(
+                    modifier = Modifier.padding(bottom = 20.dp)
+                ) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(
+                            text = "词库选择",
+                            style = MaterialTheme.typography.bodyMedium,
+                            fontWeight = FontWeight.Medium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
 
-            // 从游戏状态获取当前配置值
-            val spyNumber = currentGame?.spyNum ?: 1
-            val blackNum = currentGame?.blackNum ?: 0
-
-            Spacer(Modifier.weight(1f))
-
-            // 卧底数量选择按钮
-            Text("卧底人数 $spyNumber", modifier = Modifier.clickable {
-                showSpyNumberPicker = 1
-            }, color = MaterialTheme.colorScheme.error)
-            Spacer(Modifier.weight(1f))
-            // 空白卡数量选择按钮
-            Text(text = "空白卡数量 $blackNum", modifier = Modifier.clickable {
-                showSpyNumberPicker = 2
-            })
-
-
-            // 数值选择器组件（卧底/空白卡）
-            WeSingleColumnPicker(
-                visible = showSpyNumberPicker != 0,
-                title = if (showSpyNumberPicker == 1) "选择卧底人数" else "选择空白卡片数量",
-                range = if (showSpyNumberPicker == 1) maxSpyList else (0..(currentGame?.spyNum
-                    ?: 1)).map { "$it" },
-                onCancel = { showSpyNumberPicker = 0 },
-                onChange = {
-                    gameTimeState++
-                    when (showSpyNumberPicker) {
-                        1 -> {
-                            // 更新卧底数量时自动修正空白卡数值不超过新卧底数
-                            viewmodel.handleGameIntent(
-                                GameIntent.RefreshSpyNumber(
-                                    spyNum = maxSpyList[it].toInt(),
-                                    blackNum = if (blackNum <= spyNumber) blackNum else 0
-                                )
-                            )
-                        }
-
-                        2 -> {
-                            // 直接更新空白卡数量
-                            viewmodel.handleGameIntent(
-                                GameIntent.RefreshSpyNumber(
-                                    spyNum = spyNumber,
-                                    blackNum = it
-                                )
-                            )
-                        }
+                        // 词汇查看按钮
+                        Icon(
+                            painter = painterResource(Res.drawable.icon_info),
+                            contentDescription = "查看词汇",
+                            tint = Color.Unspecified,
+                            modifier = Modifier.size(24.dp).clickable {
+                                showWordsDialog = true
+                            }
+                        )
                     }
-                },
-                value = if (showSpyNumberPicker == 1) (currentGame?.spyNum
-                    ?: 1) else (currentGame?.blackNum ?: 0)
-            )
 
-            // 主人数选择器组件
-            WeSingleColumnPicker(
-                visible = showNumberPicker,
-                title = "选择游玩人数",
-                range = numberList,
-                onCancel = { showNumberPicker = false },
-                onChange = {
-                    gameTimeState++
-                    viewmodel.handleGameIntent(GameIntent.RefreshPlayerNumber(numberList[it].toInt()))
-                },
-                value = numberList.indexOf(playerNum.toString())
-            )
+                    Spacer(modifier = Modifier.height(12.dp))
 
+                    // 词库选择内容
+                    WordGroupSelectorContent(
+                        selectedGroupIds = selectedWordGroups,
+                        onGroupsChanged = { groupIds ->
+                            viewmodel.handleGameIntent(GameIntent.RefreshWordGroups(groupIds))
+                        }
+                    )
+                }
+
+                // 分割线
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(1.dp)
+                        .background(
+                            color = MaterialTheme.colorScheme.outline.copy(alpha = 0.3f)
+                        )
+                )
+
+                Spacer(modifier = Modifier.height(16.dp))
+
+                // 游戏设置和控制区域
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(16.dp)
+                ) {
+                    // 左侧：配置按钮列
+                    Column(
+                        modifier = Modifier.weight(3f),
+                        verticalArrangement = Arrangement.spacedBy(4.dp)
+                    ) {
+                        Text(
+                            text = "游戏设置",
+                            style = MaterialTheme.typography.bodyMedium,
+                            fontWeight = FontWeight.Medium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+
+                        // 游戏状态控制：当前显示的卧底/空白卡选择器类型（0=隐藏，1=卧底，2=空白卡）
+                        var showSpyNumberPicker by remember { mutableStateOf(0) }
+                        // 最大卧底数计算（总人数的三分之一）
+                        val maxSpyList = (1..playerNum / 3).map { "$it" }
+                        // 从游戏状态获取当前配置值
+                        val spyNumber = currentGame.spyNum
+                        val blackNum = currentGame.blackNum
+
+                        // 配置按钮列
+                        Column(
+                            verticalArrangement = Arrangement.spacedBy(2.dp)
+                        ) {
+                            // 游玩人数按钮 - 小尺寸
+                            SmallConfigButton(
+                                title = "游玩人数",
+                                value = playerNum.toString(),
+                                onClick = { showNumberPicker = true },
+                                color = MaterialTheme.colorScheme.primary
+                            )
+
+                            // 卧底人数按钮 - 小尺寸
+                            SmallConfigButton(
+                                title = "卧底人数",
+                                value = spyNumber.toString(),
+                                onClick = { showSpyNumberPicker = 1 },
+                                color = MaterialTheme.colorScheme.error
+                            )
+
+                            // 空白卡数量按钮 - 小尺寸
+                            SmallConfigButton(
+                                title = "空白卡",
+                                value = blackNum.toString(),
+                                onClick = { showSpyNumberPicker = 2 },
+                                color = MaterialTheme.colorScheme.secondary
+                            )
+                        }
+
+                        // 数值选择器组件（卧底/空白卡）
+                        WeSingleColumnPicker(
+                            visible = showSpyNumberPicker != 0,
+                            title = if (showSpyNumberPicker == 1) "选择卧底人数" else "选择空白卡片数量",
+                            range = if (showSpyNumberPicker == 1) maxSpyList else (0..currentGame.spyNum).map { "$it" },
+                            onCancel = { showSpyNumberPicker = 0 },
+                            onChange = {
+                                gameTimeState++
+                                when (showSpyNumberPicker) {
+                                    1 -> {
+                                        // 更新卧底数量时自动修正空白卡数值不超过新卧底数
+                                        viewmodel.handleGameIntent(
+                                            GameIntent.RefreshSpyNumber(
+                                                spyNum = maxSpyList[it].toInt(),
+                                                blackNum = if (blackNum <= spyNumber) blackNum else 0
+                                            )
+                                        )
+                                    }
+
+                                    2 -> {
+                                        // 直接更新空白卡数量
+                                        viewmodel.handleGameIntent(
+                                            GameIntent.RefreshSpyNumber(
+                                                spyNum = spyNumber,
+                                                blackNum = it
+                                            )
+                                        )
+                                    }
+                                }
+                            },
+                            value = if (showSpyNumberPicker == 1) currentGame.spyNum else currentGame.blackNum
+                        )
+                    }
+
+                    // 右侧：游戏控制区域
+                    Column(
+                        modifier = Modifier.weight(2f),
+                        horizontalAlignment = Alignment.CenterHorizontally
+                    ) {
+                        Text(
+                            text = "游戏控制",
+                            style = MaterialTheme.typography.bodyMedium,
+                            fontWeight = FontWeight.Medium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier.padding(bottom = 8.dp)
+                        )
+
+                        // 开始游戏按钮 - 大尺寸
+                        GameControlButton(
+                            text = if (gameTimeState == 0) "开始游戏" else "重新开始",
+                            onClick = {
+                                if (gameTimeState == 0) {
+                                    gameTimeState++
+                                }
+                                viewmodel.handleGameIntent(GameIntent.StartGame)
+                                if (gameTimeState > 0) {
+                                    gameTimeState++
+                                }
+                            },
+                            color = if (gameTimeState == 0) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.secondary
+                        )
+
+                        Spacer(modifier = Modifier.height(12.dp))
+
+                        // 游戏状态提示
+                        Text(
+                            text = if (gameTimeState == 0) "配置完成，开始游戏" else "游戏进行中",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            textAlign = TextAlign.Center
+                        )
+                    }
+                }
+
+
+                // 主人数选择器组件
+                WeSingleColumnPicker(
+                    visible = showNumberPicker,
+                    title = "选择游玩人数",
+                    range = numberList,
+                    onCancel = { showNumberPicker = false },
+                    onChange = {
+                        gameTimeState++
+                        viewmodel.handleGameIntent(GameIntent.RefreshPlayerNumber(numberList[it].toInt()))
+                    },
+                    value = numberList.indexOf(playerNum.toString())
+                )
+            }
         }
 
 
-        // 游戏数据显示区 - 只有当选择了人数时才显示
-        if (currentGame != null) {
-            Spacer(Modifier.height(8.dp))
+        // 游戏数据显示区 - 只有在游戏开始后才显示
+        if (gameTimeState > 0) {
+            Spacer(Modifier.height(16.dp))
 
             // 游戏结果显示组件，key控制强制刷新
             GameGreetingView(
                 key = gameTimeState,
-                currentGame,
+                gameState = currentGame,
                 onStart = {
                     viewmodel.handleGameIntent(GameIntent.StartGame)
                     gameTimeState++
@@ -346,12 +450,21 @@ fun LocalSpyGamePage(viewmodel: MainViewmodel, onBack: () -> Unit) {
 
                     Spacer(modifier = Modifier.height(16.dp))
 
-                    // 词汇列表
+                    // 词汇列表 - 过滤掉当前游戏使用的词汇
+                    val availableWords =
+                        remember(currentWords, currentGame.gameWord, currentGame.spyWord) {
+                            currentWords.entries.filterNot { (spyWord, normalWord) ->
+                                // 过滤掉当前游戏使用的词汇对
+                                (spyWord == currentGame.spyWord && normalWord == currentGame.gameWord) ||
+                                        (spyWord == currentGame.gameWord && normalWord == currentGame.spyWord)
+                            }
+                        }
+                    
                     LazyColumn(
                         modifier = Modifier.fillMaxSize(),
                         verticalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
-                        items(currentWords.entries.toList()) { (spyWord, normalWord) ->
+                        items(availableWords) { (spyWord, normalWord) ->
                             Card(
                                 modifier = Modifier.fillMaxWidth(),
                                 shape = RoundedCornerShape(8.dp),
@@ -385,12 +498,124 @@ fun LocalSpyGamePage(viewmodel: MainViewmodel, onBack: () -> Unit) {
                                 }
                             }
                         }
+
+                        // 如果没有可用词汇，显示提示
+                        if (availableWords.isEmpty()) {
+                            item {
+                                Box(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .padding(32.dp),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    Text(
+                                        text = "当前词库中暂无其他可用词汇",
+                                        style = MaterialTheme.typography.bodyLarge,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                        textAlign = TextAlign.Center
+                                    )
+                                }
+                            }
+                        }
                     }
                 }
             }
         }
     }
 }
+
+
+/**
+ * 词库选择内容组件（不包含外层容器和标题）
+ * 用于整合到其他组件中
+ */
+@Composable
+fun WordGroupSelectorContent(
+    selectedGroupIds: Set<String>,
+    onGroupsChanged: (Set<String>) -> Unit
+) {
+    val allGroups = WordGroupManager.getAllGroups()
+
+    // 词组选择区域
+    androidx.compose.foundation.lazy.LazyRow(
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+        modifier = Modifier.fillMaxWidth()
+    ) {
+        items(allGroups.values.toList()) { group ->
+            WordGroupItem(
+                group = group,
+                isSelected = selectedGroupIds.contains(group.id),
+                onToggle = { groupId ->
+                    val newSelection = if (selectedGroupIds.contains(groupId)) {
+                        selectedGroupIds - groupId
+                    } else {
+                        selectedGroupIds + groupId
+                    }
+                    onGroupsChanged(newSelection)
+                }
+            )
+        }
+    }
+}
+
+/**
+ * 词组项组件
+ */
+@Composable
+private fun WordGroupItem(
+    group: org.walks.gamecopilot.data.entity.WordGroup,
+    isSelected: Boolean,
+    onToggle: (String) -> Unit
+) {
+    val backgroundColor = if (isSelected) {
+        MaterialTheme.colorScheme.primaryContainer
+    } else {
+        MaterialTheme.colorScheme.surface
+    }
+
+    val borderColor = if (isSelected) {
+        MaterialTheme.colorScheme.primary
+    } else {
+        MaterialTheme.colorScheme.outline
+    }
+
+    val textColor = if (isSelected) {
+        MaterialTheme.colorScheme.onPrimaryContainer
+    } else {
+        MaterialTheme.colorScheme.onSurface
+    }
+
+    Row(
+        modifier = Modifier
+            .clip(RoundedCornerShape(20.dp))
+            .background(backgroundColor)
+            .border(
+                width = if (isSelected) 2.dp else 1.dp,
+                color = borderColor,
+                shape = RoundedCornerShape(20.dp)
+            )
+            .clickable { onToggle(group.id) }
+            .padding(horizontal = 16.dp, vertical = 8.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Text(
+            text = group.displayName,
+            color = textColor,
+            fontSize = 14.sp,
+            fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal
+        )
+
+        if (group.isBuiltIn) {
+            Spacer(modifier = Modifier.width(4.dp))
+            Text(
+                text = "•",
+                color = textColor.copy(alpha = 0.6f),
+                fontSize = 12.sp
+            )
+        }
+    }
+}
+
 
 
 /**
@@ -468,35 +693,9 @@ fun GameGreetingView(key: Int, gameState: LocalSpyEntity, onStart: () -> Unit) {
         LocalPlayerSelectArea(
             playerNum = realGameState.totalPlayerNumber,
             getWatchedTime = { watchedTimeList[it] },
-
-            badge = { currentSelect ->
-                // 不同状态下的徽章显示逻辑
-                if (identityDisPlayState.value == IDENTITY_SHOW_ALL) {
-                    WeBadge(
-                        if (identityDisPlayState.value > 0) "" else realGameState.optIdentity(
-                            currentSelect
-                        ),
-                        size = 12.dp,
-                        fontSize = 10,
-                        color = if (realGameState.isSpy(currentSelect)) MaterialTheme.colorScheme.error
-                        else MaterialTheme.colorScheme.primaryContainer
-                    )
-                } else if (playerIdentityState.contains(currentSelect)) {
-                    WeBadge(
-                        if (realGameState.isSpy(currentSelect)) "卧底" else "平民",
-                        size = 12.dp,
-                        fontSize = 10,
-                        color = if (realGameState.isSpy(currentSelect)) MaterialTheme.colorScheme.error
-                        else MaterialTheme.colorScheme.primaryContainer
-                    )
-                } else if ((watchedTimeList[currentSelect]) > 1) {
-                    WeBadge(
-                        "查看" + watchedTimeList[currentSelect] + "次",
-                        size = 12.dp,
-                        fontSize = 10
-                    )
-                }
-            },
+            gameState = realGameState,
+            identityDisplayState = identityDisPlayState.value,
+            playerIdentityState = playerIdentityState,
             onClick = { currentSelect ->
                 currentSelectPlayer = currentSelect
                 watchedTimeList[currentSelect] += 1
@@ -540,7 +739,9 @@ fun GameGreetingView(key: Int, gameState: LocalSpyEntity, onStart: () -> Unit) {
  *
  * @param playerNum 总玩家数量，默认4个玩家
  * @param getWatchedTime 获取指定玩家观看时长的回调函数（参数：玩家序号，返回：观看时间单位数）
- * @param badge 在玩家头像右上角显示的徽章组件（参数：玩家序号），默认不显示
+ * @param gameState 当前游戏状态实体，包含玩家身份信息和游戏配置
+ * @param identityDisplayState 身份显示状态
+ * @param playerIdentityState 单个玩家身份展示状态列表
  * @param onClick 玩家头像点击事件回调（参数：被点击的玩家序号）
  * @param onLongClick 玩家头像长按事件回调（参数：被长按的玩家序号）
  */
@@ -549,12 +750,13 @@ fun GameGreetingView(key: Int, gameState: LocalSpyEntity, onStart: () -> Unit) {
 fun LocalPlayerSelectArea(
     playerNum: Int = 4,
     getWatchedTime: (Int) -> Int,
-    badge: @Composable (Int) -> Unit = {},
-    identity: Int=0,
+    gameState: LocalSpyEntity,
+    identityDisplayState: Int,
+    playerIdentityState: List<Int>,
     onClick: (Int) -> Unit,
     onLongClick: (Int) -> Unit
 ) {
-    var identityState by remember { mutableStateOf("") }
+
 
     // 创建4列的垂直网格布局
     LazyVerticalGrid(
@@ -566,17 +768,7 @@ fun LocalPlayerSelectArea(
             val currentPlayer = pos + 1
             val watchedTime = getWatchedTime(currentPlayer)
 
-            // 交互状态管理，用于处理按压效果
-            val interactionState = remember { mutableStateOf<PressInteraction?>(null) }
 
-            // 动态边框颜色动画，按压时显示主题色，默认浅灰色
-            val borderColor by animateColorAsState(
-                targetValue = when (interactionState.value) {
-                    is PressInteraction.Press -> MaterialTheme.colorScheme.primary
-                    else -> Color.LightGray
-                },
-                animationSpec = tween(200)
-            )
 
             Box(modifier = Modifier.padding(top = 8.dp)) {
                 // 玩家头像容器，包含点击交互和状态显示
@@ -590,28 +782,83 @@ fun LocalPlayerSelectArea(
                             indication = LocalIndication.current
                         )
                         .padding(vertical = 8.dp),
-                    contentAlignment = Alignment.BottomStart
+                    contentAlignment = Alignment.TopEnd
                 ) {
                     Image(
-                        painter = painterResource(Res.drawable.icon_cardindex),
-                        contentDescription = "Card index icon"
+                        painter = painterResource(
+                            if (watchedTime < 1) Res.drawable.icon_cardindex_notitle
+                            else Res.drawable.icon_cardindex
+                        ),
+                        modifier = Modifier.rotate(180f),
+                        contentDescription = "Card index icon",
+                        alpha = if (watchedTime >= 1) 0.6f else 1f
                     )
-                    Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.TopCenter){
-                       Text("卧底我滴我滴", modifier = Modifier.padding(top = 10.dp), style = MaterialTheme.typography.labelSmall)
+
+                    // 身份显示区域 - 在卡片内部显示身份信息
+                    Box(
+                        modifier = Modifier.fillMaxSize(),
+                        contentAlignment = Alignment.BottomCenter
+                    ) {
+                        // 根据不同状态显示身份信息
+                        when {
+                            identityDisplayState == IDENTITY_SHOW_ALL -> {
+                                Text(
+                                    text = gameState.optIdentity(currentPlayer),
+                                    modifier = Modifier.padding(10.dp),
+                                    style = MaterialTheme.typography.labelSmall,
+                                    textAlign = TextAlign.Center,
+                                    color = if (gameState.isSpy(currentPlayer))
+                                        MaterialTheme.colorScheme.error
+                                    else
+                                        MaterialTheme.colorScheme.primary,
+                                    fontWeight = FontWeight.Bold
+                                )
+                            }
+
+                            playerIdentityState.contains(currentPlayer) -> {
+                                Text(
+                                    text = if (gameState.isSpy(currentPlayer)) "卧底" else "平民",
+                                    modifier = Modifier.padding(10.dp),
+                                    style = MaterialTheme.typography.labelSmall,
+                                    textAlign = TextAlign.Center,
+                                    color = if (gameState.isSpy(currentPlayer))
+                                        MaterialTheme.colorScheme.error
+                                    else
+                                        MaterialTheme.colorScheme.primary,
+                                    fontWeight = FontWeight.Bold
+                                )
+                            }
+
+                            watchedTime > 1 -> {
+                                Text(
+                                    text = "查看${watchedTime}次",
+                                    modifier = Modifier.padding(10.dp),
+                                    style = MaterialTheme.typography.labelSmall,
+                                    textAlign = TextAlign.Center,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                            }
+
+                            else -> {
+                                Text(
+                                    text = "",
+                                    modifier = Modifier.padding(10.dp),
+                                    style = MaterialTheme.typography.labelSmall,
+                                    textAlign = TextAlign.Center
+                                )
+                            }
+                        }
                     }
 
                     // 玩家序号文字显示，根据观看状态改变颜色
                     Text(
                         text = currentPlayer.toString(),
-                        color = if (watchedTime >= 1) Color.LightGray
-                        else MaterialTheme.colorScheme.secondary,
+                        color = MaterialTheme.colorScheme.secondary.copy(if (watchedTime >= 1) 0.5f else 1f),
                         style = MaterialTheme.typography.bodyMedium,
-                        modifier = Modifier.padding(start = 20.dp, bottom = 4.dp),
+                        modifier = Modifier.padding(end = 20.dp, top = 5.dp),
                         fontWeight = FontWeight.SemiBold
                     )
                 }
-                // 显示玩家对应的徽章组件
-                badge(currentPlayer)
             }
         }
     }
@@ -632,17 +879,29 @@ fun LocalSpyIdentityCard(
     val flipState = remember { mutableStateOf(false) }
     // 主容器：包含卡片布局和交互效果
     FlipCard(
-        modifier = Modifier.height(200.dp).width(140.dp).clip(RoundedCornerShape(20.dp))
+        modifier = Modifier.height(200.dp).width(140.dp).clip(RoundedCornerShape(12.dp))
             .clickable { flipState.value = !flipState.value },
         backContent = {
-            Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                Text(
-                    text = currentSelectPlayer.toString(),
-                    fontSize = 90.sp,
-                    fontWeight = FontWeight.W900,
-                    color = MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.33f),
-                    textAlign = TextAlign.Right
-                )
+            Column(
+                horizontalAlignment = Alignment.CenterHorizontally,
+                modifier = Modifier.background(MaterialTheme.colorScheme.tertiaryContainer)
+            ) {
+
+                Box(contentAlignment = Alignment.Center) {
+                    Image(
+                        painterResource(Res.drawable.icon_asterisk),
+                        alpha = 0.33f,
+                        modifier = Modifier.size(100.dp),
+                        contentDescription = ""
+                    )
+                    Text(
+                        text = currentSelectPlayer.toString(),
+                        fontSize = 90.sp,
+                        fontWeight = FontWeight.W900,
+                        color = MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.33f),
+                        textAlign = TextAlign.Right
+                    )
+                }
                 Spacer(modifier = Modifier.weight(1f))
                 Text(
                     if (gameState.isSpy(currentSelectPlayer)) "" else "",
@@ -667,24 +926,33 @@ fun LocalSpyIdentityCard(
         frontContent = {
             Box(
                 modifier = Modifier.background(
-                    color = MaterialTheme.colorScheme.secondaryContainer
+                    color = MaterialTheme.colorScheme.surface
                 ).border(
                     BorderStroke(
                         width = 4.dp,
                         color = MorandiColorList[(0..7).random()] // 随机生成边框颜色
                     ),
-                    shape = RoundedCornerShape(20.dp)
+                    shape = RoundedCornerShape(12.dp)
                 ),
                 contentAlignment = Alignment.BottomEnd
             ) {
-                Text(
-                    text = currentSelectPlayer.toString(),
-                    modifier = Modifier.rotate(-30f),
-                    fontSize = 90.sp,
-                    fontWeight = FontWeight.W900,
-                    color = MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.33f),
-                    textAlign = TextAlign.Right
-                )
+                Box(contentAlignment = Alignment.BottomEnd) {
+                    Image(
+                        painterResource(Res.drawable.icon_star),
+                        alpha = 0.33f,
+                        modifier = Modifier.size(120.dp).rotate(-30f),
+                        contentDescription = ""
+                    )
+
+                    Text(
+                        text = currentSelectPlayer.toString(),
+                        modifier = Modifier.rotate(-30f),
+                        fontSize = 90.sp,
+                        fontWeight = FontWeight.W900,
+                        color = MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.33f),
+                        textAlign = TextAlign.Right
+                    )
+                }
                 Column(modifier = Modifier.fillMaxSize()) {
                     Spacer(modifier = Modifier.weight(1f))
                     Text(
@@ -709,109 +977,93 @@ fun LocalSpyIdentityCard(
     )
 }
 
+
 /**
- * 词组选择器组件
- * @param selectedGroupIds 当前选中的词组ID集合
- * @param onGroupsChanged 词组变化回调
+ * 小尺寸配置按钮组件
+ * 用于垂直排列的配置选项
  */
 @Composable
-fun WordGroupSelector(
-    selectedGroupIds: Set<String>,
-    onGroupsChanged: (Set<String>) -> Unit
+fun SmallConfigButton(
+    title: String,
+    value: String,
+    onClick: () -> Unit,
+    color: Color = MaterialTheme.colorScheme.primary
 ) {
-    val availableGroups = WordGroupManager.getAllGroups()
-
-    Column(
+    Row(
         modifier = Modifier
             .fillMaxWidth()
+            .clickable { onClick() }
+
             .background(
-                color = MaterialTheme.colorScheme.surfaceVariant,
+                color = color.copy(alpha = 0.1f),
+                shape = RoundedCornerShape(8.dp)
+            )
+            .border(
+                width = 1.dp,
+                color = color.copy(alpha = 0.3f),
+                shape = RoundedCornerShape(8.dp)
+            )
+            .padding(horizontal = 12.dp, vertical = 8.dp),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Text(
+            text = title,
+            style = MaterialTheme.typography.bodySmall,
+            color = color,
+            fontWeight = FontWeight.Medium
+        )
+        Text(
+            text = value,
+            style = MaterialTheme.typography.bodyMedium,
+            color = color,
+            fontWeight = FontWeight.Bold
+        )
+    }
+}
+
+/**
+ * 游戏控制按钮组件
+ * 大尺寸的主要操作按钮
+ */
+@Composable
+fun GameControlButton(
+    text: String,
+    onClick: () -> Unit,
+    color: Color = MaterialTheme.colorScheme.primary
+) {
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(80.dp)
+            .clickable { onClick() }
+            .background(
+                color = color,
                 shape = RoundedCornerShape(12.dp)
             )
             .border(
                 width = 2.dp,
-                color = MaterialTheme.colorScheme.outline,
+                color = color.copy(alpha = 0.3f),
                 shape = RoundedCornerShape(12.dp)
-            )
-            .padding(16.dp)
+            ),
+        contentAlignment = Alignment.Center
     ) {
-        Text(
-            text = "词库选择",
-            style = MaterialTheme.typography.titleMedium,
-            fontWeight = FontWeight.Bold,
-            color = MaterialTheme.colorScheme.onSurfaceVariant
-        )
-
-        Spacer(modifier = Modifier.height(12.dp))
-
-        // 动态布局：根据词组数量调整列数
-        val groupCount = availableGroups.size
-        val columns = when {
-            groupCount <= 3 -> 3
-            groupCount <= 6 -> 3
-            else -> 4
-        }
-
-        LazyVerticalGrid(
-            columns = GridCells.Fixed(columns),
-            horizontalArrangement = Arrangement.spacedBy(8.dp),
-            verticalArrangement = Arrangement.spacedBy(8.dp),
-            modifier = Modifier.height((groupCount / columns * 40 + 40).dp)
+        Column(
+            horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            items(availableGroups.size) { index ->
-                val (groupId, group) = availableGroups.entries.elementAt(index)
-                val isSelected = selectedGroupIds.contains(groupId)
-
-                Box(
-                    modifier = Modifier
-                        .clickable {
-                            val newGroupIds = if (isSelected) {
-                                selectedGroupIds - groupId
-                            } else {
-                                selectedGroupIds + groupId
-                            }
-                            onGroupsChanged(newGroupIds)
-                        }
-                        .background(
-                            color = if (isSelected) {
-                                MaterialTheme.colorScheme.primary
-                            } else {
-                                MaterialTheme.colorScheme.surface
-                            },
-                            shape = RoundedCornerShape(8.dp)
-                        )
-                        .border(
-                            width = 1.dp,
-                            color = if (isSelected) {
-                                MaterialTheme.colorScheme.primary
-                            } else {
-                                MaterialTheme.colorScheme.outline
-                            },
-                            shape = RoundedCornerShape(8.dp)
-                        )
-                        .padding(horizontal = 12.dp, vertical = 6.dp),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Text(
-                        text = group.displayName,
-                        color = if (isSelected) {
-                            MaterialTheme.colorScheme.onPrimary
-                        } else {
-                            MaterialTheme.colorScheme.onSurface
-                        },
-                        style = MaterialTheme.typography.bodySmall,
-                        fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal
-                    )
-                }
-            }
+            Text(
+                text = text,
+                style = MaterialTheme.typography.titleMedium,
+                color = MaterialTheme.colorScheme.onPrimary,
+                fontWeight = FontWeight.Bold
+            )
+            Spacer(modifier = Modifier.height(4.dp))
+            Icon(
+                imageVector = Icons.Filled.Refresh,
+                contentDescription = text,
+                tint = MaterialTheme.colorScheme.onPrimary,
+                modifier = Modifier.size(20.dp)
+            )
         }
-
-        Spacer(modifier = Modifier.height(8.dp))
-
-        Text(
-            text = "已选择 ${selectedGroupIds.size} 个词库",
-            style = MaterialTheme.typography.bodySmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f)
-        )
     }
 }
