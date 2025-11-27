@@ -83,13 +83,15 @@ import org.walks.gamecopilot.data.entity.LocalSpyEntity
 import org.walks.gamecopilot.data.entity.WordGroupManager
 import org.walks.gamecopilot.getWordMapBySelectedGroups
 import org.walks.gamecopilot.intent.GameIntent
-import org.walks.gamecopilot.ui.badge.WeBadge
 import org.walks.gamecopilot.ui.component.WordGroupSelector
 import org.walks.gamecopilot.ui.picker.WeSingleColumnPicker
 import org.walks.gamecopilot.ui.widget.FlipCard
 import yigamecopilotx.composeapp.generated.resources.Res
+import yigamecopilotx.composeapp.generated.resources.icon_asterisk
 import yigamecopilotx.composeapp.generated.resources.icon_cardindex
+import yigamecopilotx.composeapp.generated.resources.icon_cardindex_notitle
 import yigamecopilotx.composeapp.generated.resources.icon_info
+import yigamecopilotx.composeapp.generated.resources.icon_star
 
 
 /**
@@ -118,7 +120,7 @@ fun LocalSpyGamePage(viewmodel: MainViewmodel, onBack: () -> Unit) {
     val currentGame = gameEntity.currentGame
 
     // 当前玩家总数，默认取最近一次记录或4人
-    val playerNum = currentGame?.totalPlayerNumber ?: 4
+    val playerNum = currentGame.totalPlayerNumber
     // 状态控制：控制人数选择器弹窗的显示状态
     var showNumberPicker by remember { mutableStateOf(false) }
     // 可选的游玩人数范围（4-12人）
@@ -216,8 +218,8 @@ fun LocalSpyGamePage(viewmodel: MainViewmodel, onBack: () -> Unit) {
             val maxSpyList = (1..playerNum / 3).map { "$it" }
 
             // 从游戏状态获取当前配置值
-            val spyNumber = currentGame?.spyNum ?: 1
-            val blackNum = currentGame?.blackNum ?: 0
+            val spyNumber = currentGame.spyNum
+            val blackNum = currentGame.blackNum
 
             Spacer(Modifier.weight(1f))
 
@@ -236,8 +238,7 @@ fun LocalSpyGamePage(viewmodel: MainViewmodel, onBack: () -> Unit) {
             WeSingleColumnPicker(
                 visible = showSpyNumberPicker != 0,
                 title = if (showSpyNumberPicker == 1) "选择卧底人数" else "选择空白卡片数量",
-                range = if (showSpyNumberPicker == 1) maxSpyList else (0..(currentGame?.spyNum
-                    ?: 1)).map { "$it" },
+                range = if (showSpyNumberPicker == 1) maxSpyList else (0..currentGame.spyNum).map { "$it" },
                 onCancel = { showSpyNumberPicker = 0 },
                 onChange = {
                     gameTimeState++
@@ -263,8 +264,7 @@ fun LocalSpyGamePage(viewmodel: MainViewmodel, onBack: () -> Unit) {
                         }
                     }
                 },
-                value = if (showSpyNumberPicker == 1) (currentGame?.spyNum
-                    ?: 1) else (currentGame?.blackNum ?: 0)
+                value = if (showSpyNumberPicker == 1) currentGame.spyNum else currentGame.blackNum
             )
 
             // 主人数选择器组件
@@ -468,35 +468,9 @@ fun GameGreetingView(key: Int, gameState: LocalSpyEntity, onStart: () -> Unit) {
         LocalPlayerSelectArea(
             playerNum = realGameState.totalPlayerNumber,
             getWatchedTime = { watchedTimeList[it] },
-
-            badge = { currentSelect ->
-                // 不同状态下的徽章显示逻辑
-                if (identityDisPlayState.value == IDENTITY_SHOW_ALL) {
-                    WeBadge(
-                        if (identityDisPlayState.value > 0) "" else realGameState.optIdentity(
-                            currentSelect
-                        ),
-                        size = 12.dp,
-                        fontSize = 10,
-                        color = if (realGameState.isSpy(currentSelect)) MaterialTheme.colorScheme.error
-                        else MaterialTheme.colorScheme.primaryContainer
-                    )
-                } else if (playerIdentityState.contains(currentSelect)) {
-                    WeBadge(
-                        if (realGameState.isSpy(currentSelect)) "卧底" else "平民",
-                        size = 12.dp,
-                        fontSize = 10,
-                        color = if (realGameState.isSpy(currentSelect)) MaterialTheme.colorScheme.error
-                        else MaterialTheme.colorScheme.primaryContainer
-                    )
-                } else if ((watchedTimeList[currentSelect]) > 1) {
-                    WeBadge(
-                        "查看" + watchedTimeList[currentSelect] + "次",
-                        size = 12.dp,
-                        fontSize = 10
-                    )
-                }
-            },
+            gameState = realGameState,
+            identityDisplayState = identityDisPlayState.value,
+            playerIdentityState = playerIdentityState,
             onClick = { currentSelect ->
                 currentSelectPlayer = currentSelect
                 watchedTimeList[currentSelect] += 1
@@ -549,12 +523,13 @@ fun GameGreetingView(key: Int, gameState: LocalSpyEntity, onStart: () -> Unit) {
 fun LocalPlayerSelectArea(
     playerNum: Int = 4,
     getWatchedTime: (Int) -> Int,
-    badge: @Composable (Int) -> Unit = {},
-    identity: Int=0,
+    gameState: LocalSpyEntity,
+    identityDisplayState: Int,
+    playerIdentityState: List<Int>,
     onClick: (Int) -> Unit,
     onLongClick: (Int) -> Unit
 ) {
-    var identityState by remember { mutableStateOf("") }
+
 
     // 创建4列的垂直网格布局
     LazyVerticalGrid(
@@ -593,11 +568,65 @@ fun LocalPlayerSelectArea(
                     contentAlignment = Alignment.BottomStart
                 ) {
                     Image(
-                        painter = painterResource(Res.drawable.icon_cardindex),
-                        contentDescription = "Card index icon"
+                        painter = painterResource(
+                            if (watchedTime < 1) Res.drawable.icon_cardindex_notitle
+                            else Res.drawable.icon_cardindex
+                        ),
+                        contentDescription = "Card index icon",
+                        alpha = if (watchedTime >= 1) 0.6f else 1f
                     )
-                    Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.TopCenter){
-                       Text("卧底我滴我滴", modifier = Modifier.padding(top = 10.dp), style = MaterialTheme.typography.labelSmall)
+
+                    // 身份显示区域 - 在卡片内部显示身份信息
+                    Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.TopCenter) {
+                        // 根据不同状态显示身份信息
+                        when {
+                            identityDisplayState == IDENTITY_SHOW_ALL -> {
+                                Text(
+                                    text = gameState.optIdentity(currentPlayer),
+                                    modifier = Modifier.padding(10.dp),
+                                    style = MaterialTheme.typography.labelSmall,
+                                    textAlign = TextAlign.Center,
+                                    color = if (gameState.isSpy(currentPlayer))
+                                        MaterialTheme.colorScheme.error
+                                    else
+                                        MaterialTheme.colorScheme.primary,
+                                    fontWeight = FontWeight.Bold
+                                )
+                            }
+
+                            playerIdentityState.contains(currentPlayer) -> {
+                                Text(
+                                    text = if (gameState.isSpy(currentPlayer)) "卧底" else "平民",
+                                    modifier = Modifier.padding(10.dp),
+                                    style = MaterialTheme.typography.labelSmall,
+                                    textAlign = TextAlign.Center,
+                                    color = if (gameState.isSpy(currentPlayer))
+                                        MaterialTheme.colorScheme.error
+                                    else
+                                        MaterialTheme.colorScheme.primary,
+                                    fontWeight = FontWeight.Bold
+                                )
+                            }
+
+                            watchedTime > 1 -> {
+                                Text(
+                                    text = "查看${watchedTime}次",
+                                    modifier = Modifier.padding(10.dp),
+                                    style = MaterialTheme.typography.labelSmall,
+                                    textAlign = TextAlign.Center,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                            }
+
+                            else -> {
+                                Text(
+                                    text = "",
+                                    modifier = Modifier.padding(10.dp),
+                                    style = MaterialTheme.typography.labelSmall,
+                                    textAlign = TextAlign.Center
+                                )
+                            }
+                        }
                     }
 
                     // 玩家序号文字显示，根据观看状态改变颜色
@@ -610,8 +639,6 @@ fun LocalPlayerSelectArea(
                         fontWeight = FontWeight.SemiBold
                     )
                 }
-                // 显示玩家对应的徽章组件
-                badge(currentPlayer)
             }
         }
     }
@@ -632,17 +659,29 @@ fun LocalSpyIdentityCard(
     val flipState = remember { mutableStateOf(false) }
     // 主容器：包含卡片布局和交互效果
     FlipCard(
-        modifier = Modifier.height(200.dp).width(140.dp).clip(RoundedCornerShape(20.dp))
+        modifier = Modifier.height(200.dp).width(140.dp).clip(RoundedCornerShape(12.dp))
             .clickable { flipState.value = !flipState.value },
         backContent = {
-            Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                Text(
-                    text = currentSelectPlayer.toString(),
-                    fontSize = 90.sp,
-                    fontWeight = FontWeight.W900,
-                    color = MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.33f),
-                    textAlign = TextAlign.Right
-                )
+            Column(
+                horizontalAlignment = Alignment.CenterHorizontally,
+                modifier = Modifier.background(MaterialTheme.colorScheme.tertiaryContainer)
+            ) {
+
+                Box(contentAlignment = Alignment.Center) {
+                    Image(
+                        painterResource(Res.drawable.icon_asterisk),
+                        alpha = 0.33f,
+                        modifier = Modifier.size(100.dp),
+                        contentDescription = ""
+                    )
+                    Text(
+                        text = currentSelectPlayer.toString(),
+                        fontSize = 90.sp,
+                        fontWeight = FontWeight.W900,
+                        color = MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.33f),
+                        textAlign = TextAlign.Right
+                    )
+                }
                 Spacer(modifier = Modifier.weight(1f))
                 Text(
                     if (gameState.isSpy(currentSelectPlayer)) "" else "",
@@ -667,24 +706,33 @@ fun LocalSpyIdentityCard(
         frontContent = {
             Box(
                 modifier = Modifier.background(
-                    color = MaterialTheme.colorScheme.secondaryContainer
+                    color = MaterialTheme.colorScheme.surface
                 ).border(
                     BorderStroke(
                         width = 4.dp,
                         color = MorandiColorList[(0..7).random()] // 随机生成边框颜色
                     ),
-                    shape = RoundedCornerShape(20.dp)
+                    shape = RoundedCornerShape(12.dp)
                 ),
                 contentAlignment = Alignment.BottomEnd
             ) {
-                Text(
-                    text = currentSelectPlayer.toString(),
-                    modifier = Modifier.rotate(-30f),
-                    fontSize = 90.sp,
-                    fontWeight = FontWeight.W900,
-                    color = MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.33f),
-                    textAlign = TextAlign.Right
-                )
+                Box(contentAlignment = Alignment.BottomEnd) {
+                    Image(
+                        painterResource(Res.drawable.icon_star),
+                        alpha = 0.33f,
+                        modifier = Modifier.size(120.dp).rotate(-30f),
+                        contentDescription = ""
+                    )
+
+                    Text(
+                        text = currentSelectPlayer.toString(),
+                        modifier = Modifier.rotate(-30f),
+                        fontSize = 90.sp,
+                        fontWeight = FontWeight.W900,
+                        color = MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.33f),
+                        textAlign = TextAlign.Right
+                    )
+                }
                 Column(modifier = Modifier.fillMaxSize()) {
                     Spacer(modifier = Modifier.weight(1f))
                     Text(
