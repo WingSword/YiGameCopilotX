@@ -10,7 +10,8 @@ import org.walks.gamecopilot.MainViewmodel
 import org.walks.gamecopilot.awalong.AwalongGamePage
 
 import org.walks.gamecopilot.event.NavigationEvent
-import org.walks.gamecopilot.ui.page.game.LocalSpyGamePage
+import org.walks.gamecopilot.ui.page.game.localspy.LocalSpyGamePage
+
 import org.walks.gamecopilot.ui.page.home.HomePage
 import org.walks.gamecopilot.ui.page.other.ErrorPage
 import org.walks.gamecopilot.ui.page.random.RandomPage

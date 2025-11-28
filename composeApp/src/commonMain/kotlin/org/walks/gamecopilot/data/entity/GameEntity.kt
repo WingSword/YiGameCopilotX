@@ -38,8 +38,9 @@ data class LocalSpyEntity(
     private fun optNewGameWord(selectedWordGroups: Set<String>) {
         val selectedWordMap = getWordMapBySelectedGroups(selectedWordGroups)
         if (selectedWordMap.isEmpty()) {
-            // 如果没有选中任何词组，使用默认词库
-            optNewGameWordWithMap(wordMap)
+            // 如果没有选中任何词组，不设置词汇
+            gameWord = ""
+            spyWord = ""
         } else {
             optNewGameWordWithMap(selectedWordMap)
         }
