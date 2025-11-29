@@ -223,10 +223,9 @@ private fun PlayerTaskCardOptimized(
             if (hasVoted) {
                 Spacer(modifier = Modifier.height(4.dp))
                 Text(
-                    text = if (voteResult == true) "成功" else "失败",
+                    text = "已投票",
                     fontSize = 9.sp,
-                    color = if (voteResult == true) MaterialTheme.colorScheme.primary 
-                           else MaterialTheme.colorScheme.error,
+                    color = MaterialTheme.colorScheme.primary,
                     fontWeight = FontWeight.Bold
                 )
             } else {
