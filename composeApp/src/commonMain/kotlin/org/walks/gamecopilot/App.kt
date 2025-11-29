@@ -138,7 +138,7 @@ fun AppView(viewmodel: MainViewmodel) {
     // 修改 AppView 中的 ModalNavigationDrawer 部分
     ModalNavigationDrawer(
         drawerState = drawerState,
-        gesturesEnabled = true, // 允许手势操作
+        gesturesEnabled = currentRoute != NaviRoute.AWALONG.route, // 在阿瓦隆页面禁用手势操作
         drawerContent = {
             JellyDrawerContent(
                 drawerState = drawerState,

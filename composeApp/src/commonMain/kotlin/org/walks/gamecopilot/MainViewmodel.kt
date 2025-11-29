@@ -3,7 +3,6 @@ package org.walks.gamecopilot
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.Dispatchers
-
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -16,7 +15,9 @@ import kotlinx.coroutines.withContext
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 import org.walks.gamecopilot.awalong.AwalongConfig
+import org.walks.gamecopilot.awalong.AwalongGameLogic
 import org.walks.gamecopilot.awalong.AwalongIntent
+import org.walks.gamecopilot.awalong.AwalongRole
 import org.walks.gamecopilot.awalong.data.AwalongGameDayEntity
 import org.walks.gamecopilot.awalong.data.AwalongGameState
 import org.walks.gamecopilot.data.RandomItem
@@ -367,6 +368,191 @@ class MainViewmodel : ViewModel() {
                     }
                 }
             }
+
+            is AwalongIntent.ProphetCheck -> {
+                // 预言者检查2名玩家阵营
+                _awalongGameState.update {
+                    it.copy(
+                        playTime = Clock.System.now().toEpochMilliseconds(),
+                        prophetChecked = Pair(intent.player1Index, intent.player2Index)
+                    )
+                }
+            }
+            
+            is AwalongIntent.LadyOfLakeCheck -> {
+                // 湖中仙女检查玩家阵营
+                _awalongGameState.update {
+                    it.copy(
+                        playTime = Clock.System.now().toEpochMilliseconds(),
+                        ladyOfLakeUsed = true,
+                        ladyOfLakeChecked = intent.playerIndex
+                    )
+                }
+            }
+            
+            is AwalongIntent.SirGalahadUseDoubleVote -> {
+                // 圆桌骑士使用双倍投票权
+                _awalongGameState.update {
+                    it.copy(
+                        playTime = Clock.System.now().toEpochMilliseconds(),
+                        sirGalahadUsed = true
+                    )
+                }
+            }
+            
+            is AwalongIntent.MorguseConvertSuccessToFailure -> {
+                // 莫高斯将成功卡转为失败卡
+                _awalongGameState.update {
+                    val updatedDayList = it.dayList.toMutableList()
+                    val targetDay = updatedDayList.getOrNull(intent.taskIndex)
+                    if (targetDay != null) {
+                        updatedDayList[intent.taskIndex] = targetDay.copy(
+                            morguseUsed = true
+                        )
+                    }
+                    it.copy(
+                        playTime = Clock.System.now().toEpochMilliseconds(),
+                        dayList = updatedDayList,
+                        morguseUsed = true
+                    )
+                }
+            }
+            
+            is AwalongIntent.ShapeshifterCopy -> {
+                // 变形者复制角色
+                _awalongGameState.update {
+                    it.copy(
+                        playTime = Clock.System.now().toEpochMilliseconds(),
+                        shapeshifterTarget = intent.targetRole
+                    )
+                }
+            }
+            
+            is AwalongIntent.LancelotConvert -> {
+                // 兰斯洛特转换阵营
+                _awalongGameState.update {
+                    it.copy(
+                        playTime = Clock.System.now().toEpochMilliseconds(),
+                        lancolotConverted = true
+                    )
+                }
+            }
+            
+            is AwalongIntent.DrawPlotCard -> {
+                // 抽取情节卡（预留接口）
+                viewModelScope.launch {
+                    _topTipState.emit("抽取了情节卡")
+                }
+            }
+            
+            is AwalongIntent.SelectCaptain -> {
+                // 选择队长
+                _awalongGameState.update {
+                    val updatedDayList = it.dayList.toMutableList()
+                    if (updatedDayList.isNotEmpty()) {
+                        updatedDayList[0] = updatedDayList[0].copy(captain = intent.captainIndex)
+                    }
+                    it.copy(
+                        playTime = Clock.System.now().toEpochMilliseconds(),
+                        dayList = updatedDayList
+                    )
+                }
+            }
+            
+            is AwalongIntent.FormTeam -> {
+                // 组队
+                _awalongGameState.update {
+                    val updatedDayList = it.dayList.toMutableList()
+                    if (intent.taskIndex < updatedDayList.size) {
+                        val currentDay = updatedDayList[intent.taskIndex]
+                        updatedDayList[intent.taskIndex] = currentDay.copy(
+                            mainTask = intent.teamMembers.associateWith { 1 }
+                        )
+                    }
+                    it.copy(
+                        playTime = Clock.System.now().toEpochMilliseconds(),
+                        dayList = updatedDayList
+                    )
+                }
+            }
+            
+            is AwalongIntent.VoteTeam -> {
+                // 投票（简化处理）
+                viewModelScope.launch {
+                    _topTipState.emit("投票${if (intent.vote) "通过" else "拒绝"}")
+                }
+            }
+            
+            is AwalongIntent.ExecuteTask -> {
+                // 执行任务
+                _awalongGameState.update {
+                    val updatedDayList = it.dayList.toMutableList()
+                    if (intent.taskIndex < updatedDayList.size) {
+                        val currentDay = updatedDayList[intent.taskIndex]
+                        updatedDayList[intent.taskIndex] = currentDay.copy(
+                            taskResult = if (intent.success) 1 else -1
+                        )
+                    }
+                    it.copy(
+                        playTime = Clock.System.now().toEpochMilliseconds(),
+                        dayList = updatedDayList
+                    )
+                }
+            }
+            
+            is AwalongIntent.UpdateDayState -> {
+                // 更新天的状态
+                _awalongGameState.update {
+                    val updatedDayList = it.dayList.toMutableList()
+                    val existingIndex = updatedDayList.indexOfFirst { it.day == intent.dayState.day }
+                    
+                    if (existingIndex >= 0) {
+                        updatedDayList[existingIndex] = intent.dayState
+                    } else {
+                        updatedDayList.add(intent.dayState)
+                        updatedDayList.sortBy { it.day }
+                    }
+                    
+                    it.copy(
+                        playTime = Clock.System.now().toEpochMilliseconds(),
+                        dayList = updatedDayList
+                    )
+                }
+            }
+            
+            is AwalongIntent.UpdateCurrentPage -> {
+                // 更新当前页面索引
+                _awalongGameState.update {
+                    it.copy(
+                        playTime = Clock.System.now().toEpochMilliseconds(),
+                        currentPage = intent.pageIndex
+                    )
+                }
+            }
+            
+            is AwalongIntent.Assassinate -> {
+                // 刺杀
+                val targetRole = _awalongGameState.value.roleList.getOrNull(intent.targetIndex)
+                val isMerlinKilled = targetRole == AwalongRole.MEILING
+                
+                viewModelScope.launch {
+                    _topTipState.emit(
+                        if (isMerlinKilled) "刺杀成功！红方获胜！" else "刺杀失败！蓝方获胜！"
+                    )
+                }
+            }
+            
+
+
+            is AwalongIntent.CheckGameEnd -> {
+                // 检查游戏结束
+                val result = AwalongGameLogic.checkGameEnd(_awalongGameState.value)
+                result?.let {
+                    viewModelScope.launch {
+                        _topTipState.emit("${it.winner}获胜：${it.reason}")
+                    }
+                }
+            }
         }
     }
 
@@ -374,23 +560,34 @@ class MainViewmodel : ViewModel() {
     @OptIn(ExperimentalTime::class)
     private fun resetAwalongGameState() {
         viewModelScope.launch {
+            val config = awalongConfigState.value
             _awalongGameState.emit(
                 AwalongGameState(
                     playTime = awalongGameState.value.playTime+1,
-                    roleList = awalongConfigState.value.role.optimizedShuffle().toMutableList(),
+                    roleList = config.role.optimizedShuffle().toMutableList(),
                     dayList = mutableListOf<AwalongGameDayEntity>().apply {
-                        awalongConfigState.value.process.forEachIndexed { index, i ->
+                        config.process.forEachIndexed { index, taskSize ->
+                            // 根据任务大小判断是否需要2张失败卡（通常是较大的任务）
+                            val requiresTwoFailures = taskSize >= 4 && config.playerNum >= 7
                             this.add(
                                 AwalongGameDayEntity(
                                     day = index,
-                                    captain = awalongConfigState.value.role.indices.random(),
+                                    captain = config.role.indices.random(),
+                                    requiresTwoFailures = requiresTwoFailures
                                 )
                             )
                         }
-                    }
-                ,
-                    nickNameList = (1..awalongConfigState.value.role.size).map { it.toString() }
-                        .toMutableList()
+                    },
+                    nickNameList = (1..config.role.size).map { it.toString() }
+                        .toMutableList(),
+                    // 初始化扩展包字段
+                    ladyOfLakeUsed = false,
+                    sirGalahadUsed = false,
+                    morguseUsed = false,
+                    prophetChecked = null,
+                    ladyOfLakeChecked = null,
+                    lancolotConverted = false,
+                    shapeshifterTarget = null
                 )
             )
         }

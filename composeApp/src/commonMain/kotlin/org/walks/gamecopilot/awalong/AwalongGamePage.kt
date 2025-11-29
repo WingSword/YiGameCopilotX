@@ -21,20 +21,16 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.GridItemSpan
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.pager.HorizontalPager
-import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.sharp.Check
 import androidx.compose.material.icons.sharp.CheckCircle
-import androidx.compose.material.icons.sharp.Close
 import androidx.compose.material.icons.sharp.Edit
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
@@ -66,8 +62,6 @@ import com.yi.yigamecopilot.android.theme.AiLv
 import com.yi.yigamecopilot.android.theme.AnSe
 import com.yi.yigamecopilot.android.theme.CangSe
 import com.yi.yigamecopilot.android.theme.Chi
-import com.yi.yigamecopilot.android.theme.GoldanColorList
-import com.yi.yigamecopilot.android.theme.KuHuang
 import com.yi.yigamecopilot.android.theme.MoSe
 import com.yi.yigamecopilot.android.theme.MorandiBlue
 import com.yi.yigamecopilot.android.theme.QiHei
@@ -169,103 +163,8 @@ private fun PageContent(
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun AwalongGamePage(viewmodel: MainViewmodel) {
-    val gameConfig = viewmodel.awalongConfigState.value
-
-    val nameChange = { newName: String, no: Int ->
-        viewmodel.handleAwalongGameIntent(AwalongIntent.ChangeNickName(newName, no))
-    }
-    val pages = mutableListOf<@Composable () -> Unit>(
-        {
-            PageContent(
-                "第零日",
-                bgColor = Color(0xff161823),
-                gameRule = gameConfig.description,
-                content = {
-                    PageDayZero(
-                        viewmodel.awalongGameState.value.roleList,
-                        viewmodel.awalongGameState.value.nickNameList,
-                        nameChange
-                    )
-                })
-        },
-    )
-    gameConfig.process.forEachIndexed { index, taskNum ->
-        pages.add({
-            PageContent(
-                "",
-                gameRule = gameConfig.description,
-                bgColor = GoldanColorList[index % 5],
-                content = {
-                    Box(contentAlignment = Alignment.BottomCenter) {
-                        PageDayTask(
-                            viewmodel.awalongGameState.value.roleList,
-                            viewmodel.awalongGameState.value.nickNameList,
-                            gameConfig.process[index],
-                            viewmodel.awalongGameState.value.dayList.getOrNull(index),
-                            onCheck = { map, result, cap ->
-                                viewmodel.handleAwalongGameIntent(
-                                    AwalongIntent.CheckTask(
-                                        AwalongGameDayEntity(
-                                            day = index,
-                                            mainTask = map,
-                                            taskResult = result,
-                                            murderTask = -1,
-                                            captain = cap
-                                        )
-                                    )
-                                )
-
-                            }
-                        )
-
-                        LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.padding(bottom = 24.dp)) {
-                            item {
-                                Text("第${index+1}日任务进度：", color = MaterialTheme.colorScheme.secondary)
-                            }
-                            items(viewmodel.awalongGameState.value.dayList.size) {
-                                val day = viewmodel.awalongGameState.value.dayList.getOrNull(it)
-                                Box(
-                                    modifier = Modifier.size(18.dp).border(
-                                        2.dp,
-                                        if (index == it) KuHuang else Color.White,
-                                        CircleShape
-                                    )
-                                        .background(
-                                            color = if (index == it) KuHuang else Color.Transparent,
-                                            CircleShape
-                                        )
-                                        ,
-                                ){
-                                    when (day?.taskResult) {
-                                        1 -> Icon(
-                                            imageVector = Icons.Sharp.Check,
-                                            modifier = Modifier.size(18.dp),
-                                            contentDescription = "",
-                                            tint = ZhuQing
-                                        )
-
-                                        -1 -> Icon(
-                                            imageVector = Icons.Sharp.Close,
-                                            modifier = Modifier.size(18.dp),
-                                            contentDescription = "",
-                                            tint = Chi
-                                        )
-                                    }
-                                }
-                            }
-                        }
-                    }
-
-                })
-        })
-    }
-    val pageState = rememberPagerState(initialPage = 0, pageCount = { pages.size })
-
-    HorizontalPager(
-        state = pageState
-    ) { page ->
-        pages[page]()
-    }
+    // 使用优化后的游戏页面
+    AwalongGamePageOptimized(viewmodel)
 }
 
 
@@ -408,7 +307,7 @@ private fun PageDayTask(
             }
         }
     }
-    if (showDialog >= 0) {
+    if (showDialog >= 0 && showDialog < roleList.size) {
         Dialog(onDismissRequest = { showDialog = -1 }) {
             Card(
                 modifier = Modifier.fillMaxWidth(0.75f).padding(24.dp),
@@ -441,7 +340,7 @@ private fun PageDayTask(
 }
 
 @Composable
-private fun PageDayZero(
+fun PageDayZero(
     roleList: List<AwalongRole>,
     nicknameList: List<String>,
     onNameChange: (String, Int) -> Unit
@@ -570,56 +469,77 @@ private fun RoleItem(
 ) {
     var isEditing by remember { mutableStateOf(false) }
     var name by remember { mutableStateOf(nickName) }
-    Row(
-        modifier = Modifier.background(
-            shape = RoundedCornerShape(16.dp),
-            color = YinBai
-        ).padding(16.dp).clickable {
-            onItemClick()
-        },
-        verticalAlignment = Alignment.CenterVertically
+    
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 4.dp)
+            .clickable { onItemClick() },
+        shape = RoundedCornerShape(12.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = if (isSelected) MaterialTheme.colorScheme.primaryContainer else YinBai
+        ),
+        elevation = CardDefaults.cardElevation(
+            defaultElevation = if (isSelected) 8.dp else 2.dp
+        )
     ) {
-        Text("${sn + 1}号", fontWeight = FontWeight.W900, color = MaterialTheme.colorScheme.primary)
-        Column(modifier = Modifier.padding(horizontal = 24.dp).weight(1f)) {
-            OutlinedTextField(
-                value = name,
-                onValueChange = {
-                    name = it
-                },
-                enabled = isEditing,
-                singleLine = true,
-                modifier = Modifier.fillMaxWidth(),
-                textStyle = MaterialTheme.typography.bodySmall.copy(fontWeight = FontWeight.W900),
-                colors = TextFieldDefaults.colors(
-                    focusedTextColor = MaterialTheme.colorScheme.secondary,
-                    unfocusedTextColor = MaterialTheme.colorScheme.secondary.copy(0.66f),
-                    disabledTextColor = MaterialTheme.colorScheme.secondary.copy(0.66f),
-                ),
-                leadingIcon = {
-                    Icon(
-                        imageVector = if (isEditing) Icons.Sharp.CheckCircle else Icons.Sharp.Edit,
-                        contentDescription = null,
-                        tint = Color.Gray,
-                        modifier = Modifier.clickable {
-                            if (isEditing) {
-                                nickNameChange?.invoke(name)
-                            }
-                            isEditing = !isEditing
-                        }
-                    )
-                }
-            )
-        }
-        AnimatedVisibility(
-            isSelected,
-            modifier = Modifier.border(4.dp, Color.DarkGray, RoundedCornerShape(10.dp)).background(
-                color = Color.Transparent,
-                shape = RoundedCornerShape(4.dp)
-            ).padding(4.dp)
+        Row(
+            modifier = Modifier.padding(16.dp),
+            verticalAlignment = Alignment.CenterVertically
         ) {
-            actionButtonIcon?.invoke()
+            // 号码显示区域 - 与PlayerCard保持一致
+            Box(
+                modifier = Modifier
+                    .size(48.dp)
+                    .background(
+                        color = MaterialTheme.colorScheme.primary,
+                        shape = RoundedCornerShape(8.dp)
+                    ),
+                contentAlignment = Alignment.Center
+            ) {
+                Text(
+                    text = "${sn + 1}号",
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.onPrimary,
+                    fontSize = 14.sp
+                )
+            }
+            
+            Spacer(modifier = Modifier.width(16.dp))
+            
+            Column(modifier = Modifier.weight(1f)) {
+                OutlinedTextField(
+                    value = name,
+                    onValueChange = { name = it },
+                    enabled = isEditing,
+                    singleLine = true,
+                    modifier = Modifier.fillMaxWidth(),
+                    textStyle = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Bold),
+                    colors = TextFieldDefaults.colors(
+                        focusedTextColor = MaterialTheme.colorScheme.onSurface,
+                        unfocusedTextColor = MaterialTheme.colorScheme.onSurface,
+                        disabledTextColor = MaterialTheme.colorScheme.onSurface.copy(0.66f),
+                    ),
+                    leadingIcon = {
+                        Icon(
+                            imageVector = if (isEditing) Icons.Sharp.CheckCircle else Icons.Sharp.Edit,
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.primary,
+                            modifier = Modifier.clickable {
+                                if (isEditing) {
+                                    nickNameChange?.invoke(name)
+                                }
+                                isEditing = !isEditing
+                            }
+                        )
+                    }
+                )
+            }
+            
+            if (isSelected) {
+                actionButtonIcon?.invoke()
+            }
         }
-
     }
 }
 
