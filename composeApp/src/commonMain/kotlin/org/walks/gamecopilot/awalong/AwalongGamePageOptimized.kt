@@ -14,6 +14,8 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.PagerState
 import androidx.compose.foundation.pager.rememberPagerState
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.sharp.ArrowBack
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Icon
@@ -38,6 +40,7 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
 import org.jetbrains.compose.resources.painterResource
 import org.walks.gamecopilot.MainViewmodel
+import org.walks.gamecopilot.awalong.components.AwalongDayZeroPage
 import org.walks.gamecopilot.awalong.components.GameRulesDialog
 import org.walks.gamecopilot.awalong.components.PageDayTaskOptimized
 import org.walks.gamecopilot.awalong.components.TaskProgressBar
@@ -147,7 +150,7 @@ private fun buildPages(
         ) {
             Box(contentAlignment = Alignment.BottomCenter) {
                 // 第零日内容
-                PageDayZero(
+                AwalongDayZeroPage(
                     viewmodel.awalongGameState.value.roleList,
                     viewmodel.awalongGameState.value.nickNameList,
                     nameChange
@@ -270,16 +273,21 @@ private fun PageNavigationButtons(
                 containerColor = Color.Red // 红色确保可见
             )
         ) {
-            Text("上一页", color = Color.White)
+            Icon(
+                imageVector = Icons.AutoMirrored.Sharp.ArrowBack,
+                contentDescription = null,
+                tint = Color.White
+            )
+
         }
 
-        Text(
-            text = "${currentPage + 1} / $totalPages",
-            fontSize = 16.sp,
-            fontWeight = FontWeight.Medium,
-            color = MaterialTheme.colorScheme.onSurface,
-            modifier = Modifier.align(Alignment.CenterVertically)
-        )
+//        Text(
+//            text = "${currentPage + 1} / $totalPages",
+//            fontSize = 16.sp,
+//            fontWeight = FontWeight.Medium,
+//            color = MaterialTheme.colorScheme.onSurface,
+//            modifier = Modifier.align(Alignment.CenterVertically)
+//        )
 
         val isNextEnabled = currentPage == 0 || currentPage < maxAccessiblePage
 

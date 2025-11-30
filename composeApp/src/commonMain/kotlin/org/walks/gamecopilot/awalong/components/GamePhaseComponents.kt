@@ -155,7 +155,7 @@ fun TeamFormationPhase(
         Spacer(modifier = Modifier.height(20.dp))
         
         LazyVerticalGrid(
-            columns = GridCells.Fixed(3),
+            columns = GridCells.Fixed(2),
             horizontalArrangement = Arrangement.spacedBy(8.dp),
             verticalArrangement = Arrangement.spacedBy(8.dp),
             modifier = Modifier.fillMaxSize()
