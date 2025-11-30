@@ -1,6 +1,8 @@
 package org.walks.gamecopilot.awalong.data
 
 import org.walks.gamecopilot.awalong.AwalongRole
+import kotlin.time.Clock
+import kotlin.time.ExperimentalTime
 
 /**
  *  Created by Wing at 10:39 on 2025/5/26
@@ -51,12 +53,12 @@ data class AwalongGameDayEntity(
 /**
  * 技能使用记录
  */
-data class SkillUsageRecord(
+data class SkillUsageRecord @OptIn(ExperimentalTime::class) constructor(
     val skillType: String, // 技能类型
     val userIndex: Int, // 使用者索引
     val targetIndex: Int? = null, // 目标索引（如果有的话）
     val description: String, // 描述
-    val timestamp: Long = System.currentTimeMillis() // 时间戳
+    val timestamp: Long = Clock.System.now().toEpochMilliseconds() // 时间戳
 )
 
 /**

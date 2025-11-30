@@ -1,5 +1,6 @@
 package org.walks.gamecopilot.awalong
 
+import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -7,6 +8,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
@@ -31,11 +33,11 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.yi.yigamecopilot.android.theme.GoldanColorList
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
 import org.jetbrains.compose.resources.painterResource
@@ -143,17 +145,23 @@ private fun buildPages(
         PageContent(
             title = "第零日",
             gameConfig = gameConfig,
-            bgColor = Color(0xff161823),
+            bgColor = MaterialTheme.colorScheme.background,
             currentPage = 1,
             totalPages = gameConfig.process.size + 1,
-            showRulesDialog = onShowRulesDialog
+            showRulesDialog = onShowRulesDialog,
+            onRestartGame = {
+                viewmodel.handleAwalongGameIntent(AwalongIntent.RestartGame)
+            }
         ) {
             Box(contentAlignment = Alignment.BottomCenter) {
                 // 第零日内容
                 AwalongDayZeroPage(
-                    viewmodel.awalongGameState.value.roleList,
-                    viewmodel.awalongGameState.value.nickNameList,
-                    nameChange
+                    roleList = viewmodel.awalongGameState.value.roleList,
+                    nicknameList = viewmodel.awalongGameState.value.nickNameList,
+                    onNameChange = nameChange,
+                    onRefreshRoles = {
+                        viewmodel.handleAwalongGameIntent(AwalongIntent.RestartGame)
+                    }
                 )
             }
         }
@@ -165,10 +173,13 @@ private fun buildPages(
             PageContent(
                 title = "第${index + 1}日",
                 gameConfig = gameConfig,
-                bgColor = GoldanColorList[index % 5],
+                bgColor = MaterialTheme.colorScheme.background,
                 currentPage = index + 2,
                 totalPages = gameConfig.process.size + 1,
-                showRulesDialog = onShowRulesDialog
+                showRulesDialog = onShowRulesDialog,
+                onRestartGame = {
+                    viewmodel.handleAwalongGameIntent(AwalongIntent.RestartGame)
+                }
             ) {
                 Box(contentAlignment = Alignment.BottomCenter) {
                     PageDayTaskOptimized(
@@ -260,49 +271,48 @@ private fun PageNavigationButtons(
             .padding(16.dp),
         horizontalArrangement = Arrangement.SpaceBetween
     ) {
-        Button(
-            onClick = {
-                if (currentPage > 0) {
-                    scope.launch {
-                        pageState.scrollToPage(currentPage - 1)
+        AnimatedVisibility(currentPage > 0) {
+            Button(
+                onClick = {
+                    if (currentPage > 0) {
+                        scope.launch {
+                            pageState.scrollToPage(currentPage - 1)
+                        }
                     }
-                }
-            },
-            enabled = currentPage > 0,
-            colors = ButtonDefaults.buttonColors(
-                containerColor = Color.Red // 红色确保可见
-            )
-        ) {
-            Icon(
-                imageVector = Icons.AutoMirrored.Sharp.ArrowBack,
-                contentDescription = null,
-                tint = Color.White
-            )
+                },
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = Color.Red // 红色确保可见
+                )
+            ) {
+                Icon(
+                    imageVector = Icons.AutoMirrored.Sharp.ArrowBack,
+                    contentDescription = null,
+                    tint = Color.White
+                )
 
+            }
         }
-
-//        Text(
-//            text = "${currentPage + 1} / $totalPages",
-//            fontSize = 16.sp,
-//            fontWeight = FontWeight.Medium,
-//            color = MaterialTheme.colorScheme.onSurface,
-//            modifier = Modifier.align(Alignment.CenterVertically)
-//        )
-
+        Spacer(modifier = Modifier.weight(1f))
         val isNextEnabled = currentPage == 0 || currentPage < maxAccessiblePage
 
-        Button(
-            onClick = {
-                scope.launch {
-                    pageState.scrollToPage(currentPage + 1)
-                }
-            },
-            enabled = isNextEnabled,
-            colors = ButtonDefaults.buttonColors(
-                containerColor = Color.Blue // 强制蓝色确保可见
-            )
-        ) {
-            Text("下一页", color = Color.White)
+        AnimatedVisibility(isNextEnabled && currentPage == 0) {
+            Button(
+                onClick = {
+                    scope.launch {
+                        pageState.scrollToPage(currentPage + 1)
+                    }
+                },
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = Color.Blue // 强制蓝色确保可见
+                )
+            ) {
+                Icon(
+                    imageVector = Icons.AutoMirrored.Sharp.ArrowBack,
+                    contentDescription = null,
+                    tint = Color.White,
+                    modifier = Modifier.rotate(180f)
+                )
+            }
         }
     }
 }
@@ -319,6 +329,7 @@ private fun PageContent(
     currentPage: Int,
     totalPages: Int,
     showRulesDialog: () -> Unit,
+    onRestartGame: (() -> Unit)? = null,
     content: @Composable () -> Unit
 ) {
     Column(
@@ -329,7 +340,8 @@ private fun PageContent(
             title = title,
             currentPage = currentPage,
             totalPages = totalPages,
-            onShowRules = showRulesDialog
+            onShowRules = showRulesDialog,
+            onRestartGame = onRestartGame
         )
 
         // 主内容区域 - 使用weight让内容区域自适应
@@ -337,7 +349,7 @@ private fun PageContent(
             modifier = Modifier
                 .weight(1f)
                 .fillMaxWidth()
-                .background(MaterialTheme.colorScheme.surface)
+                .background(bgColor)
                 .padding(16.dp)
         ) {
             content()
@@ -353,7 +365,8 @@ private fun TopNavigationBar(
     title: String,
     currentPage: Int,
     totalPages: Int,
-    onShowRules: () -> Unit
+    onShowRules: () -> Unit,
+    onRestartGame: (() -> Unit)? = null
 ) {
     Surface(
         modifier = Modifier.fillMaxWidth(),
@@ -384,16 +397,29 @@ private fun TopNavigationBar(
 
             // 操作按钮
             Row {
+                // 添加重新开始按钮
+                onRestartGame?.let {
+                    Text(
+                        text = "🔄",
+                        fontSize = 24.sp,
+                        modifier = Modifier
+                            .clickable {
+                                it.invoke()
+                            }
+                            .padding(8.dp)
+                    )
+                }
 
                 Icon(
                     painter = painterResource(Res.drawable.icon_info),
                     contentDescription = "游戏规则",
                     tint = Color.Unspecified,
-                    modifier = Modifier.size(40.dp).clickable {
-                        onShowRules()
-                    }
+                    modifier = Modifier
+                        .size(40.dp)
+                        .clickable {
+                            onShowRules()
+                        }
                 )
-
             }
         }
     }

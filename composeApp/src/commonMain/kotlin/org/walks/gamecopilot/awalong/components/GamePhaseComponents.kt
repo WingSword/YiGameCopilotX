@@ -14,10 +14,13 @@ import androidx.compose.foundation.lazy.grid.GridItemSpan
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.pager.PagerState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowForward
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -28,6 +31,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -55,17 +59,19 @@ enum class TaskPhase {
  */
 @Composable
 fun PhaseIndicator(currentPhase: TaskPhase, taskResult: Int? = null) {
-    val (containerColor, contentColor, phaseText) = when (currentPhase) {
+    val (_, contentColor, phaseText) = when (currentPhase) {
         TaskPhase.TEAM_FORMATION -> Triple(
             MaterialTheme.colorScheme.primaryContainer,
             MaterialTheme.colorScheme.primary,
             "队长组队"
         )
+
         TaskPhase.TASK_EXECUTION -> Triple(
             MaterialTheme.colorScheme.secondaryContainer,
             MaterialTheme.colorScheme.secondary,
             "任务执行"
         )
+
         TaskPhase.TASK_RESULT -> {
             if (taskResult == 1) {
                 Triple(
@@ -88,11 +94,11 @@ fun PhaseIndicator(currentPhase: TaskPhase, taskResult: Int? = null) {
             }
         }
     }
-    
+
     Card(
         modifier = Modifier.fillMaxWidth(),
         colors = CardDefaults.cardColors(
-            containerColor = containerColor
+            containerColor = MaterialTheme.colorScheme.surface
         )
     ) {
         Row(
@@ -106,7 +112,7 @@ fun PhaseIndicator(currentPhase: TaskPhase, taskResult: Int? = null) {
                 fontWeight = FontWeight.Medium,
                 color = contentColor
             )
-            
+
             Text(
                 text = phaseText,
                 fontSize = 16.sp,
@@ -133,27 +139,27 @@ fun TeamFormationPhase(
 ) {
     // 创建一个本地状态来触发重组
     var selectedTeam by remember { mutableStateOf(taskPlayer.toList()) }
-    
+
     // 当外部 taskPlayer 变化时，同步到本地状态
     LaunchedEffect(taskPlayer) {
         selectedTeam = taskPlayer.toList()
     }
-    
+
     Column {
         val captainName = if (currentCaptain >= 0 && currentCaptain < nicknameList.size) {
             nicknameList[currentCaptain]
         } else {
             "未确定"
         }
-        
+
         Text(
             text = "队长（${captainName}）请选择 $taskNum 位玩家执行任务：",
             fontSize = 16.sp,
             fontWeight = FontWeight.Bold
         )
-        
+
         Spacer(modifier = Modifier.height(20.dp))
-        
+
         LazyVerticalGrid(
             columns = GridCells.Fixed(2),
             horizontalArrangement = Arrangement.spacedBy(8.dp),
@@ -176,17 +182,17 @@ fun TeamFormationPhase(
                             selectedTeam
                         }
                         selectedTeam = newTeam
-                        
+
                         // 更新外部状态
                         onTaskPlayerUpdate(newTeam.toMutableList())
                     }
                 )
             }
-            
-            item(span = { GridItemSpan(3) }) {
+
+            item(span = { GridItemSpan(2) }) {
                 Spacer(modifier = Modifier.height(16.dp))
                 Button(
-                    onClick = { 
+                    onClick = {
                         if (selectedTeam.size == taskNum) {
                             onTeamComplete(selectedTeam.toList())
                         }
@@ -235,12 +241,12 @@ fun TaskResultPhase(
     // 好人完成3次任务成功，或坏人完成2次任务失败，或已完成所有轮次
     val isGameComplete =
         successCount >= 3 || failureCount >= 2 || (totalRounds >= 5 && (successCount >= 3 || failureCount >= 2))
-    
+
     // 获取所有锁定的玩家
     val lockedPlayers = remember(taskIndex) {
         gameState.dayList.take(taskIndex + 1).flatMap { it.lockedPlayers }.toSet()
     }
-    
+
     Column(
         modifier = Modifier.fillMaxSize()
     ) {
@@ -250,39 +256,26 @@ fun TaskResultPhase(
                 .fillMaxWidth()
                 .padding(16.dp),
             colors = CardDefaults.cardColors(
-                containerColor = when (result) {
-                    1 -> MaterialTheme.colorScheme.primaryContainer
-                    -1 -> MaterialTheme.colorScheme.errorContainer
-                    else -> MaterialTheme.colorScheme.surfaceVariant
-                }
+                containerColor = MaterialTheme.colorScheme.surface
             )
         ) {
             Column(
                 modifier = Modifier.padding(16.dp)
             ) {
-                Text(
-                    text = "任务结果：${if (result == 1) "成功" else "失败"}",
-                    fontSize = 16.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = when (result) {
-                        1 -> MaterialTheme.colorScheme.primary
-                        -1 -> MaterialTheme.colorScheme.error
-                        else -> MaterialTheme.colorScheme.onSurfaceVariant
-                    }
-                )
-                
                 // 显示参与本轮任务的玩家
                 if (taskPlayer.isNotEmpty()) {
                     Spacer(modifier = Modifier.height(8.dp))
                     Text(
-                        text = "参与本轮任务的玩家：${taskPlayer.map { gameState.nickNameList[it] }.joinToString(", ")}",
+                        text = "参与本轮任务的玩家：${
+                            taskPlayer.joinToString(", ") { gameState.nickNameList[it] }
+                        }",
                         fontSize = 14.sp,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 }
             }
         }
-        
+
         // 操作按钮区域
         Row(
             modifier = Modifier
@@ -295,13 +288,13 @@ fun TaskResultPhase(
                     onNextRound()
                 },
                 colors = ButtonDefaults.buttonColors(
-                    containerColor = MaterialTheme.colorScheme.primary
+                    containerColor = Color.Blue
                 ),
                 modifier = Modifier.weight(1f)
             ) {
-                Text("下一轮")
+                Icon(Icons.AutoMirrored.Filled.ArrowForward, contentDescription = null)
             }
-            
+
             // 只有在游戏结束时才显示查看结果按钮
             if (isGameComplete) {
                 Button(
@@ -315,7 +308,7 @@ fun TaskResultPhase(
                 }
             }
         }
-        
+
         // 角色选择区域（显示锁定状态）
         LazyVerticalGrid(
             columns = GridCells.Fixed(3),
@@ -338,7 +331,7 @@ fun TaskResultPhase(
                 )
             }
         }
-        
+
         // 显示所有结果对话框
         if (showAllResults) {
             AllResultsDialog(
@@ -365,11 +358,11 @@ fun proceedToNextRound(
         val updatedDay = day.copy(gamePhase = "TASK_RESULT")
         viewmodel.handleAwalongGameIntent(AwalongIntent.UpdateDayState(updatedDay))
     }
-    
+
     // 如果存在下一个任务，初始化下一个任务的状态
     val nextTaskIndex = currentTaskIndex + 1
     val totalTasks = viewmodel.awalongConfigState.value.process.size
-    
+
     if (nextTaskIndex < totalTasks) {
         val nextDay = viewmodel.awalongGameState.value.dayList.getOrNull(nextTaskIndex)
         if (nextDay == null) {
@@ -393,7 +386,7 @@ fun proceedToNextRound(
             val updatedDay = nextDay.copy(gamePhase = "TEAM_FORMATION")
             viewmodel.handleAwalongGameIntent(AwalongIntent.UpdateDayState(updatedDay))
         }
-        
+
         // 切换到下一页
         if (pageState != null && scope != null) {
             scope.launch {

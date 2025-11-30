@@ -286,6 +286,14 @@ class MainViewmodel : ViewModel() {
             GameIntent.StartGame -> {
                 startNewLocalSpyGame()
             }
+
+            GameIntent.RefreshIdentities -> {
+                refreshCurrentGameIdentities()
+            }
+
+            is GameIntent.UpdateNickname -> {
+                updatePlayerNickname(intent.playerIndex, intent.newNickname)
+            }
         }
     }
     
@@ -295,12 +303,17 @@ class MainViewmodel : ViewModel() {
             if (current.currentGame != null) {
                 saveCurrentGameToHistory(current.currentGame, current.gameCount)
             }
+
+            // 创建新游戏，保留可能的昵称设置
+            val previousNicknames = current.currentGame?.nicknames ?: emptyList()
+            val playerNumber = current.currentGame?.totalPlayerNumber ?: 4
             
-            // 创建新游戏
             val newGame = LocalSpyEntity(
-                totalPlayerNumber = current.currentGame?.totalPlayerNumber ?: 4,
+                totalPlayerNumber = playerNumber,
                 spyNum = current.currentGame?.spyNum ?: 1,
-                blackNum = current.currentGame?.blackNum ?: 0
+                blackNum = current.currentGame?.blackNum ?: 0,
+                nicknames = if (previousNicknames.size == playerNumber) previousNicknames
+                else List(playerNumber) { (it + 1).toString() } // 初始化默认昵称
             )
             
             // 刷新游戏词汇
@@ -310,6 +323,57 @@ class MainViewmodel : ViewModel() {
                 currentGame = newGame,
                 gameCount = current.gameCount + 1
             )
+        }
+    }
+
+    private fun refreshCurrentGameIdentities() {
+        _gameEntity.update { current ->
+            current.currentGame?.let { game ->
+                // 创建新的游戏实例，确保重新分配身份，但保留昵称
+                val refreshedGame = LocalSpyEntity(
+                    totalPlayerNumber = game.totalPlayerNumber,
+                    spyNum = game.spyNum,
+                    blackNum = game.blackNum,
+                    nicknames = game.nicknames // 保留现有昵称
+                ).apply {
+                    refreshGame(current.globalSelectedWordGroups)
+                }
+
+                GameLogger.debug("重新分配身份完成，旧的卧底索引: ${game.spies}, 新的卧底索引: ${refreshedGame.spies}")
+                GameLogger.debug("词汇也重新分配了，旧词汇: ${game.gameWord}/${game.spyWord}, 新词汇: ${refreshedGame.gameWord}/${refreshedGame.spyWord}")
+                current.copy(
+                    currentGame = refreshedGame
+                )
+            } ?: current
+        }
+    }
+
+    private fun updatePlayerNickname(playerIndex: Int, newNickname: String) {
+        _gameEntity.update { current ->
+            current.currentGame?.let { game ->
+                // 确保昵称列表长度足够
+                val updatedNicknames = if (game.nicknames.size >= game.totalPlayerNumber) {
+                    game.nicknames.toMutableList().apply {
+                        set(playerIndex, newNickname.ifEmpty { (playerIndex + 1).toString() })
+                    }
+                } else {
+                    // 如果昵称列表长度不够，创建新的列表
+                    List(game.totalPlayerNumber) { index ->
+                        if (index == playerIndex) {
+                            newNickname.ifEmpty { (playerIndex + 1).toString() }
+                        } else if (index < game.nicknames.size) {
+                            game.nicknames[index]
+                        } else {
+                            (index + 1).toString()
+                        }
+                    }
+                }
+
+                GameLogger.debug("更新昵称: 玩家${playerIndex + 1} -> $newNickname")
+                current.copy(
+                    currentGame = game.copy(nicknames = updatedNicknames)
+                )
+            } ?: current
         }
     }
     

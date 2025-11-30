@@ -1,5 +1,6 @@
 package org.walks.gamecopilot.awalong.components
 
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.height
@@ -24,6 +25,7 @@ import org.walks.gamecopilot.awalong.data.AwalongGameState
  * 优化后的任务页面组件
  * 处理单日任务的完整流程：组队 -> 执行 -> 结果
  */
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun PageDayTaskOptimized(
     roleList: List<AwalongRole>,

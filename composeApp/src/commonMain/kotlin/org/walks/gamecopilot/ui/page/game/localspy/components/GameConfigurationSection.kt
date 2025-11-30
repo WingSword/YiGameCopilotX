@@ -121,7 +121,6 @@ fun GameConfigurationSection(
                         options = numberList,
                         color = MaterialTheme.colorScheme.primary,
                         onValueChange = { newValue ->
-                            onGameTimeStateChange(gameTimeState + 1)
                             onGameIntent(GameIntent.RefreshPlayerNumber(newValue.toInt()))
                         }
                     ),

@@ -83,6 +83,7 @@ fun IdentitySelector(
     identities: List<String>,
     nicknames: List<String>,
     onNicknameChange: (Int, String) -> Unit,
+    onRefreshIdentities: (() -> Unit)? = null,
     customIdentityCard: @Composable ((playerNumber: Int, identity: String, nickname: String) -> Unit)? = null
 ) {
     // 当前选中玩家索引（0-based）
@@ -95,6 +96,7 @@ fun IdentitySelector(
     val nicknameText = remember { mutableStateOf("") }
     // 强制刷新状态
     var forceRefresh by remember { mutableStateOf(0) }
+    // 昵称更新状态
 
     // 单个玩家身份展示状态列表，记录已查看过身份的玩家
     val playerIdentityState = remember {
@@ -116,8 +118,8 @@ fun IdentitySelector(
     }
 
     // 监听昵称变化，强制刷新UI
-    LaunchedEffect(nicknames, forceRefresh) {
-        // 昵称列表变化时，不需要重置游戏状态，但需要触发重组
+    LaunchedEffect(nicknames) {
+        // 昵称列表变化时触发重组以立即显示昵称变化
     }
 
     Column(
@@ -133,6 +135,7 @@ fun IdentitySelector(
             playerIdentityState = playerIdentityState,
             identities = identities,
             forceRefresh = forceRefresh,
+            onRefreshIdentities = onRefreshIdentities,
             onClick = { currentSelect ->
                 currentSelectPlayer = currentSelect - 1 // 转换为0-based索引
                 watchedTimeList[currentSelect] += 1
@@ -195,8 +198,6 @@ fun IdentitySelector(
                 onNicknameChange = { newNickname ->
                     nicknameText.value = newNickname
                     onNicknameChange(currentSelectPlayer, newNickname)
-                    // 强制刷新UI以立即显示昵称变化
-                    forceRefresh++
                 },
                 onDismiss = { nicknameEditState.value = false }
             )
@@ -217,21 +218,60 @@ private fun PlayerSelectArea(
     playerIdentityState: List<Int>,
     identities: List<String>,
     forceRefresh: Int,
+    onRefreshIdentities: (() -> Unit)? = null,
     onClick: (Int) -> Unit,
     onLongClick: (Int) -> Unit
 ) {
-    LazyVerticalGrid(
-        columns = GridCells.Fixed(4),
-        horizontalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(8.dp),
-        verticalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(8.dp),
+    // 列容器，包含刷新按钮和玩家网格
+    Column(
         modifier = Modifier.fillMaxSize().padding(horizontal = 8.dp)
     ) {
+        LazyVerticalGrid(
+            columns = GridCells.Fixed(4),
+            horizontalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(8.dp),
+            verticalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(8.dp),
+            modifier = Modifier.weight(1f)
+        ) {
         items(playerNum) { pos ->
             val currentPlayer = pos + 1
             val watchedTime = getWatchedTime(currentPlayer)
 
-            Box {
-                // 昵称显示在最外层顶部
+            Box(
+                modifier = Modifier.padding(top = 8.dp)
+            ) {
+                // 可点击的卡片区域
+                Box(
+                    modifier = Modifier
+                        .size(100.dp)
+                        .combinedClickable(
+                            onLongClick = { onLongClick(currentPlayer) },
+                            onClick = { onClick(currentPlayer) },
+                            interactionSource = remember { MutableInteractionSource() },
+                            indication = LocalIndication.current
+                        )
+                ) {
+                    Image(
+                        painter = painterResource(
+                            if (watchedTime < 1) Res.drawable.icon_cardindex_notitle
+                            else Res.drawable.icon_cardindex
+                        ),
+                        modifier = Modifier.rotate(180f).align(Alignment.TopEnd),
+                        contentDescription = "Card index icon",
+                        alpha = if (watchedTime >= 1) 0.6f else 1f
+                    )
+
+                    // 玩家序号显示
+                    Text(
+                        text = currentPlayer.toString(),
+                        modifier = Modifier.align(Alignment.TopEnd)
+                            .padding(end = 20.dp, top = 5.dp),
+                        color = MaterialTheme.colorScheme.secondary.copy(if (watchedTime >= 1) 0.5f else 1f),
+                        style = MaterialTheme.typography.bodyMedium,
+                        fontWeight = FontWeight.SemiBold
+                    )
+                }
+
+                // 昵称显示在卡片上方，但位置更合理
                 if (nicknames[currentPlayer - 1].isNotEmpty() &&
                     nicknames[currentPlayer - 1] != currentPlayer.toString()
                 ) {
@@ -239,7 +279,7 @@ private fun PlayerSelectArea(
                         text = nicknames[currentPlayer - 1],
                         modifier = Modifier
                             .align(Alignment.TopCenter)
-                            .offset(y = (-8).dp)
+                            .offset(y = (-8).dp) // 减少偏移，使昵称更靠近卡片
                             .background(
                                 color = MaterialTheme.colorScheme.primary,
                                 shape = RoundedCornerShape(4.dp)
@@ -252,49 +292,16 @@ private fun PlayerSelectArea(
                     )
                 }
 
+                // 身份显示区域 - 回到卡片内部底部，紧贴卡片
                 Box(
-                    modifier = Modifier
-                        .size(100.dp)
-                        .combinedClickable(
-                            onLongClick = { onLongClick(currentPlayer) },
-                            onClick = { onClick(currentPlayer) },
-                            interactionSource = remember { MutableInteractionSource() },
-                            indication = LocalIndication.current
-                        ),
-                    contentAlignment = Alignment.TopEnd
-                ) {
-                    Image(
-                        painter = painterResource(
-                            if (watchedTime < 1) Res.drawable.icon_cardindex_notitle
-                            else Res.drawable.icon_cardindex
-                        ),
-                        modifier = Modifier.rotate(180f),
-                        contentDescription = "Card index icon",
-                        alpha = if (watchedTime >= 1) 0.6f else 1f
-                    )
-
-                    // 玩家序号显示
-                    Text(
-                        text = currentPlayer.toString(),
-                        modifier = Modifier.padding(end = 20.dp, top = 5.dp),
-                        color = MaterialTheme.colorScheme.secondary.copy(if (watchedTime >= 1) 0.5f else 1f),
-                        style = MaterialTheme.typography.bodyMedium,
-                        fontWeight = FontWeight.SemiBold
-                    )
-                }
-
-                // 身份显示区域 - 与图片底部对齐
-                Box(
-                    modifier = Modifier
-                        .size(100.dp)
-                        .align(Alignment.BottomCenter),
+                    modifier = Modifier.fillMaxSize(),
                     contentAlignment = Alignment.BottomCenter
                 ) {
                     when {
                         playerIdentityState.contains(currentPlayer) -> {
                             Text(
                                 text = identities[currentPlayer - 1],
-                                modifier = Modifier.padding(bottom = 10.dp),
+                                modifier = Modifier.padding(bottom = 2.dp), // 减少底部间距
                                 style = MaterialTheme.typography.labelSmall,
                                 textAlign = TextAlign.Center,
                                 color = MaterialTheme.colorScheme.primary,
@@ -305,7 +312,7 @@ private fun PlayerSelectArea(
                         watchedTime > 1 -> {
                             Text(
                                 text = "查看${watchedTime}次",
-                                modifier = Modifier.padding(bottom = 10.dp),
+                                modifier = Modifier.padding(bottom = 2.dp), // 减少底部间距，紧贴卡片
                                 style = MaterialTheme.typography.labelSmall,
                                 textAlign = TextAlign.Center,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
@@ -315,14 +322,16 @@ private fun PlayerSelectArea(
                         else -> {
                             Text(
                                 text = "",
-                                modifier = Modifier.padding(bottom = 10.dp),
+                                modifier = Modifier.padding(bottom = 2.dp),
                                 style = MaterialTheme.typography.labelSmall,
                                 textAlign = TextAlign.Center
                             )
                         }
                     }
                 }
+
             }
+        }
         }
     }
 }

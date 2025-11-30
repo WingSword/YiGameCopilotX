@@ -17,15 +17,11 @@ import org.walks.gamecopilot.ui.components.common.IdentitySelector
 fun AwalongDayZeroPage(
     roleList: List<AwalongRole>,
     nicknameList: List<String>,
-    onNameChange: (String, Int) -> Unit
+    onNameChange: (String, Int) -> Unit,
+    onRefreshRoles: (() -> Unit)? = null
 ) {
     // 用于强制刷新身份选择器的key
     var refreshKey by remember { mutableIntStateOf(0) }
-
-    // 监听昵称列表变化，强制刷新组件
-    LaunchedEffect(nicknameList) {
-        refreshKey++
-    }
 
     // 确保角色列表和昵称列表长度一致
     val playerNum = roleList.size
@@ -36,9 +32,9 @@ fun AwalongDayZeroPage(
         nicknameList + List(playerNum - nicknameList.size) { "" }
     }
 
-    // 监听角色变化，刷新组件
-    LaunchedEffect(roleList) {
-        refreshKey++
+    // 监听refreshKey变化以确保刷新功能正常工作
+    LaunchedEffect(refreshKey) {
+        // 此处为空，仅用于触发重组
     }
 
     IdentitySelector(
@@ -48,6 +44,11 @@ fun AwalongDayZeroPage(
         nicknames = safeNicknameList,
         onNicknameChange = { playerIndex, newNickname ->
             onNameChange(newNickname, playerIndex)
+            refreshKey++
+        },
+        onRefreshIdentities = {
+            onRefreshRoles?.invoke()
+            refreshKey++
         },
         customIdentityCard = { playerNumber, identity, nickname ->
             // 找到对应的角色对象

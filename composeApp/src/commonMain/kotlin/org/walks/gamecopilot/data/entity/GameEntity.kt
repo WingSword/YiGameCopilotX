@@ -1,16 +1,13 @@
 package org.walks.gamecopilot.data.entity
 
 import org.walks.gamecopilot.getWordMapBySelectedGroups
-import org.walks.gamecopilot.wordMap
 
 data class GameEntity(
     val gameMode: Int = 0,
     val currentGame: LocalSpyEntity = LocalSpyEntity(),
     val gameCount: Int = 0, // 游戏局数
     val globalSelectedWordGroups: Set<String> = WordGroupManager.getDefaultSelectedGroups() // 全局词库选择
-) {
-
-}
+)
 
 
 data class LocalSpyEntity(
@@ -19,7 +16,8 @@ data class LocalSpyEntity(
     var totalPlayerNumber: Int = 4,
     var spyWord: String = "",
     var spies: List<Int> = listOf(),
-    var blackNum: Int = 0
+    var blackNum: Int = 0,
+    var nicknames: List<String> = listOf() // 玩家昵称列表
 ) {
     fun refreshGame(selectedWordGroups: Set<String> = WordGroupManager.getDefaultSelectedGroups()){
         getUniqueRandomBatch()

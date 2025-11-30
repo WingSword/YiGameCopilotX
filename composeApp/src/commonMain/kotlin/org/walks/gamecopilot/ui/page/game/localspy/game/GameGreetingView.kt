@@ -8,7 +8,6 @@ import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
-import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
@@ -28,26 +27,18 @@ import androidx.compose.ui.window.DialogProperties
 import org.walks.gamecopilot.PlatformHelper
 import org.walks.gamecopilot.data.entity.LocalSpyEntity
 import org.walks.gamecopilot.ui.page.game.localspy.game.components.LocalPlayerSelectArea
-import org.walks.gamecopilot.ui.page.game.localspy.game.components.LocalSpyIdentityCard
+import org.walks.gamecopilot.ui.page.home.LocalSpyIdentityCard
 
 /**
  * 游戏身份展示视图组件
- * 管理玩家身份查看、卡片翻转和游戏状态的核心逻辑
+ * 使用通用的LocalSpyIdentitySelector组件来管理玩家身份查看
  *
- * 游戏流程说明：
- * 1. 游戏开始时，所有玩家身份隐藏
- * 2. 玩家点击卡片查看自己的身份
- * 3. 所有玩家查看完成后，显示"长按公布所有身份"提示
- * 4. 长按后游戏结束，显示所有身份
- * 5. 重新开始游戏时重置所有状态
- *
- * @param key 重组标识键，用于控制派生状态和记忆值的更新时机
+ * @param key 重组标识键，用于控制状态重置
  * @param gameState 当前游戏状态实体，包含玩家身份信息和游戏配置
  * @param showAllIdentities 是否显示所有身份（游戏结束状态）
  * @param onShowAllIdentitiesChange 显示所有身份状态变化回调
  * @param onAllPlayersViewed 所有玩家查看状态变化回调
  */
-@OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun GameGreetingView(
     key: Int,
