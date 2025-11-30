@@ -2,6 +2,7 @@ package org.walks.gamecopilot.awalong
 
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -11,16 +12,20 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.pager.HorizontalPager
+import androidx.compose.foundation.pager.PagerState
 import androidx.compose.foundation.pager.rememberPagerState
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -29,6 +34,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.yi.yigamecopilot.android.theme.GoldanColorList
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.launch
 import org.jetbrains.compose.resources.painterResource
 import org.walks.gamecopilot.MainViewmodel
 import org.walks.gamecopilot.awalong.components.GameRulesDialog
@@ -47,30 +54,63 @@ import yigamecopilotx.composeapp.generated.resources.icon_info
 @Composable
 fun AwalongGamePageOptimized(viewmodel: MainViewmodel) {
     val gameConfig = viewmodel.awalongConfigState.value
+    val gameState = viewmodel.awalongGameState.value
     var showRulesDialog by remember { mutableStateOf(false) }
+
+    val scope = rememberCoroutineScope()
 
     val nameChange = { newName: String, no: Int ->
         viewmodel.handleAwalongGameIntent(AwalongIntent.ChangeNickName(newName, no))
     }
-    
-    // 构建页面列表
-    val pages = buildPages(viewmodel, gameConfig, nameChange) { showRulesDialog = true }
-    
-    val pageState = rememberPagerState(initialPage = 0, pageCount = { pages.size })
-    
-    // 计算当前可以访问的最大页面索引
-    val maxAccessiblePage = remember(viewmodel.awalongGameState.value.dayList) {
-        calculateMaxAccessiblePage(viewmodel.awalongGameState.value)
+
+    // 计算总页面数
+    val totalPages = gameConfig.process.size + 1
+
+    val pageState = rememberPagerState(initialPage = 0, pageCount = { totalPages })
+
+    // 构建页面列表，传递 pageState 和 scope
+    val pages =
+        buildPages(viewmodel, gameConfig, nameChange, pageState, scope) { showRulesDialog = true }
+
+    // 计算当前可以访问的最大页面索引 - 实时计算
+    val maxAccessiblePage = calculateMaxAccessiblePage(gameState)
+
+    // 完全禁止用户滑动，只允许通过程序控制页面切换
+    val userScrollEnabled = false
+
+    // 实时监控页面状态，确保立即响应（去掉动画）
+    LaunchedEffect(maxAccessiblePage, pageState.currentPage) {
+        if (pageState.currentPage > maxAccessiblePage) {
+            pageState.scrollToPage(maxAccessiblePage) // 使用scrollToPage而不是animateScrollToPage
+        }
+    }
+
+    // 监听游戏状态变化，立即重新计算可访问页面
+    LaunchedEffect(gameState.dayList) {
+        val newMaxPage = calculateMaxAccessiblePage(gameState)
+        if (pageState.currentPage > newMaxPage) {
+            pageState.scrollToPage(newMaxPage) // 使用scrollToPage而不是animateScrollToPage
+        }
     }
 
     Column {
         HorizontalPager(
             state = pageState,
-            userScrollEnabled = true // 允许用户自由切换页面
+            userScrollEnabled = userScrollEnabled, // 完全禁止用户滑动
+            modifier = Modifier.weight(1f) // 让HorizontalPager占用剩余空间
         ) { page ->
             pages[page]()
         }
-        
+
+        // 统一的底部导航按钮
+        PageNavigationButtons(
+            currentPage = pageState.currentPage,
+            maxAccessiblePage = maxAccessiblePage,
+            totalPages = pages.size,
+            scope = scope,
+            pageState = pageState
+        )
+
         // 规则弹窗
         if (showRulesDialog) {
             GameRulesDialog(
@@ -84,14 +124,17 @@ fun AwalongGamePageOptimized(viewmodel: MainViewmodel) {
 /**
  * 构建所有页面
  */
+@OptIn(ExperimentalFoundationApi::class)
 private fun buildPages(
     viewmodel: MainViewmodel,
     gameConfig: AwalongConfig,
     nameChange: (String, Int) -> Unit,
+    pageState: PagerState,
+    scope: CoroutineScope,
     onShowRulesDialog: () -> Unit
 ): List<@Composable () -> Unit> {
     val pages = mutableListOf<@Composable () -> Unit>()
-    
+
     // 第零日页面
     pages.add {
         PageContent(
@@ -102,14 +145,17 @@ private fun buildPages(
             totalPages = gameConfig.process.size + 1,
             showRulesDialog = onShowRulesDialog
         ) {
-            PageDayZero(
-                viewmodel.awalongGameState.value.roleList,
-                viewmodel.awalongGameState.value.nickNameList,
-                nameChange
-            )
+            Box(contentAlignment = Alignment.BottomCenter) {
+                // 第零日内容
+                PageDayZero(
+                    viewmodel.awalongGameState.value.roleList,
+                    viewmodel.awalongGameState.value.nickNameList,
+                    nameChange
+                )
+            }
         }
     }
-    
+
     // 任务日页面
     gameConfig.process.forEachIndexed { index, taskNum ->
         pages.add {
@@ -132,18 +178,18 @@ private fun buildPages(
                         gameState = viewmodel.awalongGameState.value,
                         viewmodel = viewmodel,
                         onCheck = { map, result, cap ->
-                            viewmodel.handleAwalongGameIntent(
-                                AwalongIntent.CheckTask(
-                                    AwalongGameDayEntity(
-                                        day = index,
-                                        mainTask = map,
-                                        taskResult = result,
-                                        murderTask = -1,
-                                        captain = cap
-                                    )
-                                )
+                            val completedTask = AwalongGameDayEntity(
+                                day = index,
+                                mainTask = map,
+                                taskResult = result,
+                                murderTask = -1,
+                                captain = cap,
+                                gamePhase = "TASK_RESULT" // 标记任务已完成
                             )
-                        }
+                            viewmodel.handleAwalongGameIntent(AwalongIntent.CheckTask(completedTask))
+                        },
+                        pageState = pageState,
+                        scope = scope
                     )
 
                     // 优化的任务进度显示
@@ -156,24 +202,103 @@ private fun buildPages(
             }
         }
     }
-    
+
     return pages
 }
 
 /**
  * 计算当前可以访问的最大页面索引
+ * 页面0：第零日，页面1：第1日（对应任务索引0），页面2：第2日（对应任务索引1）...
  */
 private fun calculateMaxAccessiblePage(gameState: AwalongGameState): Int {
-    // 找到第一个未完成任务的天数
-    val firstIncompleteDay = gameState.dayList.indexOfFirst { it.gamePhase != "TASK_RESULT" }
-    return if (firstIncompleteDay == -1) {
-        // 所有任务都完成了，可以访问所有页面
-        gameState.dayList.size
-    } else {
-        // 可以访问到当前未完成的任务页面（+1 因为包含第0页）
-        firstIncompleteDay + 1
+    // 第0页（第零日）总是可以访问下一页（第1页）
+    var maxAccessiblePage = 1 // 第0页总是可以到第1页
+
+    // 如果没有任何任务日数据，第0页可以到第1页
+    if (gameState.dayList.isEmpty()) {
+        return maxAccessiblePage
+    }
+
+    // 检查每个任务日是否完成
+    for (taskIndex in gameState.dayList.indices) {
+        val dayEntity = gameState.dayList[taskIndex]
+
+        if (dayEntity.gamePhase == "TASK_RESULT") {
+            // 任务完成，可以访问下一个任务页面（任务索引+2，因为页面索引=任务索引+1）
+            maxAccessiblePage = taskIndex + 2
+        } else {
+            // 遇到未完成的任务，只能访问当前任务页面
+            // 第一个未完成的任务页面也是可以访问的（任务索引+1）
+            maxAccessiblePage = taskIndex + 1
+            break // 遇到未完成的任务就停止检查
+        }
+    }
+
+    // 确保最大可访问页面不超过总页面数
+    val totalPages = gameState.dayList.size + 1 // 第零日 + 任务日数量
+    return maxAccessiblePage.coerceAtMost(totalPages - 1)
+}
+
+/**
+ * 页面导航按钮组件
+ */
+@OptIn(ExperimentalFoundationApi::class)
+@Composable
+private fun PageNavigationButtons(
+    currentPage: Int,
+    maxAccessiblePage: Int,
+    totalPages: Int,
+    scope: CoroutineScope,
+    pageState: PagerState
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(16.dp),
+        horizontalArrangement = Arrangement.SpaceBetween
+    ) {
+        Button(
+            onClick = {
+                if (currentPage > 0) {
+                    scope.launch {
+                        pageState.scrollToPage(currentPage - 1)
+                    }
+                }
+            },
+            enabled = currentPage > 0,
+            colors = ButtonDefaults.buttonColors(
+                containerColor = Color.Red // 红色确保可见
+            )
+        ) {
+            Text("上一页", color = Color.White)
+        }
+
+        Text(
+            text = "${currentPage + 1} / $totalPages",
+            fontSize = 16.sp,
+            fontWeight = FontWeight.Medium,
+            color = MaterialTheme.colorScheme.onSurface,
+            modifier = Modifier.align(Alignment.CenterVertically)
+        )
+
+        val isNextEnabled = currentPage == 0 || currentPage < maxAccessiblePage
+
+        Button(
+            onClick = {
+                scope.launch {
+                    pageState.scrollToPage(currentPage + 1)
+                }
+            },
+            enabled = isNextEnabled,
+            colors = ButtonDefaults.buttonColors(
+                containerColor = Color.Blue // 强制蓝色确保可见
+            )
+        ) {
+            Text("下一页", color = Color.White)
+        }
     }
 }
+
 
 /**
  * 页面内容容器组件
@@ -198,11 +323,12 @@ private fun PageContent(
             totalPages = totalPages,
             onShowRules = showRulesDialog
         )
-        
-        // 主内容区域
+
+        // 主内容区域 - 使用weight让内容区域自适应
         Box(
             modifier = Modifier
-                .fillMaxSize()
+                .weight(1f)
+                .fillMaxWidth()
                 .background(MaterialTheme.colorScheme.surface)
                 .padding(16.dp)
         ) {
@@ -247,19 +373,19 @@ private fun TopNavigationBar(
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             }
-            
+
             // 操作按钮
             Row {
-                IconButton(
-                    onClick = onShowRules,
-                    modifier = Modifier.size(40.dp)
-                ) {
-                    Icon(
-                        painter = painterResource(Res.drawable.icon_info),
-                        contentDescription = "游戏规则",
-                        tint = Color.Unspecified
-                    )
-                }
+
+                Icon(
+                    painter = painterResource(Res.drawable.icon_info),
+                    contentDescription = "游戏规则",
+                    tint = Color.Unspecified,
+                    modifier = Modifier.size(40.dp).clickable {
+                        onShowRules()
+                    }
+                )
+
             }
         }
     }

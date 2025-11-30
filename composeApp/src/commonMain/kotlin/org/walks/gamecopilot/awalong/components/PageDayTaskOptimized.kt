@@ -3,6 +3,7 @@ package org.walks.gamecopilot.awalong.components
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.pager.PagerState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -11,6 +12,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import kotlinx.coroutines.CoroutineScope
 import org.walks.gamecopilot.MainViewmodel
 import org.walks.gamecopilot.awalong.AwalongConfig
 import org.walks.gamecopilot.awalong.AwalongIntent
@@ -32,7 +34,9 @@ fun PageDayTaskOptimized(
     gameConfig: AwalongConfig,
     gameState: AwalongGameState,
     viewmodel: MainViewmodel,
-    onCheck: (Map<Int, Int>, Int, Int) -> Unit
+    onCheck: (Map<Int, Int>, Int, Int) -> Unit,
+    pageState: PagerState? = null,
+    scope: CoroutineScope? = null
 ) {
     // 从 gameState 获取当前天的状态，确保状态持久化
     val currentDayState = gameState.dayList.getOrNull(taskIndex)
@@ -74,12 +78,10 @@ fun PageDayTaskOptimized(
         }
     }
 
-    val taskMap = remember {
+    remember {
         mutableMapOf<Int, Int>()
     }
 
-    var showDialog by remember { mutableStateOf(-1) }
-    
     // 保存状态的函数
     fun saveState() {
         val updatedDayEntity = AwalongGameDayEntity(
@@ -163,34 +165,38 @@ fun PageDayTaskOptimized(
                     taskPlayer = taskPlayer,
                     taskVotes = taskVotes,
                     onExecutionComplete = { votes, success ->
+                        // 立即更新本地状态
                         taskVotes = votes.toMutableMap()
                         result = if (success) 1 else -1
                         gamePhase = TaskPhase.TASK_RESULT
                         
                         // 保存任务结果到dayEntity
+                        val finalTaskMap = mutableMapOf<Int, Int>()
+                        taskPlayer.forEach { playerIndex ->
+                            finalTaskMap[playerIndex] = if (success) 1 else -1
+                        }
+                        
                         val updatedDayEntity = currentDayState?.copy(
                             taskVotes = votes.toMap(),
                             taskResult = if (success) 1 else -1,
-                            gamePhase = "TASK_RESULT"
+                            gamePhase = "TASK_RESULT",
+                            mainTask = finalTaskMap
                         ) ?: AwalongGameDayEntity(
                             day = taskIndex,
-                            mainTask = taskPlayer.associateWith { if (success) 1 else -1 },
+                            mainTask = finalTaskMap,
                             taskResult = if (success) 1 else -1,
                             murderTask = -1,
                             captain = currentCaptain,
                             taskVotes = votes.toMap(),
                             gamePhase = "TASK_RESULT"
                         )
-                        
+
+                        // 立即保存到ViewModel
                         viewmodel.handleAwalongGameIntent(
                             AwalongIntent.UpdateDayState(updatedDayEntity)
                         )
-                        
-                        // 保存任务结果
-                        val finalTaskMap = mutableMapOf<Int, Int>()
-                        taskPlayer.forEach { playerIndex ->
-                            finalTaskMap[playerIndex] = if (success) 1 else -1
-                        }
+
+                        // 立即调用onCheck回调，通知主页面任务完成
                         onCheck(finalTaskMap, result, currentCaptain)
                     },
                     onBackToTeamFormation = {
@@ -216,7 +222,7 @@ fun PageDayTaskOptimized(
                     taskPlayer = taskPlayer, // 传递参与任务的玩家列表
                     onNextRound = {
                         // 实现进入下一轮的逻辑
-                        proceedToNextRound(viewmodel, taskIndex)
+                        proceedToNextRound(viewmodel, taskIndex, pageState, scope)
                     }
                 )
             }

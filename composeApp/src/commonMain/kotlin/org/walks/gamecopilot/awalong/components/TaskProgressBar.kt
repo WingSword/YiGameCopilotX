@@ -99,7 +99,7 @@ private fun TaskProgressItem(
     isCurrent: Boolean,
     totalItems: Int
 ) {
-    val isCompleted = day.taskResult != 0
+    val isCompleted = day.gamePhase == "TASK_RESULT"
     val isSuccess = day.taskResult == 1
     
     // 计算圆角：连续完成的任务之间没有圆角

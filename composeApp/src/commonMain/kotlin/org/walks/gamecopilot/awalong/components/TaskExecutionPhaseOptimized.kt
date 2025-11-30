@@ -268,9 +268,9 @@ private fun TaskVoteDialogOptimized(
         properties = DialogProperties(
             usePlatformDefaultWidth = false,
             dismissOnBackPress = false,
-            dismissOnClickOutside = false
         )
     ) {
+        var hasVoted by remember { mutableStateOf(false) }
         Surface(
             modifier = Modifier
                 .fillMaxWidth(0.9f)
@@ -284,7 +284,7 @@ private fun TaskVoteDialogOptimized(
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
                 Text(
-                    text = "$playerName，请选择任务执行结果：",
+                    text = "$playerName，请选择任务执行：",
                     fontSize = 16.sp,
                     fontWeight = FontWeight.Bold,
                     textAlign = TextAlign.Center
@@ -297,14 +297,22 @@ private fun TaskVoteDialogOptimized(
                     modifier = Modifier.fillMaxWidth()
                 ) {
                     Button(
-                        onClick = { onVote(false) },
-                        enabled = playerRole.roleType == BAD_PERSON,
+                        onClick = {
+                            if (playerRole.roleType == BAD_PERSON) {
+                                onVote(false)
+                            } else {
+                                //显示Toast 作为好人 必须选择任务成功
+                                hasVoted = true
+                            }
+
+                        },
+
                         colors = ButtonDefaults.buttonColors(
                             containerColor = MaterialTheme.colorScheme.error
                         ),
                         modifier = Modifier.weight(1f)
                     ) {
-                        Text("任务失败")
+                        Text("阻止任务")
                     }
                     
                     Button(
@@ -314,11 +322,11 @@ private fun TaskVoteDialogOptimized(
                         ),
                         modifier = Modifier.weight(1f)
                     ) {
-                        Text("任务成功")
+                        Text("执行任务")
                     }
                 }
-                
-                if (playerRole.roleType == GOOD_PERSON) {
+
+                if (playerRole.roleType == GOOD_PERSON && hasVoted) {
                     Spacer(modifier = Modifier.height(12.dp))
                     Text(
                         text = "提示：作为好人阵营，你必须选择任务成功",

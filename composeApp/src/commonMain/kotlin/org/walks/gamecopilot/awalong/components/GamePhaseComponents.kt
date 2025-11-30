@@ -1,5 +1,6 @@
 package org.walks.gamecopilot.awalong.components
 
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -11,6 +12,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.GridItemSpan
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
+import androidx.compose.foundation.pager.PagerState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -29,6 +31,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.launch
 import org.walks.gamecopilot.MainViewmodel
 import org.walks.gamecopilot.awalong.AllResultsDialog
 import org.walks.gamecopilot.awalong.AwalongIntent
@@ -220,16 +224,17 @@ fun TaskResultPhase(
     onNextRound: () -> Unit
 ) {
     var showAllResults by remember { mutableStateOf(false) }
-    
-    // 判断游戏是否结束
-    val isGameComplete = remember(gameState.dayList) {
-        val successCount = gameState.dayList.count { it.taskResult == 1 }
-        val failureCount = gameState.dayList.count { it.taskResult == -1 }
-        val totalRounds = gameState.dayList.size
-        
-        // 好人完成3次任务成功，或坏人完成2次任务失败，或已完成所有轮次
+
+    // 判断游戏是否结束 - 实时计算，不使用remember缓存
+    val successCount =
+        gameState.dayList.count { it.gamePhase == "TASK_RESULT" && it.taskResult == 1 }
+    val failureCount =
+        gameState.dayList.count { it.gamePhase == "TASK_RESULT" && it.taskResult == -1 }
+    val totalRounds = gameState.dayList.size
+
+    // 好人完成3次任务成功，或坏人完成2次任务失败，或已完成所有轮次
+    val isGameComplete =
         successCount >= 3 || failureCount >= 2 || (totalRounds >= 5 && (successCount >= 3 || failureCount >= 2))
-    }
     
     // 获取所有锁定的玩家
     val lockedPlayers = remember(taskIndex) {
@@ -347,7 +352,13 @@ fun TaskResultPhase(
 /**
  * 处理进入下一轮的逻辑
  */
-fun proceedToNextRound(viewmodel: MainViewmodel, currentTaskIndex: Int) {
+@OptIn(ExperimentalFoundationApi::class)
+fun proceedToNextRound(
+    viewmodel: MainViewmodel,
+    currentTaskIndex: Int,
+    pageState: PagerState? = null,
+    scope: CoroutineScope? = null
+) {
     // 更新当前任务状态为已完成
     val currentDay = viewmodel.awalongGameState.value.dayList.getOrNull(currentTaskIndex)
     currentDay?.let { day ->
@@ -384,6 +395,10 @@ fun proceedToNextRound(viewmodel: MainViewmodel, currentTaskIndex: Int) {
         }
         
         // 切换到下一页
-        viewmodel.handleAwalongGameIntent(AwalongIntent.UpdateCurrentPage(nextTaskIndex))
+        if (pageState != null && scope != null) {
+            scope.launch {
+                pageState.scrollToPage(nextTaskIndex + 1) // +1 因为第0页是第零日
+            }
+        }
     }
 }
