@@ -1,8 +1,5 @@
 package org.walks.gamecopilot.mmkv
 
-import com.ctrip.flight.mmkv.defaultMMKV
-import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.callbackFlow
 
 /**
  *  Created by Wing at 15:27 on 2025/4/27
@@ -11,7 +8,7 @@ import kotlinx.coroutines.flow.callbackFlow
 object MMKVUtils {
 
     private val kv by lazy {
-         defaultMMKV()
+        MMKVDelegate()
     }
 
     fun put(key: String, value: Any?) {

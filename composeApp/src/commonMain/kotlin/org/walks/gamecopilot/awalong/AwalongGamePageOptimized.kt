@@ -24,8 +24,10 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -42,6 +44,7 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
 import org.jetbrains.compose.resources.painterResource
 import org.walks.gamecopilot.MainViewmodel
+import org.walks.gamecopilot.PlatformHelper
 import org.walks.gamecopilot.awalong.components.AwalongDayZeroPage
 import org.walks.gamecopilot.awalong.components.GameRulesDialog
 import org.walks.gamecopilot.awalong.components.PageDayTaskOptimized
@@ -74,8 +77,10 @@ fun AwalongGamePageOptimized(viewmodel: MainViewmodel) {
     val pageState = rememberPagerState(initialPage = 0, pageCount = { totalPages })
 
     // 构建页面列表，传递 pageState 和 scope
-    val pages =
+    // 使用 remember 来避免不必要的重新构建，但监听游戏状态变化
+    val pages = remember(gameState.playTime) {
         buildPages(viewmodel, gameConfig, nameChange, pageState, scope) { showRulesDialog = true }
+    }
 
     // 计算当前可以访问的最大页面索引 - 实时计算
     val maxAccessiblePage = calculateMaxAccessiblePage(gameState)
@@ -142,6 +147,8 @@ private fun buildPages(
 
     // 第零日页面
     pages.add {
+        // 使用remember来观察状态变化，确保重启时重新组合
+        val currentGameState by viewmodel.awalongGameState.collectAsState()
         PageContent(
             title = "第零日",
             gameConfig = gameConfig,
@@ -156,8 +163,9 @@ private fun buildPages(
             Box(contentAlignment = Alignment.BottomCenter) {
                 // 第零日内容
                 AwalongDayZeroPage(
-                    roleList = viewmodel.awalongGameState.value.roleList,
-                    nicknameList = viewmodel.awalongGameState.value.nickNameList,
+                    roleList = currentGameState.roleList,
+                    nicknameList = currentGameState.nickNameList,
+                    playTime = currentGameState.playTime,
                     onNameChange = nameChange,
                     onRefreshRoles = {
                         viewmodel.handleAwalongGameIntent(AwalongIntent.RestartGame)
@@ -170,6 +178,8 @@ private fun buildPages(
     // 任务日页面
     gameConfig.process.forEachIndexed { index, taskNum ->
         pages.add {
+            // 使用collectAsState来观察状态变化，确保重启时重新组合
+            val currentGameState by viewmodel.awalongGameState.collectAsState()
             PageContent(
                 title = "第${index + 1}日",
                 gameConfig = gameConfig,
@@ -183,13 +193,13 @@ private fun buildPages(
             ) {
                 Box(contentAlignment = Alignment.BottomCenter) {
                     PageDayTaskOptimized(
-                        roleList = viewmodel.awalongGameState.value.roleList,
-                        nicknameList = viewmodel.awalongGameState.value.nickNameList,
+                        roleList = currentGameState.roleList,
+                        nicknameList = currentGameState.nickNameList,
                         taskNum = gameConfig.process[index],
-                        dayEntity = viewmodel.awalongGameState.value.dayList.getOrNull(index),
+                        dayEntity = currentGameState.dayList.getOrNull(index),
                         taskIndex = index,
                         gameConfig = gameConfig,
-                        gameState = viewmodel.awalongGameState.value,
+                        gameState = currentGameState,
                         viewmodel = viewmodel,
                         onCheck = { map, result, cap ->
                             val completedTask = AwalongGameDayEntity(
@@ -209,7 +219,7 @@ private fun buildPages(
                     // 优化的任务进度显示
                     TaskProgressBar(
                         currentDay = index,
-                        dayList = viewmodel.awalongGameState.value.dayList,
+                        dayList = currentGameState.dayList,
                         gameConfig = gameConfig
                     )
                 }
@@ -399,15 +409,21 @@ private fun TopNavigationBar(
             Row {
                 // 添加重新开始按钮
                 onRestartGame?.let {
-                    Text(
-                        text = "🔄",
-                        fontSize = 24.sp,
-                        modifier = Modifier
-                            .clickable {
-                                it.invoke()
-                            }
-                            .padding(8.dp)
-                    )
+                    AnimatedVisibility(currentPage == 1) {
+                        TextButton(onClick = {
+                            PlatformHelper.getInstance().vibrateLongMethod()
+                            it.invoke()
+                        }, colors = ButtonDefaults.textButtonColors()) {
+                            Text(
+                                text = "重新开始",
+                                fontSize = 14.sp,
+                                modifier = Modifier
+                                    .padding(horizontal = 8.dp, vertical = 4.dp)
+                            )
+                        }
+
+                    }
+
                 }
 
                 Icon(

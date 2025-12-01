@@ -1,4 +1,3 @@
-import org.jetbrains.compose.desktop.application.dsl.TargetFormat
 import org.jetbrains.kotlin.gradle.ExperimentalKotlinGradlePluginApi
 import org.jetbrains.kotlin.gradle.ExperimentalWasmDsl
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
@@ -17,7 +16,6 @@ val composeHtmlVersion = "1.6.11" // 保持与compose.compiler版本一致
 kotlin {
     @OptIn(ExperimentalWasmDsl::class)
     wasmJs {
-        moduleName = "composeApp"
         browser {
             val projectDirPath = project.projectDir.path
             commonWebpackConfig {
@@ -40,8 +38,6 @@ kotlin {
         }
     }
 
-    jvm("desktop")
-
     listOf(
         iosX64(),
         iosArm64(),
@@ -63,8 +59,6 @@ kotlin {
         }
     }
     sourceSets {
-        val desktopMain by getting
-
         androidMain.dependencies {
             implementation(compose.preview)
             implementation(libs.androidx.activity.compose)
@@ -84,10 +78,6 @@ kotlin {
             implementation(libs.androidx.lifecycle.runtime.compose)
             api(projects.shared)
 
-        }
-        desktopMain.dependencies {
-            implementation(compose.desktop.currentOs)
-            implementation(libs.kotlinx.coroutines.swing)
         }
 
         iosMain.dependencies {
@@ -113,10 +103,6 @@ kotlin {
 android {
     namespace = "org.walks.gamecopilot"
     compileSdk = libs.versions.android.compileSdk.get().toInt()
-
-    sourceSets["main"].manifest.srcFile("src/androidMain/AndroidManifest.xml")
-    sourceSets["main"].res.srcDirs("src/androidMain/res")
-    sourceSets["main"].resources.srcDirs("src/commonMain/resources")
 
     defaultConfig {
         applicationId = "org.walks.gamecopilot"
@@ -149,17 +135,5 @@ android {
 }
 dependencies {
     implementation(libs.places)
-    implementation(libs.androidx.lifecycle.common.jvm)
 }
 
-compose.desktop {
-    application {
-        mainClass = "org.walks.gamecopilot.MainKt"
-
-        nativeDistributions {
-            targetFormats(TargetFormat.Dmg, TargetFormat.Msi, TargetFormat.Deb)
-            packageName = appName
-            packageVersion = "1.0.0"
-        }
-    }
-}

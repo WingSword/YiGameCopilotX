@@ -42,7 +42,8 @@ fun AwalongIdentityCard(
     allRoles: List<AwalongRole>,
     allNicknames: List<String>
 ) {
-    val flipState = remember { androidx.compose.runtime.mutableStateOf(false) }
+    val flipState =
+        remember(role.title, nickname) { androidx.compose.runtime.mutableStateOf(false) }
 
     FlipCard(
         modifier = Modifier.height(320.dp).width(200.dp)

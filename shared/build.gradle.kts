@@ -39,7 +39,6 @@ kotlin {
     iosArm64()
     iosSimulatorArm64()
 
-    jvm()
 // For KSP, configure using KSP extension:
 
     sourceSets {
@@ -59,16 +58,18 @@ kotlin {
             //implementation(libs.androidx.room.runtime)
             // KSP 注解处理器（替代 kapt）
             //implementation(libs.androidx.room.compiler)
-//            implementation(libs.mmkv)
-            implementation(libs.ctrip.mmkv.kotlin)
-
+            implementation(libs.mmkv)
         }
+
         androidMain.dependencies {
             implementation(libs.androidx.room.ktx)
             implementation(libs.io.ktor.ktor.client.android11)
+
         }
+
         iosMain.dependencies {
             implementation(libs.io.ktor.ktor.client.darwin5)
+
         }
 
     }

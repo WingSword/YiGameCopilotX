@@ -35,7 +35,6 @@ import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateListOf
@@ -57,6 +56,8 @@ import androidx.compose.ui.window.DialogProperties
 import com.yi.yigamecopilot.android.theme.MorandiColorList
 import org.jetbrains.compose.resources.painterResource
 import org.walks.gamecopilot.PlatformHelper
+import org.walks.gamecopilot.ui.page.home.IDENTITY_DISMISS
+import org.walks.gamecopilot.ui.page.home.IDENTITY_SHOW
 import org.walks.gamecopilot.ui.widget.FlipCard
 import yigamecopilotx.composeapp.generated.resources.Res
 import yigamecopilotx.composeapp.generated.resources.icon_asterisk
@@ -68,7 +69,7 @@ import yigamecopilotx.composeapp.generated.resources.icon_star
  * 通用身份选择器组件
  * 支持多种游戏的身份查看、卡片翻转和昵称设置功能
  *
- * @param key 重组标识键，用于控制状态重置
+ * @param refreshKey 重组标识键，用于控制状态重置
  * @param playerNum 玩家总数
  * @param identities 玩家身份列表（索引从0开始，对应玩家1-N）
  * @param nicknames 玩家昵称列表（索引从0开始，对应玩家1-N）
@@ -78,55 +79,34 @@ import yigamecopilotx.composeapp.generated.resources.icon_star
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun IdentitySelector(
-    key: Int,
+    refreshKey: Int,
     playerNum: Int,
     identities: List<String>,
     nicknames: List<String>,
     onNicknameChange: (Int, String) -> Unit,
     onRefreshIdentities: (() -> Unit)? = null,
-    customIdentityCard: @Composable ((playerNumber: Int, identity: String, nickname: String) -> Unit)? = null
+    customIdentityCard: @Composable ((playerNumber: Int, identity: String, nickname: String) -> Unit)? = null,
 ) {
-    // 当前选中玩家索引（0-based）
-    var currentSelectPlayer by remember { mutableIntStateOf(0) }
-    // 身份显示状态机
-    val identityDisplayState = remember { mutableStateOf(IDENTITY_DISMISS) }
-    // 昵称编辑状态
-    val nicknameEditState = remember { mutableStateOf(false) }
-    // 昵称编辑文本
-    val nicknameText = remember { mutableStateOf("") }
-    // 强制刷新状态
-    var forceRefresh by remember { mutableStateOf(0) }
-    // 昵称更新状态
+    var currentSelectPlayer by remember(refreshKey) { mutableIntStateOf(0) }
+    val identityDisplayState = remember(refreshKey) { mutableStateOf(IDENTITY_DISMISS) }
+    val nicknameEditState = remember(refreshKey) { mutableStateOf(false) }
+    val nicknameText = remember(refreshKey) { mutableStateOf("") }
+    var forceRefresh by remember(refreshKey) { mutableStateOf(0) }
 
     // 单个玩家身份展示状态列表，记录已查看过身份的玩家
-    val playerIdentityState = remember {
+    val playerIdentityState = remember(refreshKey) {
         mutableStateListOf<Int>()
     }
 
     // 玩家查看次数记录列表
-    val watchedTimeList = remember(key) {
+    val watchedTimeList = remember(refreshKey) {
         mutableStateListOf(*(Array(playerNum + 1) { 0 }))
-    }
-
-    /* 当key变化时重置游戏状态 */
-    LaunchedEffect(key1 = key) {
-        identityDisplayState.value = IDENTITY_DISMISS
-        repeat(watchedTimeList.size) { index ->
-            watchedTimeList[index] = 0
-        }
-        playerIdentityState.clear()
-    }
-
-    // 监听昵称变化，强制刷新UI
-    LaunchedEffect(nicknames) {
-        // 昵称列表变化时触发重组以立即显示昵称变化
     }
 
     Column(
         modifier = Modifier.fillMaxSize(),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        /* 玩家选择区域布局 */
         PlayerSelectArea(
             playerNum = playerNum,
             nicknames = nicknames,
@@ -135,17 +115,16 @@ fun IdentitySelector(
             playerIdentityState = playerIdentityState,
             identities = identities,
             forceRefresh = forceRefresh,
+            refreshKey = refreshKey,
             onRefreshIdentities = onRefreshIdentities,
             onClick = { currentSelect ->
-                currentSelectPlayer = currentSelect - 1 // 转换为0-based索引
+                currentSelectPlayer = currentSelect - 1
                 watchedTimeList[currentSelect] += 1
                 identityDisplayState.value = IDENTITY_SHOW
                 PlatformHelper.getInstance().vibrateMethod()
             }
         ) { currentSelect ->
-            // 长按编辑昵称
-            currentSelectPlayer = currentSelect - 1 // 转换为0-based索引
-            // 如果昵称等于数字号码，则显示空字符串
+            currentSelectPlayer = currentSelect - 1
             val currentNickname = nicknames[currentSelectPlayer]
             nicknameText.value =
                 if (currentNickname == currentSelect.toString()) "" else currentNickname
@@ -218,11 +197,11 @@ private fun PlayerSelectArea(
     playerIdentityState: List<Int>,
     identities: List<String>,
     forceRefresh: Int,
+    refreshKey: Int,
     onRefreshIdentities: (() -> Unit)? = null,
     onClick: (Int) -> Unit,
-    onLongClick: (Int) -> Unit
+    onLongClick: (Int) -> Unit,
 ) {
-    // 列容器，包含刷新按钮和玩家网格
     Column(
         modifier = Modifier.fillMaxSize().padding(horizontal = 8.dp)
     ) {
@@ -232,106 +211,104 @@ private fun PlayerSelectArea(
             verticalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(8.dp),
             modifier = Modifier.weight(1f)
         ) {
-        items(playerNum) { pos ->
-            val currentPlayer = pos + 1
-            val watchedTime = getWatchedTime(currentPlayer)
+            items(playerNum, key = { pos -> pos + refreshKey }) { pos ->
+                val currentPlayer = pos + 1
+                val watchedTime = getWatchedTime(currentPlayer)
 
-            Box(
-                modifier = Modifier.padding(top = 8.dp)
-            ) {
-                // 可点击的卡片区域
                 Box(
-                    modifier = Modifier
-                        .size(100.dp)
-                        .combinedClickable(
-                            onLongClick = { onLongClick(currentPlayer) },
-                            onClick = { onClick(currentPlayer) },
-                            interactionSource = remember { MutableInteractionSource() },
-                            indication = LocalIndication.current
-                        )
+                    modifier = Modifier.padding(top = 8.dp)
                 ) {
-                    Image(
-                        painter = painterResource(
-                            if (watchedTime < 1) Res.drawable.icon_cardindex_notitle
-                            else Res.drawable.icon_cardindex
-                        ),
-                        modifier = Modifier.rotate(180f).align(Alignment.TopEnd),
-                        contentDescription = "Card index icon",
-                        alpha = if (watchedTime >= 1) 0.6f else 1f
-                    )
-
-                    // 玩家序号显示
-                    Text(
-                        text = currentPlayer.toString(),
-                        modifier = Modifier.align(Alignment.TopEnd)
-                            .padding(end = 20.dp, top = 5.dp),
-                        color = MaterialTheme.colorScheme.secondary.copy(if (watchedTime >= 1) 0.5f else 1f),
-                        style = MaterialTheme.typography.bodyMedium,
-                        fontWeight = FontWeight.SemiBold
-                    )
-                }
-
-                // 昵称显示在卡片上方，但位置更合理
-                if (nicknames[currentPlayer - 1].isNotEmpty() &&
-                    nicknames[currentPlayer - 1] != currentPlayer.toString()
-                ) {
-                    Text(
-                        text = nicknames[currentPlayer - 1],
+                    // 可点击的卡片区域
+                    Box(
                         modifier = Modifier
-                            .align(Alignment.TopCenter)
-                            .offset(y = (-8).dp) // 减少偏移，使昵称更靠近卡片
-                            .background(
-                                color = MaterialTheme.colorScheme.primary,
-                                shape = RoundedCornerShape(4.dp)
+                            .size(100.dp)
+                            .combinedClickable(
+                                onLongClick = { onLongClick(currentPlayer) },
+                                onClick = { onClick(currentPlayer) },
+                                interactionSource = remember { MutableInteractionSource() },
+                                indication = LocalIndication.current
                             )
-                            .padding(horizontal = 6.dp, vertical = 2.dp),
-                        color = MaterialTheme.colorScheme.onPrimary,
-                        style = MaterialTheme.typography.labelSmall,
-                        fontSize = 9.sp,
-                        maxLines = 1
-                    )
-                }
+                    ) {
+                        Image(
+                            painter = painterResource(
+                                if (watchedTime < 1) Res.drawable.icon_cardindex_notitle
+                                else Res.drawable.icon_cardindex
+                            ),
+                            modifier = Modifier.rotate(180f).align(Alignment.TopEnd),
+                            contentDescription = "Card index icon",
+                            alpha = if (watchedTime >= 1) 0.6f else 1f
+                        )
 
-                // 身份显示区域 - 回到卡片内部底部，紧贴卡片
-                Box(
-                    modifier = Modifier.fillMaxSize(),
-                    contentAlignment = Alignment.BottomCenter
-                ) {
-                    when {
-                        playerIdentityState.contains(currentPlayer) -> {
-                            Text(
-                                text = identities[currentPlayer - 1],
-                                modifier = Modifier.padding(bottom = 2.dp), // 减少底部间距
-                                style = MaterialTheme.typography.labelSmall,
-                                textAlign = TextAlign.Center,
-                                color = MaterialTheme.colorScheme.primary,
-                                fontWeight = FontWeight.Bold
-                            )
-                        }
+                        // 玩家序号显示
+                        Text(
+                            text = currentPlayer.toString(),
+                            modifier = Modifier.align(Alignment.TopEnd)
+                                .padding(end = 20.dp, top = 5.dp),
+                            color = MaterialTheme.colorScheme.secondary.copy(if (watchedTime >= 1) 0.5f else 1f),
+                            style = MaterialTheme.typography.bodyMedium,
+                            fontWeight = FontWeight.SemiBold
+                        )
+                    }
 
-                        watchedTime > 1 -> {
-                            Text(
-                                text = "查看${watchedTime}次",
-                                modifier = Modifier.padding(bottom = 2.dp), // 减少底部间距，紧贴卡片
-                                style = MaterialTheme.typography.labelSmall,
-                                textAlign = TextAlign.Center,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
-                            )
-                        }
+                    if (nicknames[currentPlayer - 1].isNotEmpty() &&
+                        nicknames[currentPlayer - 1] != currentPlayer.toString()
+                    ) {
+                        Text(
+                            text = nicknames[currentPlayer - 1],
+                            modifier = Modifier
+                                .align(Alignment.TopCenter)
+                                .offset(y = (-8).dp)
+                                .background(
+                                    color = MaterialTheme.colorScheme.primary,
+                                    shape = RoundedCornerShape(4.dp)
+                                )
+                                .padding(horizontal = 6.dp, vertical = 2.dp),
+                            color = MaterialTheme.colorScheme.onPrimary,
+                            style = MaterialTheme.typography.labelSmall,
+                            fontSize = 9.sp,
+                            maxLines = 1
+                        )
+                    }
 
-                        else -> {
-                            Text(
-                                text = "",
-                                modifier = Modifier.padding(bottom = 2.dp),
-                                style = MaterialTheme.typography.labelSmall,
-                                textAlign = TextAlign.Center
-                            )
+                    Box(
+                        modifier = Modifier.fillMaxSize(),
+                        contentAlignment = Alignment.BottomCenter
+                    ) {
+                        when {
+                            playerIdentityState.contains(currentPlayer) -> {
+                                Text(
+                                    text = identities[currentPlayer - 1],
+                                    modifier = Modifier.padding(bottom = 2.dp),
+                                    style = MaterialTheme.typography.labelSmall,
+                                    textAlign = TextAlign.Center,
+                                    color = MaterialTheme.colorScheme.primary,
+                                    fontWeight = FontWeight.Bold
+                                )
+                            }
+
+                            watchedTime > 1 -> {
+                                Text(
+                                    text = "查看${watchedTime}次",
+                                    modifier = Modifier.padding(bottom = 2.dp),
+                                    style = MaterialTheme.typography.labelSmall,
+                                    textAlign = TextAlign.Center,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                            }
+
+                            else -> {
+                                Text(
+                                    text = "",
+                                    modifier = Modifier.padding(bottom = 2.dp),
+                                    style = MaterialTheme.typography.labelSmall,
+                                    textAlign = TextAlign.Center
+                                )
+                            }
                         }
                     }
-                }
 
+                }
             }
-        }
         }
     }
 }
@@ -339,8 +316,9 @@ private fun PlayerSelectArea(
 /**
  * 身份卡片组件
  */
+
 @Composable
-private fun IdentityCard(
+fun IdentityCard(
     playerNumber: Int,
     identity: String,
     nickname: String
@@ -450,7 +428,7 @@ private fun IdentityCard(
  * 昵称编辑弹窗
  */
 @Composable
-private fun NicknameEditDialog(
+fun NicknameEditDialog(
     playerNumber: Int,
     currentNickname: String,
     onNicknameChange: (String) -> Unit,
@@ -501,7 +479,3 @@ private fun NicknameEditDialog(
     }
 }
 
-// 身份显示状态常量
-private const val IDENTITY_DISMISS = 0
-private const val IDENTITY_SHOW = 1
-private const val IDENTITY_SHOW_ALL = 2

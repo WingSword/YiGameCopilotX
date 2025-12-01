@@ -37,7 +37,7 @@ composeApp/src/commonMain/kotlin/org/walks/gamecopilot/
 
 ```kotlin
 IdentitySelector(
-    key = refreshKey,
+    refreshKey = refreshKey,
     playerNum = playerCount,
     identities = listOf("角色1", "角色2", "角色3", "角色4"),
     nicknames = listOf("昵称1", "昵称2", "昵称3", "昵称4"),
@@ -51,7 +51,7 @@ IdentitySelector(
 
 ```kotlin
 IdentitySelector(
-    key = refreshKey,
+    refreshKey = refreshKey,
     playerNum = playerCount,
     identities = roleList.map { it.title },
     nicknames = nicknameList,
@@ -78,7 +78,7 @@ IdentitySelector(
 ```kotlin
 // AwalongDayZeroPage.kt
 IdentitySelector(
-    key = refreshKey,
+    refreshKey = refreshKey,
     playerNum = playerNum,
     identities = identities,
     nicknames = safeNicknameList,
@@ -117,7 +117,7 @@ fun LocalSpyIdentitySelector(
     val nicknames = List(playerNum) { "" }
 
     IdentitySelector(
-        key = key,
+        refreshKey = key,
         playerNum = playerNum,
         identities = identities,
         nicknames = nicknames,
@@ -132,7 +132,7 @@ fun LocalSpyIdentitySelector(
 
 | 参数                 | 类型                                           | 说明             |
 |--------------------|----------------------------------------------|----------------|
-| key                | Int                                          | 重组标识键，用于控制状态重置 |
+| refreshKey         | Int                                          | 重组标识键，用于控制状态重置 |
 | playerNum          | Int                                          | 玩家总数           |
 | identities         | List<String>                                 | 玩家身份列表         |
 | nicknames          | List<String>                                 | 玩家昵称列表         |
@@ -153,7 +153,7 @@ fun NewGameDayZeroPage(
     onNameChange: (String, Int) -> Unit
 ) {
     IdentitySelector(
-        key = refreshKey,
+        refreshKey = refreshKey,
         playerNum = roleList.size,
         identities = roleList.map { it.title },
         nicknames = nicknameList,

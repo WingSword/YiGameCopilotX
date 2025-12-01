@@ -12,7 +12,6 @@ import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 import org.walks.gamecopilot.awalong.AwalongConfig
 import org.walks.gamecopilot.awalong.AwalongGameLogic
@@ -623,36 +622,34 @@ class MainViewmodel : ViewModel() {
 
     @OptIn(ExperimentalTime::class)
     private fun resetAwalongGameState() {
-        viewModelScope.launch {
-            val config = awalongConfigState.value
-            _awalongGameState.emit(
-                AwalongGameState(
-                    playTime = awalongGameState.value.playTime+1,
-                    roleList = config.role.optimizedShuffle().toMutableList(),
-                    dayList = mutableListOf<AwalongGameDayEntity>().apply {
-                        config.process.forEachIndexed { index, taskSize ->
-                            // 根据任务大小判断是否需要2张失败卡（通常是较大的任务）
-                            val requiresTwoFailures = taskSize >= 4 && config.playerNum >= 7
-                            this.add(
-                                AwalongGameDayEntity(
-                                    day = index,
-                                    captain = config.role.indices.random(),
-                                    requiresTwoFailures = requiresTwoFailures
-                                )
+        val config = awalongConfigState.value
+        _awalongGameState.update {
+            AwalongGameState(
+                playTime = Clock.System.now().toEpochMilliseconds(),
+                roleList = config.role.optimizedShuffle().toMutableList(),
+                dayList = mutableListOf<AwalongGameDayEntity>().apply {
+                    config.process.forEachIndexed { index, taskSize ->
+                        // 根据任务大小判断是否需要2张失败卡（通常是较大的任务）
+                        val requiresTwoFailures = taskSize >= 4 && config.playerNum >= 7
+                        this.add(
+                            AwalongGameDayEntity(
+                                day = index,
+                                captain = config.role.indices.random(),
+                                requiresTwoFailures = requiresTwoFailures
                             )
-                        }
-                    },
-                    nickNameList = (1..config.role.size).map { it.toString() }
-                        .toMutableList(),
-                    // 初始化扩展包字段
-                    ladyOfLakeUsed = false,
-                    sirGalahadUsed = false,
-                    morguseUsed = false,
-                    prophetChecked = null,
-                    ladyOfLakeChecked = null,
-                    lancolotConverted = false,
-                    shapeshifterTarget = null
-                )
+                        )
+                    }
+                },
+                nickNameList = (1..config.role.size).map { it.toString() }
+                    .toMutableList(),
+                // 初始化扩展包字段
+                ladyOfLakeUsed = false,
+                sirGalahadUsed = false,
+                morguseUsed = false,
+                prophetChecked = null,
+                ladyOfLakeChecked = null,
+                lancolotConverted = false,
+                shapeshifterTarget = null
             )
         }
     }

@@ -30,7 +30,7 @@ fun LocalSpyIdentitySelector(
     }
 
     IdentitySelector(
-        key = key,
+        refreshKey = key,
         playerNum = playerNum,
         identities = identities,
         nicknames = nicknames,

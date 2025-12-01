@@ -1,11 +1,6 @@
 package org.walks.gamecopilot.awalong.components
 
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableIntStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import org.walks.gamecopilot.awalong.AwalongRole
 import org.walks.gamecopilot.ui.components.common.IdentitySelector
 
@@ -17,12 +12,10 @@ import org.walks.gamecopilot.ui.components.common.IdentitySelector
 fun AwalongDayZeroPage(
     roleList: List<AwalongRole>,
     nicknameList: List<String>,
+    playTime: Long,
     onNameChange: (String, Int) -> Unit,
     onRefreshRoles: (() -> Unit)? = null
 ) {
-    // 用于强制刷新身份选择器的key
-    var refreshKey by remember { mutableIntStateOf(0) }
-
     // 确保角色列表和昵称列表长度一致
     val playerNum = roleList.size
     val identities = roleList.map { it.title }
@@ -32,24 +25,17 @@ fun AwalongDayZeroPage(
         nicknameList + List(playerNum - nicknameList.size) { "" }
     }
 
-    // 监听refreshKey变化以确保刷新功能正常工作
-    LaunchedEffect(refreshKey) {
-        // 此处为空，仅用于触发重组
-    }
-
+    // 直接使用playTime作为key，确保每次重启key都不同
+    val key = playTime.toInt()
+    println("AwalongDayZeroPage: playTime=$playTime, key=$key")
+    
     IdentitySelector(
-        key = refreshKey,
+        refreshKey = key, // 组合key确保触发重组
         playerNum = playerNum,
         identities = identities,
         nicknames = safeNicknameList,
-        onNicknameChange = { playerIndex, newNickname ->
-            onNameChange(newNickname, playerIndex)
-            refreshKey++
-        },
-        onRefreshIdentities = {
-            onRefreshRoles?.invoke()
-            refreshKey++
-        },
+        onNicknameChange = { index, nickname -> onNameChange(nickname, index) },
+        onRefreshIdentities = onRefreshRoles,
         customIdentityCard = { playerNumber, identity, nickname ->
             // 找到对应的角色对象
             val role = roleList.find { it.title == identity } ?: roleList[playerNumber - 1]
