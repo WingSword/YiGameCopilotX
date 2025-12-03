@@ -109,8 +109,8 @@ android {
         resValue("string", "app_name", appName)
         minSdk = libs.versions.android.minSdk.get().toInt()
         targetSdk = libs.versions.android.targetSdk.get().toInt()
-        versionCode = 4
-        versionName = "1.3"
+        versionCode = 5
+        versionName = "1.4"
     }
     packaging {
         resources {

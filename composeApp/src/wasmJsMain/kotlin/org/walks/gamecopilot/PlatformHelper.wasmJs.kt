@@ -20,4 +20,6 @@ actual class PlatformHelper {
     actual fun vibrateLongMethod() {
     }
 
+    actual fun getAppVersionName(): String = "1.3"
+    actual fun getAppVersionCode(): Int = 4
 }

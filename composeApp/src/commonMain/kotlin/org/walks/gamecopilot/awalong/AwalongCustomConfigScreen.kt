@@ -73,25 +73,36 @@ fun AwalongCustomConfigScreen(viewmodel: MainViewmodel, navi: NavHostController)
 
 
         item {
-            // 预定义配置按钮
-            OutlinedButton(
-                onClick = { showPredefinedConfigDialog = true },
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(48.dp),
-                shape = RoundedCornerShape(12.dp)
-            ) {
-                Icon(
-                    imageVector = Icons.Default.Settings,
-                    contentDescription = "预定义配置",
-                    modifier = Modifier.size(20.dp)
-                )
-                Spacer(modifier = Modifier.width(8.dp))
+            Row(verticalAlignment = Alignment.CenterVertically) {
                 Text(
-                    text = "选择预定义配置",
-                    fontSize = 16.sp,
-                    fontWeight = FontWeight.Medium
+                    text = "角色配置",
+                    fontSize = 18.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.onSurface,
+                    modifier = Modifier.padding(bottom = 16.dp)
                 )
+
+                Spacer(modifier = Modifier.width(32.dp))
+                // 预定义配置按钮
+                OutlinedButton(
+                    onClick = { showPredefinedConfigDialog = true },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(48.dp),
+                    shape = RoundedCornerShape(12.dp)
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Settings,
+                        contentDescription = "预定义配置",
+                        modifier = Modifier.size(20.dp)
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text(
+                        text = "选择预定义配置",
+                        fontSize = 14.sp,
+                        fontWeight = FontWeight.Medium
+                    )
+                }
             }
         }
 
@@ -99,20 +110,11 @@ fun AwalongCustomConfigScreen(viewmodel: MainViewmodel, navi: NavHostController)
             // 角色选择区域
             Card(
                 modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(16.dp),
                 colors = CardDefaults.cardColors(
                     containerColor = MaterialTheme.colorScheme.surface
                 )
             ) {
                 Column {
-                    Text(
-                        text = "角色选择",
-                        fontSize = 18.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = MaterialTheme.colorScheme.onSurface,
-                        modifier = Modifier.padding(bottom = 16.dp)
-                    )
-
                     // 蓝方阵营选择
                     RoleSelectionSection(
                         title = "蓝方阵营",
@@ -319,8 +321,9 @@ private fun RoleSelectionSection(
             modifier = Modifier.fillMaxWidth(),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Column(
-                modifier = Modifier.weight(1f)
+            Row(
+                modifier = Modifier.weight(1f),
+                verticalAlignment = Alignment.Bottom
             ) {
                 Text(
                     text = title,
@@ -328,6 +331,7 @@ private fun RoleSelectionSection(
                     fontWeight = FontWeight.Bold,
                     color = roleColor
                 )
+                Spacer(modifier = Modifier.width(8.dp))
                 Text(
                     text = subtitle,
                     fontSize = 12.sp,
@@ -391,7 +395,7 @@ private fun RoleSelectionCard(
     Card(
         modifier = Modifier
             .width(88.dp)
-            .height(140.dp),
+            .height(88.dp),
         shape = RoundedCornerShape(12.dp),
         colors = CardDefaults.cardColors(
             containerColor = if (isSelected) {

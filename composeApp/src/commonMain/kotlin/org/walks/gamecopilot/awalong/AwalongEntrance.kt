@@ -58,8 +58,6 @@ fun AwalongEntrance(viewmodel: MainViewmodel,navi: NavHostController) {
         TopHeaderSection(
             onShowRules = { showRulesDialog = true }
         )
-        
-        Spacer(modifier = Modifier.height(16.dp))
 
         // 自定义配置界面
         AwalongCustomConfigScreen(
@@ -93,12 +91,6 @@ fun TopHeaderSection(onShowRules: () -> Unit) {
                 fontSize = 28.sp,
                 fontWeight = FontWeight.Bold,
                 color = MaterialTheme.colorScheme.primary
-            )
-            Text(
-                text = "选择游戏配置开始游戏",
-                fontSize = 14.sp,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.padding(top = 4.dp)
             )
         }
         

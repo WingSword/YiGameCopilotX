@@ -11,5 +11,8 @@ expect class PlatformHelper {
     fun vibrateMethod()
 
     fun vibrateLongMethod()
+
+    fun getAppVersionName(): String
+    fun getAppVersionCode(): Int
 }
 
