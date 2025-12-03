@@ -3,6 +3,7 @@ package org.walks.gamecopilot.awalong
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -26,6 +27,7 @@ import androidx.compose.material.icons.filled.Clear
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Settings
+import androidx.compose.material.icons.sharp.Clear
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
@@ -102,9 +104,7 @@ fun AwalongCustomConfigScreen(viewmodel: MainViewmodel, navi: NavHostController)
                     containerColor = MaterialTheme.colorScheme.surface
                 )
             ) {
-                Column(
-                    modifier = Modifier.padding(16.dp)
-                ) {
+                Column {
                     Text(
                         text = "角色选择",
                         fontSize = 18.sp,
@@ -428,34 +428,36 @@ private fun RoleSelectionCard(
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
                 // 角色名称
-                Text(
-                    text = role.title,
-                    fontSize = 12.sp,
-                    fontWeight = FontWeight.Medium,
-                    color = if (isSelected) roleColor else MaterialTheme.colorScheme.onSurface,
-                    textAlign = androidx.compose.ui.text.style.TextAlign.Center,
-                    maxLines = 2
-                )
-
-                // 选择计数 - 仅当计数大于0时显示
-                if (selectedCount > 0) {
-                    Box(
-                        modifier = Modifier
-                            .size(16.dp)
-                            .background(
-                                roleColor,
-                                shape = CircleShape
-                            ),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Text(
-                            text = "$selectedCount",
-                            fontSize = 13.sp,
-                            fontWeight = FontWeight.Bold,
-                            color = Color.White
-                        )
+                Row {
+                    Text(
+                        text = role.title,
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.Medium,
+                        color = if (isSelected) roleColor else MaterialTheme.colorScheme.onSurface,
+                        textAlign = androidx.compose.ui.text.style.TextAlign.Center,
+                        maxLines = 2
+                    )
+                    // 选择计数 - 仅当计数大于1时显示
+                    if (selectedCount > 1) {
+                        Box(
+                            modifier = Modifier
+                                .size(14.dp)
+                                .background(
+                                    roleColor,
+                                    shape = CircleShape
+                                ),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Text(
+                                text = "$selectedCount",
+                                fontSize = 11.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = Color.White
+                            )
+                        }
                     }
                 }
+
                 Spacer(modifier = Modifier.weight(1f))
 
                 // 操作按钮区域（带动画）
@@ -473,10 +475,14 @@ private fun RoleSelectionCard(
                         ) {
                             IconButton(
                                 onClick = onRemove,
-                                modifier = Modifier.size(18.dp),
-
+                                modifier = Modifier.size(18.dp)
+                                    .border(2.dp, Color.White, shape = CircleShape),
                                 ) {
-                                Text("-")
+                                Icon(
+                                    imageVector = Icons.Sharp.Clear,
+                                    contentDescription = "移除",
+                                    tint = roleColor
+                                )
                             }
                         }
 

@@ -1,7 +1,6 @@
 package org.walks.gamecopilot.ui.page.home
 
 import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -9,7 +8,6 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxHeight
@@ -17,19 +15,14 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.pager.HorizontalPager
-import androidx.compose.foundation.pager.rememberPagerState
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -40,12 +33,9 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavHostController
-import com.yi.yigamecopilot.android.theme.MorandiColorList
-import kotlinx.coroutines.launch
 import org.jetbrains.compose.resources.DrawableResource
 import org.jetbrains.compose.resources.painterResource
 import org.walks.gamecopilot.MainViewmodel
-import org.walks.gamecopilot.PlatformHelper
 import org.walks.gamecopilot.awalong.AwalongEntrance
 import org.walks.gamecopilot.data.entity.GameMode
 import org.walks.gamecopilot.intent.GameIntent
@@ -74,13 +64,14 @@ fun HomePage(viewmodel: MainViewmodel,navi:NavHostController) {
             viewmodel.handleGameIntent(GameIntent.SwitchGameMode(position))
         }
 
-        Spacer(Modifier.height(16.dp))
+
 
         Column(
             modifier = Modifier.background(
                 shape = RoundedCornerShape(32.dp, 32.dp, 0.dp, 0.dp),
                 color = MaterialTheme.colorScheme.surface
-            ).weight(1f).fillMaxWidth().padding(top = 20.dp, start = 10.dp, end = 10.dp)
+            ).weight(1f).fillMaxWidth()
+                .padding(top = 10.dp, start = 10.dp, end = 10.dp, bottom = 66.dp)
         ) {
             /* 根据选中模式显示对应内容区域 */
             // 模式0：显示在线房间入口卡片
@@ -249,68 +240,118 @@ fun ModeCardNext(
 
 
 /**
- * 模式选择水平分页列表组件
- * @param list 要显示的数据列表，每个元素对应一个分页项
- * @param selectedPos 初始选中项的位置，默认值为0（第一项）
- * @param onItemClick 当选中项发生变化时的回调函数，返回选中项的索引位置
+ * 游戏模式选择网格布局组件
+ * 上面圆形图标，下面名称的列表布局，每个游戏有更大的配置空间
+ * @param list 要显示的游戏模式列表
+ * @param selectedPos 当前选中项的索引
+ * @param onItemClick 点击回调函数，返回选中项的索引
  */
-@OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun ModeSelectList(
     list: List<GameMode> = GameMode.entries,
     selectedPos: Int = 0,
     onItemClick: (Int) -> Unit
 ) {
-    // 创建分页状态管理，初始页设置为选中项位置，根据列表大小自动计算页数
-    val pagerState = rememberPagerState(
-        initialPage = selectedPos,
-        initialPageOffsetFraction = 0f,
-        pageCount = { list.size }
-    )
-    // 创建协程作用域用于处理滚动动画
-    val coroutineScope = rememberCoroutineScope()
+    // 创建响应式布局：根据屏幕宽度计算每行项目数
+    val itemsPerRow = 4 // 每行显示4个项目
 
-    var isInitialized by remember { mutableStateOf(false) } // 新增初始化标记
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 16.dp)
+    ) {
+        // 计算行数
+        val rowCount = (list.size + itemsPerRow - 1) / itemsPerRow
 
-    LaunchedEffect(key1 = pagerState.currentPage) {
-        if (isInitialized)
-            PlatformHelper.getInstance().vibrateMethod()
-        isInitialized = true
-    }
-
-    Column(modifier = Modifier.height(180.dp).fillMaxWidth()) {
-        // 水平分页容器：设置间距和边距实现卡片堆叠视觉效果
-        HorizontalPager(
-            state = pagerState,
-            modifier = Modifier.weight(1f),
-            pageSpacing = 10.dp,     // 卡片间视觉间距
-            contentPadding = PaddingValues(horizontal = 50.dp)  // 左右留白保证边缘卡片可见
-        ) { page ->
-            Box(modifier = Modifier.fillMaxHeight().fillMaxWidth()) {
-                // 当前选中页的渲染逻辑：显示完整卡片并触发回调
-                if (pagerState.currentPage == page) {
-                    ModeCard(
-                        title = list[page].title,
-                        res = list[page].icon,
-                        background = MorandiColorList[page % MorandiColorList.size] // 循环使用颜色列表
-                    )
-                    onItemClick(pagerState.currentPage)
-                }
-                // 非选中页的渲染逻辑：显示次级卡片并绑定点击滚动事件
-                else {
-                    Box(modifier = Modifier.clickable {
-                        coroutineScope.launch {
-                            pagerState.animateScrollToPage(page) // 平滑滚动到目标页
-                        }
-                    }) {
-                        ModeCardNext(
-                            title = list[page].title,
-                            background = MorandiColorList[page % MorandiColorList.size]
+        // 按行渲染游戏模式
+        for (row in 0 until rowCount) {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(vertical = 8.dp),
+                horizontalArrangement = Arrangement.SpaceEvenly
+            ) {
+                // 渲染当前行的每个项目
+                for (col in 0 until itemsPerRow) {
+                    val index = row * itemsPerRow + col
+                    if (index < list.size) {
+                        ModeGridItem(
+                            gameMode = list[index],
+                            isSelected = index == selectedPos,
+                            onClick = { onItemClick(index) }
                         )
+                    } else {
+                        // 空白占位符
+                        Spacer(modifier = Modifier.weight(1f))
                     }
                 }
             }
         }
+    }
+}
+
+/**
+ * 游戏模式网格项组件
+ * 上面圆形图标，下面名称的布局
+ * @param gameMode 游戏模式数据
+ * @param isSelected 是否选中
+ * @param onClick 点击回调
+ */
+@Composable
+fun ModeGridItem(
+    gameMode: GameMode,
+    isSelected: Boolean,
+    onClick: () -> Unit
+) {
+    Column(
+        modifier = Modifier
+            .width(80.dp)
+            .clickable { onClick() }
+            .padding(8.dp),
+        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
+        // 圆形图标容器
+        Box(
+            modifier = Modifier
+                .size(64.dp)
+                .clip(CircleShape)
+                .background(
+                    color = if (isSelected)
+                        MaterialTheme.colorScheme.primary
+                    else
+                        MaterialTheme.colorScheme.surfaceVariant
+                )
+                .border(
+                    width = 3.dp,
+                    color = if (isSelected)
+                        MaterialTheme.colorScheme.primaryContainer
+                    else
+                        MaterialTheme.colorScheme.outline,
+                    shape = CircleShape
+                ),
+            contentAlignment = Alignment.Center
+        ) {
+            // 游戏图标
+            Image(
+                painter = painterResource(gameMode.icon),
+                contentDescription = gameMode.title,
+                modifier = Modifier.size(32.dp),
+                contentScale = ContentScale.Fit
+            )
+        }
+
+        // 游戏名称
+        Text(
+            text = gameMode.title,
+            modifier = Modifier.padding(top = 8.dp),
+            style = MaterialTheme.typography.labelMedium,
+            color = if (isSelected)
+                MaterialTheme.colorScheme.primary
+            else
+                MaterialTheme.colorScheme.onSurface,
+            textAlign = TextAlign.Center,
+            maxLines = 2
+        )
     }
 }
 

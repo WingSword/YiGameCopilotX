@@ -3,14 +3,11 @@ package org.walks.gamecopilot
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.LinearEasing
-import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.core.animateFloatAsState
-import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -20,38 +17,30 @@ import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.layout.wrapContentHeight
 import androidx.compose.foundation.layout.wrapContentSize
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.sharp.Add
 import androidx.compose.material3.Button
 import androidx.compose.material3.CenterAlignedTopAppBar
-import androidx.compose.material3.DrawerState
-import androidx.compose.material3.DrawerValue
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.IconButtonDefaults
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.ModalNavigationDrawer
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBarDefaults
-import androidx.compose.material3.rememberDrawerState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -63,9 +52,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.rotate
+import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.graphicsLayer
-import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -107,13 +95,115 @@ fun App() {
     }
 }
 
+/**
+ * 悬浮导航栏组件
+ * 悬浮的长条形状，包含导航项
+ */
+@Composable
+fun BottomNavigationBar(navi: NavHostController, currentRoute: String) {
+    // 获取主要导航路由（排除游戏页面）
+    val mainRoutes = NaviRoute.entries.filter { it.type == 0 }
+
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 16.dp, vertical = 16.dp)
+    ) {
+        // 悬浮长条背景
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(60.dp)
+                .clip(RoundedCornerShape(30.dp))
+                .background(
+                    color = MaterialTheme.colorScheme.surface,
+                    shape = RoundedCornerShape(30.dp)
+                )
+                .border(
+                    width = 1.dp,
+                    color = MaterialTheme.colorScheme.outline.copy(alpha = 0.2f),
+                    shape = RoundedCornerShape(30.dp)
+                )
+                .shadow(
+                    elevation = 8.dp,
+                    shape = RoundedCornerShape(30.dp),
+                    clip = true
+                )
+                .padding(horizontal = 16.dp),
+            horizontalArrangement = Arrangement.SpaceEvenly,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            // 显示所有导航项
+            mainRoutes.forEachIndexed { index, route ->
+                BottomNavItem(
+                    route = route,
+                    isSelected = currentRoute == route.route,
+                    onClick = { navi.navigate(route.route) }
+                )
+            }
+        }
+    }
+}
+
+/**
+ * 底部导航项组件
+ */
+@Composable
+fun BottomNavItem(
+    route: NaviRoute,
+    isSelected: Boolean,
+    onClick: () -> Unit
+) {
+    Column(
+        modifier = Modifier
+            .width(60.dp)
+            .clickable { onClick() }
+            .padding(vertical = 4.dp),
+        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
+        // 图标
+        Box(
+            modifier = Modifier
+                .size(32.dp)
+                .clip(CircleShape)
+                .background(
+                    color = if (isSelected)
+                        MaterialTheme.colorScheme.primary
+                    else
+                        MaterialTheme.colorScheme.surfaceVariant
+                ),
+            contentAlignment = Alignment.Center
+        ) {
+            // 这里可以添加对应的图标，暂时用文字代替
+            Text(
+                text = route.label.take(2),
+                color = if (isSelected)
+                    MaterialTheme.colorScheme.onPrimary
+                else
+                    MaterialTheme.colorScheme.onSurfaceVariant,
+                fontSize = 12.sp,
+                fontWeight = FontWeight.Bold
+            )
+        }
+
+        // 标签
+        Text(
+            text = route.label,
+            fontSize = 10.sp,
+            color = if (isSelected)
+                MaterialTheme.colorScheme.primary
+            else
+                MaterialTheme.colorScheme.onSurface,
+            maxLines = 1
+        )
+    }
+}
+
 
 @Composable
 fun AppView(viewmodel: MainViewmodel) {
     val snackState = remember { mutableStateOf(SnackbarHostState()) }
     val navi = rememberNavController()
-    val drawerState = rememberDrawerState(DrawerValue.Closed)
-    val scope = rememberCoroutineScope()
     var currentRoute by remember { mutableStateOf("") }
 
     var floatButtonShow by remember { mutableStateOf(true) }
@@ -122,125 +212,112 @@ fun AppView(viewmodel: MainViewmodel) {
             currentRoute = entry.destination.route ?: ""
 
             currentRoute = entry.destination.route ?: ""
-            // 获取页面参数（示例参数名为"mode"）
-            //val pageMode = entry.arguments?.getString("mode")
-
             // 复合条件判断（示例：当在RANDOM路由且mode=edit时显示）
             floatButtonShow = when (currentRoute) {
-                NaviRoute.RANDOM.route -> true//pageMode == "edit"
+                NaviRoute.RANDOM.route -> true
                 // 添加其他路由条件...
                 else -> false
             }
         }
     }
 
-
-    // 修改 AppView 中的 ModalNavigationDrawer 部分
-    ModalNavigationDrawer(
-        drawerState = drawerState,
-        gesturesEnabled = currentRoute != NaviRoute.AWALONG.route, // 在阿瓦隆页面禁用手势操作
-        drawerContent = {
-            JellyDrawerContent(
-                drawerState = drawerState,
-                onClose = { scope.launch { drawerState.close() } },
-                modifier = Modifier.wrapContentSize()
-                    .background(MaterialTheme.colorScheme.background),
-                navi = navi
-            )
+    // 移除抽屉导航，改为悬浮导航栏
+    Scaffold(
+        topBar = {
+            // 只在特定页面显示全局TopBar，首页不显示
+            if (!isStartRoute(currentRoute) && (currentRoute == NaviRoute.RANDOM.route || currentRoute == NaviRoute.ROOM.route)) {
+                AppTopBar(navi, viewmodel)
+            }
         },
-        scrimColor = Color.Transparent // 去掉默认遮罩
-    ) {
-        // 添加内容区域偏移动画
-        val contentOffset by animateDpAsState(
-            targetValue = if (drawerState.isOpen) 150.dp else 0.dp,
-            animationSpec = spring(stiffness = 300f, dampingRatio = 0.8f)
-        )
+        snackbarHost = {
+            SnackbarHost(hostState = snackState.value)
+        },
+        floatingActionButton = {
+            var isOpen by remember { mutableStateOf(false) }
+            val rotation by animateFloatAsState(
+                targetValue = if (isOpen) -45f else 0f,
+                animationSpec = tween(durationMillis = 300)
+            )
+            if (floatButtonShow) {
+                // 菜单项垂直排列
+                LazyColumn(
+                    horizontalAlignment = Alignment.End,
+                    verticalArrangement = Arrangement.spacedBy(8.dp),
 
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .offset(x = contentOffset)
-        ) {
-            Scaffold(
-                topBar = {
-                    // 只在一级页面显示全局TopBar，二级页面自行实现
-                    if (isStartRoute(currentRoute) || currentRoute == NaviRoute.RANDOM.route || currentRoute == NaviRoute.ROOM.route) {
-                        AppTopBar(navi, viewmodel, drawerState)
-                    }
-                },
-                snackbarHost = {
-                    SnackbarHost(hostState = snackState.value)
-                }, floatingActionButton = {
-                    var isOpen by remember { mutableStateOf(false) }
-                    val rotation by animateFloatAsState(
-                        targetValue = if (isOpen) -45f else 0f,
-                        animationSpec = tween(durationMillis = 300)
-                    )
-                    if (floatButtonShow) {
-                        // 菜单项垂直排列
-                        LazyColumn(
-                            horizontalAlignment = Alignment.End,
-                            verticalArrangement = Arrangement.spacedBy(8.dp),
+                    modifier = Modifier.padding(bottom = 72.dp) // 给菜单按钮留出空间
+                ) {
+                    item {
+                        AnimatedVisibility(isOpen) {
+                            Button(
+                                onClick = {
+                                    viewmodel.handleRandomPageIntent(RandomPageIntent.OnAddNewRandomDialogShow)
+                                    isOpen = false
+                                },
+                                modifier = Modifier
 
-                            modifier = Modifier.padding(bottom = 72.dp) // 给菜单按钮留出空间
-                        ) {
-                            item {
-                                AnimatedVisibility(isOpen) {
-                                    Button(
-                                        onClick = {
-                                            viewmodel.handleRandomPageIntent(RandomPageIntent.OnAddNewRandomDialogShow)
-                                            isOpen = false
-                                        },
-                                        modifier = Modifier
-
-                                    ) {
-                                        Text("新增配置")
-                                    }
-                                }
-                            }
-                            // 菜单项1
-                            item {
-                                AnimatedVisibility(isOpen) {
-                                    Button(
-                                        onClick = { /* 其他操作 */ },
-                                        modifier = Modifier
-                                    ) {
-                                        Text("临时添加")
-                                    }
-                                }
-                            }
-                            item {
-                                // 主按钮
-                                FloatingActionButton(
-                                    onClick = { isOpen = !isOpen },
-                                    modifier = Modifier
-                                        .padding(20.dp)
-                                        .wrapContentSize()
-                                        .rotate(rotation)
-                                        .clip(RoundedCornerShape(16.dp))
-                                ) {
-                                    Icon(Icons.Sharp.Add, "展开菜单")
-                                }
+                            ) {
+                                Text("新增配置")
                             }
                         }
                     }
-                }
-
-            ) { inp ->
-                Column(
-                    modifier = Modifier
-                        .padding(inp)
-                        .padding(horizontal = 10.dp)
-                        .fillMaxWidth(),
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                    verticalArrangement = Arrangement.Center
-                ) {
-                    NavigationHost(viewmodel, navi)
+                    // 菜单项1
+                    item {
+                        AnimatedVisibility(isOpen) {
+                            Button(
+                                onClick = { /* 其他操作 */ },
+                                modifier = Modifier
+                            ) {
+                                Text("临时添加")
+                            }
+                        }
+                    }
+                    item {
+                        // 主按钮
+                        FloatingActionButton(
+                            onClick = { isOpen = !isOpen },
+                            modifier = Modifier
+                                .padding(20.dp)
+                                .wrapContentSize()
+                                .rotate(rotation)
+                                .clip(RoundedCornerShape(16.dp))
+                        ) {
+                            Icon(Icons.Sharp.Add, "展开菜单")
+                        }
+                    }
                 }
             }
-        }
-    }
+        },
+        bottomBar = {
 
+        },
+
+        ) { inp ->
+        Box(
+            modifier = Modifier
+                .padding(inp)
+                .fillMaxSize(),
+            contentAlignment = Alignment.BottomCenter
+        ) {
+            // 主要内容区域 - 为所有页面添加底部边距，避免内容被导航栏遮挡
+            Column(
+                modifier = Modifier
+                    .padding(horizontal = 10.dp)
+                    .fillMaxWidth()
+                    .fillMaxHeight()
+                    .padding(bottom = 0.dp), // 为所有页面预留足够底部空间
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.Center
+            ) {
+                NavigationHost(viewmodel, navi)
+            }
+            // 底部导航栏
+            if (isStartRoute(currentRoute)) {
+                BottomNavigationBar(navi, currentRoute)
+            }
+        }
+
+
+    }
 
     LaunchedEffect(key1 = Unit) {
         viewmodel.topTipState.collect {
@@ -256,91 +333,10 @@ private fun isStartRoute(route: String?): Boolean {
     return route == "start" || route == null
 }
 
-@Composable
-fun JellyDrawerContent(
-    drawerState: DrawerState,
-    onClose: () -> Unit,
-    modifier: Modifier = Modifier,
-    navi: NavHostController
-) {
-    val list = NaviRoute.entries.filter {
-        it.type == 0
-    }
-    val offsetX by animateDpAsState(
-        targetValue = if (drawerState.isOpen) 0.dp else (-200).dp,
-        animationSpec = spring(
-            dampingRatio = 0.6f,  // 增加阻尼比增强果冻感
-            stiffness = 400f
-        )
-    )
-
-    Surface(
-        modifier = modifier
-            .padding(vertical = 24.dp)
-            .width(150.dp).fillMaxHeight()
-            .offset(x = offsetX),
-//            .border(
-//                4.dp,
-//                MaterialTheme.colorScheme.primaryContainer,
-//                RoundedCornerShape(topEnd = 16.dp, bottomEnd = 16.dp)
-//            ),
-        shadowElevation = 24.dp,
-        shape = RoundedCornerShape(topEnd = 16.dp, bottomEnd = 16.dp),
-        color = MaterialTheme.colorScheme.surface,
-        contentColor = MaterialTheme.colorScheme.onSecondaryContainer
-    ) {
-        LazyColumn(
-            horizontalAlignment = Alignment.CenterHorizontally,
-            modifier = Modifier.wrapContentHeight()
-        ) {
-            items(list.size) { index ->
-                val isSelected = navi.currentDestination?.route == list[index].route
-                val item = list[index]
-                var isPressed by remember { mutableStateOf(false) }
-                val scale = animateFloatAsState(
-                    targetValue = if (isPressed) 0.95f else 1f,
-                    animationSpec = spring(dampingRatio = 0.6f, stiffness = 400f)
-                )
-                TextButton(
-                    onClick = {
-                        navi.navigate(item.route)
-                        onClose()
-                    },
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(12.dp)
-                        .border(
-                            width = 4.dp,
-                            color = if (isSelected) MaterialTheme.colorScheme.primary else Color.Transparent,
-                            shape = CircleShape
-                        )
-                        .pointerInput(Unit) {
-                            detectTapGestures(
-                                onPress = {
-                                    isPressed = true
-                                    tryAwaitRelease()
-                                    isPressed = false
-                                }
-                            )
-                        }
-                        .graphicsLayer(scaleX = scale.value, scaleY = scale.value),
-                ) {
-                    Text(
-                        text = item.label,
-                        fontSize = 18.sp,
-                        color = MaterialTheme.colorScheme.primary
-                    )
-                }
-            }
-        }
-
-    }
-}
-
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun AppTopBar(navi: NavHostController, viewmodel: MainViewmodel, drawerState: DrawerState) {
+fun AppTopBar(navi: NavHostController, viewmodel: MainViewmodel) {
     // 协程作用域：用于处理动画等异步操作
     val scope = rememberCoroutineScope()
     // 旋转动画：刷新按钮的旋转动画控制
@@ -348,7 +344,6 @@ fun AppTopBar(navi: NavHostController, viewmodel: MainViewmodel, drawerState: Dr
 
     var roomTitle by remember { mutableStateOf("") }
     var current by remember { mutableStateOf("") }
-    var playerNum by remember { mutableStateOf(1) }
     LaunchedEffect(Unit) {
         navi.currentBackStackEntryFlow.collectLatest {
             current = navi.currentDestination?.route ?: ""
@@ -374,7 +369,7 @@ fun AppTopBar(navi: NavHostController, viewmodel: MainViewmodel, drawerState: Dr
                     ) {
                         Spacer(Modifier.weight(1f))
                         Text(
-                            text =  viewmodel.roomEntityState.value.roomKey,
+                            text = viewmodel.roomEntityState.value.roomKey,
                             color = MaterialTheme.colorScheme.onTertiaryContainer.copy(alpha = 0.5f),
                             fontWeight = FontWeight.W900,
                             textAlign = TextAlign.End,
@@ -383,7 +378,7 @@ fun AppTopBar(navi: NavHostController, viewmodel: MainViewmodel, drawerState: Dr
                     }
 
                     Text(
-                        text =  viewmodel.roomEntityState.value.roomId,
+                        text = viewmodel.roomEntityState.value.roomId,
                         color = MaterialTheme.colorScheme.onTertiaryContainer,
                         fontSize = 14.sp,
                         fontWeight = FontWeight.W900
@@ -393,55 +388,50 @@ fun AppTopBar(navi: NavHostController, viewmodel: MainViewmodel, drawerState: Dr
 
         },
         navigationIcon = {
-            IconButton(
-                modifier = Modifier
-                    .clip(CircleShape)
-                    .border(
-                        width = 2.dp,
-                        color = MaterialTheme.colorScheme.secondaryContainer,
-                        shape = CircleShape
-                    ),
-                onClick = {
-                    if (navi.previousBackStackEntry?.destination?.route == "start") {
-                        try {
+            // 只在二级页面显示返回按钮
+            if (!isStartRoute(current)) {
+                IconButton(
+                    modifier = Modifier
+                        .clip(CircleShape)
+                        .border(
+                            width = 2.dp,
+                            color = MaterialTheme.colorScheme.secondaryContainer,
+                            shape = CircleShape
+                        ),
+                    onClick = {
+                        if (navi.previousBackStackEntry?.destination?.route == "start") {
+                            try {
+                                navi.popBackStack()
+                            } catch (e: Exception) {
+                                // 处理 popBackStack 异常，例如记录日志或提示用户
+                                println("Error popping back stack: ${e.message}")
+                            }
+                            if (current == "start") {
+                                viewmodel.handleRoomIntent(GameRoomIntent.LeaveGameRoom)
+                            }
+                        } else {
+                            // 返回上一级页面
                             navi.popBackStack()
-                        } catch (e: Exception) {
-                            // 处理 popBackStack 异常，例如记录日志或提示用户
-                            println("Error popping back stack: ${e.message}")
                         }
-                        if (current == "start") {
-                            viewmodel.handleRoomIntent(GameRoomIntent.LeaveGameRoom)
-                        }
-                    } else {
-                        scope.launch {  // 新增抽屉开关逻辑
-                            if (drawerState.isClosed) drawerState.open()
-                            else drawerState.close()
-                        }
-                    }
-                },
-                colors = IconButtonDefaults.iconButtonColors(
-                    containerColor = MaterialTheme.colorScheme.secondaryContainer,
-                    contentColor = MaterialTheme.colorScheme.onSecondaryContainer,
-                )
-            ) {
-                val rotation by animateFloatAsState(
-                    targetValue = if (isStartRoute(current)) -180f else 0f,
-                    animationSpec = tween(durationMillis = 300)
-                )
-
-                Icon(
-                    painter = painterResource(Res.drawable.Icon_arrow_left),
-                    contentDescription = "back button",
-                    modifier = Modifier.rotate(rotation).size(24.dp),
-
+                    },
+                    colors = IconButtonDefaults.iconButtonColors(
+                        containerColor = MaterialTheme.colorScheme.secondaryContainer,
+                        contentColor = MaterialTheme.colorScheme.onSecondaryContainer,
                     )
+                ) {
+                    Icon(
+                        painter = painterResource(Res.drawable.Icon_arrow_left),
+                        contentDescription = "返回",
+                        modifier = Modifier.size(24.dp)
+                    )
+                }
             }
         },
         actions = {
             if (!isStartRoute(current))
-                if(current == NaviRoute.ROOM.route&&!viewmodel.roomEntityState.value.isRoomOwner){
+                if (current == NaviRoute.ROOM.route && !viewmodel.roomEntityState.value.isRoomOwner) {
 
-                }else{
+                } else {
                     IconButton(
                         modifier = Modifier
                             .clip(CircleShape)
@@ -454,7 +444,10 @@ fun AppTopBar(navi: NavHostController, viewmodel: MainViewmodel, drawerState: Dr
                             scope.launch {
                                 rotation.animateTo(
                                     targetValue = 360f,
-                                    animationSpec = tween(durationMillis = 500, easing = LinearEasing)
+                                    animationSpec = tween(
+                                        durationMillis = 500,
+                                        easing = LinearEasing
+                                    )
                                 )
                                 rotation.snapTo(0f) // 重置角度准备下次旋转
                             }
@@ -493,5 +486,3 @@ fun AppTopBar(navi: NavHostController, viewmodel: MainViewmodel, drawerState: Dr
         )
     )
 }
-
-
