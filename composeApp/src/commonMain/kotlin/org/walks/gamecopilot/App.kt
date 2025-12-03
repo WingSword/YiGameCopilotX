@@ -76,6 +76,9 @@ import org.walks.gamecopilot.navigation.NavigationHost
 import org.walks.gamecopilot.theme.WeUITheme
 import yigamecopilotx.composeapp.generated.resources.Icon_arrow_left
 import yigamecopilotx.composeapp.generated.resources.Res
+import yigamecopilotx.composeapp.generated.resources.icon_random_svg
+import yigamecopilotx.composeapp.generated.resources.icon_setting_svg
+import yigamecopilotx.composeapp.generated.resources.icon_sword_svg
 
 
 @Composable
@@ -161,41 +164,71 @@ fun BottomNavItem(
             .padding(vertical = 4.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        // 图标
+        // 图标容器
         Box(
             modifier = Modifier
                 .size(32.dp)
                 .clip(CircleShape)
                 .background(
                     color = if (isSelected)
-                        MaterialTheme.colorScheme.primary
+                        MaterialTheme.colorScheme.primary.copy(alpha = 0.2f)
                     else
                         MaterialTheme.colorScheme.surfaceVariant
                 ),
             contentAlignment = Alignment.Center
         ) {
-            // 这里可以添加对应的图标，暂时用文字代替
-            Text(
-                text = route.label.take(2),
-                color = if (isSelected)
-                    MaterialTheme.colorScheme.onPrimary
-                else
-                    MaterialTheme.colorScheme.onSurfaceVariant,
-                fontSize = 12.sp,
-                fontWeight = FontWeight.Bold
-            )
-        }
+            // 根据路由类型显示对应图标
+            when (route) {
+                NaviRoute.HOME -> {
+                    Icon(
+                        painter = painterResource(Res.drawable.icon_sword_svg),
+                        contentDescription = "首页",
+                        modifier = Modifier.size(20.dp),
+                        tint = if (isSelected)
+                            Color.Unspecified
+                        else
+                            MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f)
+                    )
+                }
 
-        // 标签
-        Text(
-            text = route.label,
-            fontSize = 10.sp,
-            color = if (isSelected)
-                MaterialTheme.colorScheme.primary
-            else
-                MaterialTheme.colorScheme.onSurface,
-            maxLines = 1
-        )
+                NaviRoute.RANDOM -> {
+                    Icon(
+                        painter = painterResource(Res.drawable.icon_random_svg),
+                        contentDescription = "随机工具",
+                        modifier = Modifier.size(20.dp),
+                        tint = if (isSelected)
+                            Color.Unspecified
+                        else
+                            MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f)
+                    )
+                }
+
+                NaviRoute.SETTING -> {
+                    Icon(
+                        painter = painterResource(Res.drawable.icon_setting_svg),
+                        contentDescription = "设置",
+                        modifier = Modifier.size(20.dp),
+                        tint = if (isSelected)
+                            Color.Unspecified
+                        else
+                            MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f)
+                    )
+                }
+
+                else -> {
+                    // 其他路由使用默认文字
+                    Text(
+                        text = route.label.take(2),
+                        color = if (isSelected)
+                            MaterialTheme.colorScheme.onPrimary
+                        else
+                            MaterialTheme.colorScheme.onSurfaceVariant,
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.Bold
+                    )
+                }
+            }
+        }
     }
 }
 
@@ -224,8 +257,13 @@ fun AppView(viewmodel: MainViewmodel) {
     // 移除抽屉导航，改为悬浮导航栏
     Scaffold(
         topBar = {
-            // 只在特定页面显示全局TopBar，首页不显示
-            if (!isStartRoute(currentRoute) && (currentRoute == NaviRoute.RANDOM.route || currentRoute == NaviRoute.ROOM.route)) {
+            // 一级页面（首页、随机工具、设置）不显示TopBar，由页面自身决定
+            // 二级页面（游戏页面）自行设置导航栏
+            if (!isStartRoute(currentRoute) &&
+                currentRoute != NaviRoute.HOME.route &&
+                currentRoute != NaviRoute.RANDOM.route &&
+                currentRoute != NaviRoute.SETTING.route
+            ) {
                 AppTopBar(navi, viewmodel)
             }
         },
@@ -310,8 +348,12 @@ fun AppView(viewmodel: MainViewmodel) {
             ) {
                 NavigationHost(viewmodel, navi)
             }
-            // 底部导航栏
-            if (isStartRoute(currentRoute)) {
+            // 底部导航栏 - 显示在一级页面（首页、随机工具、设置）
+            if (isStartRoute(currentRoute) ||
+                currentRoute == NaviRoute.HOME.route ||
+                currentRoute == NaviRoute.RANDOM.route ||
+                currentRoute == NaviRoute.SETTING.route
+            ) {
                 BottomNavigationBar(navi, currentRoute)
             }
         }

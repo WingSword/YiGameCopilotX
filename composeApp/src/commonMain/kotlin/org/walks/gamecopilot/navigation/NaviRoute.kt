@@ -6,10 +6,10 @@ package org.walks.gamecopilot.navigation
  */
 enum class NaviRoute(val route: String, val label: String, val type: Int = 0) {
     HOME("start", "首页"),
+    RANDOM("random", "随机工具"),
     SETTING("setting", "设置"),
     LOCAL_SPY("localSpy", "本地卧底", 1),
     ROOM("room", "房间", 1),
-    RANDOM("random", "随机工具"),
     AWALONG("awalong", "阿瓦隆", 1)
     ;
 

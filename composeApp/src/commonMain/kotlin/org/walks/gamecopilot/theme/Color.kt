@@ -3,7 +3,7 @@ package com.yi.yigamecopilot.android.theme
 import androidx.compose.ui.graphics.Color
 
 // 主色
-val PrimaryColor = Color(0xFF53AA99)
+val PrimaryColor = Color(0xFF22a2c3)
 
 // 元素颜色
 val BorderColorLight = Color(0f, 0f, 0f, 0.1f)
