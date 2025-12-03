@@ -1,5 +1,6 @@
 package org.walks.gamecopilot.awalong
 
+
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -41,8 +42,8 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
-import org.walks.gamecopilot.awalong.AwalongRole
 import org.walks.gamecopilot.awalong.data.AwalongGameState
+import org.walks.gamecopilot.awalong.data.SkillUsageRecord
 
 /**
  * 显示所有游戏结果的对话框
@@ -120,10 +121,22 @@ fun AllResultsDialog(
                                 verticalArrangement = Arrangement.spacedBy(12.dp)
                             ) {
                                 gameState.dayList.forEachIndexed { dayIndex, dayEntity ->
-                                    TaskDetailItem(
-                                        dayIndex = dayIndex,
-                                        dayEntity = dayEntity,
-                                        nicknameList = gameState.nickNameList
+                                    // 只显示有人参与投票的任务
+                                    if (dayEntity.taskVotes.isNotEmpty()) {
+                                        TaskDetailItem(
+                                            dayIndex = dayIndex,
+                                            dayEntity = dayEntity,
+                                            nicknameList = gameState.nickNameList
+                                        )
+                                    }
+                                }
+                                // 如果没有有投票记录的任务
+                                if (gameState.dayList.all { it.taskVotes.isEmpty() }) {
+                                    Text(
+                                        text = "暂无任务投票记录",
+                                        fontSize = 14.sp,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                        modifier = Modifier.padding(vertical = 8.dp)
                                     )
                                 }
                             }
@@ -160,6 +173,7 @@ fun AllResultsDialog(
                             Column(
                                 verticalArrangement = Arrangement.spacedBy(8.dp)
                             ) {
+                                // 显示每轮技能使用记录
                                 gameState.dayList.forEachIndexed { dayIndex, dayEntity ->
                                     if (dayEntity.skillUsageRecords.isNotEmpty()) {
                                         Text(
@@ -177,8 +191,46 @@ fun AllResultsDialog(
                                         }
                                     }
                                 }
-                                
-                                if (gameState.dayList.all { it.skillUsageRecords.isEmpty() }) {
+
+                                // 添加刺客刺杀技能记录
+                                val hasAssassin = gameState.roleList.contains(AwalongRole.CISHA)
+                                val assassinationResult = gameState.assassinationResult
+
+                                if (hasAssassin && assassinationResult != null) {
+                                    Text(
+                                        text = "刺客刺杀：",
+                                        fontSize = 14.sp,
+                                        fontWeight = FontWeight.Bold,
+                                        color = MaterialTheme.colorScheme.primary,
+                                        modifier = Modifier.padding(top = 8.dp)
+                                    )
+
+                                    // 查找刺客玩家索引
+                                    val assassinIndex =
+                                        gameState.roleList.indexOf(AwalongRole.CISHA)
+                                    if (assassinIndex >= 0) {
+                                        gameState.nickNameList.getOrNull(assassinIndex) ?: "刺客"
+                                    } else {
+                                        "刺客"
+                                    }
+
+                                    SkillUsageItem(
+                                        record = SkillUsageRecord(
+                                            skillType = "刺客刺杀",
+                                            userIndex = assassinIndex,
+                                            description = if (assassinationResult) "刺杀成功，坏人获得胜利" else "刺杀失败，好人获得胜利"
+                                        ),
+                                        nicknameList = gameState.nickNameList
+                                    )
+                                }
+
+                                // 如果没有技能使用记录
+                                val allSkillRecordsEmpty =
+                                    gameState.dayList.all { it.skillUsageRecords.isEmpty() }
+                                val noAssassinationRecord =
+                                    !hasAssassin || assassinationResult == null
+
+                                if (allSkillRecordsEmpty && noAssassinationRecord) {
                                     Text(
                                         text = "暂无技能使用记录",
                                         fontSize = 14.sp,
@@ -250,11 +302,20 @@ private fun GameSummarySection(gameState: AwalongGameState) {
     val successCount = gameState.dayList.count { it.taskResult == 1 }
     val failureCount = gameState.dayList.count { it.taskResult == -1 }
     val totalTasks = gameState.dayList.size
-    
-    // 判断游戏结果
+
+    // 检查是否有刺客刺杀成功的情况
+    val hasAssassin = gameState.roleList.contains(AwalongRole.CISHA)
+    val assassinationResult = gameState.assassinationResult
+
+    // 判断游戏结果（考虑刺客刺杀情况）
     val gameResult = when {
-        successCount >= 3 -> "好人胜利"
+        // 刺客刺杀成功，红方胜利
+        hasAssassin && assassinationResult == true -> "坏人胜利"
+        // 刺客刺杀失败，蓝方胜利
+        hasAssassin && assassinationResult == false -> "好人胜利"
+        // 正常任务胜利条件
         failureCount >= 3 -> "坏人胜利"
+        successCount >= 3 -> "好人胜利"
         totalTasks >= 5 && successCount >= 3 -> "好人胜利"
         totalTasks >= 5 && failureCount >= 2 -> "坏人胜利"
         else -> "游戏进行中"
@@ -670,7 +731,7 @@ private fun TaskDetailItem(
 
 @Composable
 private fun SkillUsageItem(
-    record: org.walks.gamecopilot.awalong.data.SkillUsageRecord,
+    record: SkillUsageRecord,
     nicknameList: List<String>
 ) {
     val userNickname = nicknameList.getOrNull(record.userIndex) ?: "玩家${record.userIndex + 1}"

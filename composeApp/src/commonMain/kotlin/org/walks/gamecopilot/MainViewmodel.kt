@@ -631,6 +631,13 @@ class MainViewmodel : ViewModel() {
                     }
                 }
             }
+
+            is AwalongIntent.UpdateAssassinationResult -> {
+                // 更新刺客刺杀结果
+                _awalongGameState.update { currentState ->
+                    currentState.copy(assassinationResult = intent.success)
+                }
+            }
         }
     }
 
@@ -676,7 +683,8 @@ class MainViewmodel : ViewModel() {
                     prophetChecked = null,
                     ladyOfLakeChecked = null,
                     lancolotConverted = false,
-                    shapeshifterTarget = null
+                    shapeshifterTarget = null,
+                    assassinationResult = null
                 )
             }
         } else {
@@ -710,7 +718,8 @@ class MainViewmodel : ViewModel() {
                     prophetChecked = null,
                     ladyOfLakeChecked = null,
                     lancolotConverted = false,
-                    shapeshifterTarget = null
+                    shapeshifterTarget = null,
+                    assassinationResult = null
                 )
             }
         }
@@ -747,7 +756,8 @@ class MainViewmodel : ViewModel() {
                 prophetChecked = null,
                 ladyOfLakeChecked = null,
                 lancolotConverted = false,
-                shapeshifterTarget = null
+                shapeshifterTarget = null,
+                assassinationResult = null
             )
         }
     }

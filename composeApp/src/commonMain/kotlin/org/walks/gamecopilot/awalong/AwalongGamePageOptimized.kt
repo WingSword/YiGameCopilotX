@@ -128,7 +128,8 @@ fun AwalongGamePageOptimized(navi: NavController, viewmodel: MainViewmodel) {
     var gameEndResult by remember { mutableStateOf<GameEndResult?>(null) }
     var showAssassinationDialog by remember { mutableStateOf(false) }
     var isGameLocked by remember { mutableStateOf(false) }
-    var showGameResultDialog by remember { mutableStateOf(false) }
+
+
     // 监听游戏状态变化，自动翻页和检测游戏结束
     LaunchedEffect(gameState.dayList, pageState.currentPage) {
         val newMaxPage = calculateMaxAccessiblePage(gameState, actualProcess)
@@ -159,10 +160,6 @@ fun AwalongGamePageOptimized(navi: NavController, viewmodel: MainViewmodel) {
     LaunchedEffect(gameState.dayList, gameState.roleList, gameState.playTime) {
         val result = AwalongGameLogic.checkGameEnd(gameState)
 
-        // 调试信息：打印游戏状态和检测结果
-        println("游戏状态检测：成功任务数=${gameState.dayList.count { it.taskResult == 1 }}, 失败任务数=${gameState.dayList.count { it.taskResult == -1 }}")
-        println("游戏结束检测结果：$result")
-        println("当前弹窗状态：showAssassinationDialog=$showAssassinationDialog, gameEndResult=$gameEndResult, isGameLocked=$isGameLocked")
 
         if (result != null && !isGameLocked) {
             // 如果是蓝方胜利且场上有刺客，显示刺杀弹窗
@@ -275,6 +272,12 @@ fun AwalongGamePageOptimized(navi: NavController, viewmodel: MainViewmodel) {
                 gameState = gameState,
                 onAssassinationComplete = { success ->
                     showAssassinationDialog = false
+                    // 保存刺杀结果到游戏状态
+                    viewmodel.handleAwalongGameIntent(
+                        AwalongIntent.UpdateAssassinationResult(
+                            success
+                        )
+                    )
                     if (success) {
                         // 刺杀成功，红方胜利
                         gameEndResult = GameEndResult("红方", "刺客成功刺杀梅林")
@@ -286,35 +289,23 @@ fun AwalongGamePageOptimized(navi: NavController, viewmodel: MainViewmodel) {
             )
         }
 
-        // 游戏结束弹窗
-        gameEndResult?.let { result ->
-            GameEndDialog(
-                result = result,
-                onDismiss = {
-                    gameEndResult = null
-                    showGameResultDialog = true
-                }
-            )
-        }
 
-        // 查看结果弹窗
-        if (showGameResultDialog) {
-            GameResultDialog(
+        // 显示所有结果对话框
+        if (gameEndResult != null) {
+            AllResultsDialog(
                 gameState = gameState,
-                gameConfig = gameConfig,
                 onDismiss = {
-                    showGameResultDialog = false
                     // 游戏结束后自动返回到第0页
                     scope.launch {
                         delay(1000)
                         pageState.scrollToPage(0)
-                        // 重置游戏结束状态，以便下次游戏
                         gameEndResult = null
-                        isGameLocked = false
+                        viewmodel.handleAwalongGameIntent(AwalongIntent.RestartGame)
                     }
                 }
             )
         }
+
     }
 }
 
@@ -610,91 +601,6 @@ private fun AssassinationDialog(
                 onClick = { onAssassinationComplete(false) }
             ) {
                 Text("取消")
-            }
-        }
-    )
-}
-
-
-/**
- * 游戏结束弹窗组件
- */
-@Composable
-private fun GameEndDialog(
-    result: GameEndResult,
-    onDismiss: () -> Unit
-) {
-    androidx.compose.material3.AlertDialog(
-        onDismissRequest = onDismiss,
-        title = { Text("游戏结束") },
-        text = {
-            Column {
-                Text("${result.winner}胜利！", fontWeight = FontWeight.Bold)
-                Text(result.reason)
-            }
-        },
-        confirmButton = {
-            androidx.compose.material3.TextButton(
-                onClick = onDismiss
-            ) {
-                Text("查看结果")
-            }
-        }
-    )
-}
-
-/**
- * 查看结果弹窗组件
- */
-@Composable
-private fun GameResultDialog(
-    gameState: AwalongGameState,
-    gameConfig: AwalongConfig,
-    onDismiss: () -> Unit
-) {
-    androidx.compose.material3.AlertDialog(
-        onDismissRequest = onDismiss,
-        title = { Text("游戏结果详情") },
-        text = {
-            Column {
-                Text("玩家身份信息：", fontWeight = FontWeight.Bold)
-                Spacer(modifier = Modifier.padding(4.dp))
-
-                // 显示所有玩家身份
-                gameState.roleList.forEachIndexed { index, role ->
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween
-                    ) {
-                        Text("${index + 1}号玩家：${gameState.nickNameList.getOrNull(index) ?: "玩家${index + 1}"}")
-                        Text(
-                            "${role.title}",
-                            color = if (role.roleType == GOOD_PERSON) Color.Blue else Color.Red
-                        )
-                    }
-                }
-
-                Spacer(modifier = Modifier.padding(8.dp))
-
-                Text("任务结果：", fontWeight = FontWeight.Bold)
-                Spacer(modifier = Modifier.padding(4.dp))
-
-                // 显示任务结果
-                gameState.dayList.forEachIndexed { index, day ->
-                    val resultText = when (day.taskResult) {
-                        1 -> "成功"
-                        -1 -> "失败"
-                        else -> "未完成"
-                    }
-                    Text("第${index + 1}日任务：$resultText")
-                }
-            }
-        },
-        confirmButton = {
-            androidx.compose.material3.TextButton(
-                onClick = onDismiss
-            ) {
-                Text("确定")
             }
         }
     )

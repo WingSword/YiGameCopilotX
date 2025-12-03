@@ -22,7 +22,8 @@ data class AwalongGameState(
     val prophetChecked: Pair<Int, Int>? = null, // 预言者检查的玩家索引 (player1, player2)
     val ladyOfLakeChecked: Int? = null, // 湖中仙女检查的玩家索引
     val lancolotConverted: Boolean = false, // 兰斯洛特是否已转换阵营
-    val shapeshifterTarget: AwalongRole? = null // 变形者复制的目标角色
+    val shapeshifterTarget: AwalongRole? = null, // 变形者复制的目标角色
+    val assassinationResult: Boolean? = null // 刺客刺杀结果（true=成功，false=失败，null=未刺杀）
 )
 
 data class AwalongGameDayEntity(

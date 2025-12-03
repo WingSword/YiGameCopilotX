@@ -32,4 +32,5 @@ sealed class AwalongIntent {
     data class UpdateCurrentPage(val pageIndex: Int) : AwalongIntent()
     data class Assassinate(val targetIndex: Int) : AwalongIntent()
     data object CheckGameEnd : AwalongIntent()
+    data class UpdateAssassinationResult(val success: Boolean) : AwalongIntent()
 }

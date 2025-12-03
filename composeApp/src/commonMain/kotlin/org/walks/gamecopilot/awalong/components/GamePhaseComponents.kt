@@ -38,7 +38,6 @@ import androidx.compose.ui.unit.sp
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
 import org.walks.gamecopilot.MainViewmodel
-import org.walks.gamecopilot.awalong.AllResultsDialog
 import org.walks.gamecopilot.awalong.AwalongIntent
 import org.walks.gamecopilot.awalong.AwalongRole
 import org.walks.gamecopilot.awalong.data.AwalongGameDayEntity
@@ -229,7 +228,7 @@ fun TaskResultPhase(
     taskPlayer: List<Int> = emptyList(), // 添加参与任务的玩家列表
     onNextRound: () -> Unit
 ) {
-    var showAllResults by remember { mutableStateOf(false) }
+
 
     // 判断游戏是否结束 - 实时计算，不使用remember缓存
     val successCount =
@@ -239,8 +238,7 @@ fun TaskResultPhase(
     val totalRounds = gameState.dayList.size
 
     // 好人完成3次任务成功，或坏人完成2次任务失败，或已完成所有轮次
-    val isGameComplete =
-        successCount >= 3 || failureCount >= 2 || (totalRounds >= 5 && (successCount >= 3 || failureCount >= 2))
+    successCount >= 3 || failureCount >= 2 || (totalRounds >= 5 && (successCount >= 3 || failureCount >= 2))
 
     // 获取所有锁定的玩家
     val lockedPlayers = remember(taskIndex) {
@@ -295,18 +293,7 @@ fun TaskResultPhase(
                 Icon(Icons.AutoMirrored.Filled.ArrowForward, contentDescription = null)
             }
 
-            // 只有在游戏结束时才显示查看结果按钮
-            if (isGameComplete) {
-                Button(
-                    onClick = { showAllResults = true },
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = MaterialTheme.colorScheme.secondary
-                    ),
-                    modifier = Modifier.weight(1f)
-                ) {
-                    Text("查看结果")
-                }
-            }
+
         }
 
         // 角色选择区域（显示锁定状态）
@@ -330,14 +317,6 @@ fun TaskResultPhase(
                     onClick = { /* 锁定的玩家不可点击 */ }
                 )
             }
-        }
-
-        // 显示所有结果对话框
-        if (showAllResults) {
-            AllResultsDialog(
-                gameState = gameState,
-                onDismiss = { showAllResults = false }
-            )
         }
     }
 }
