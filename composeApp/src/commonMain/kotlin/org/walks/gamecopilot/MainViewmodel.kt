@@ -14,9 +14,12 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.json.Json
 import org.walks.gamecopilot.awalong.AwalongConfig
+import org.walks.gamecopilot.awalong.AwalongCustomConfig
 import org.walks.gamecopilot.awalong.AwalongGameLogic
 import org.walks.gamecopilot.awalong.AwalongIntent
 import org.walks.gamecopilot.awalong.AwalongRole
+import org.walks.gamecopilot.awalong.DefaultCustomConfig
+
 import org.walks.gamecopilot.awalong.data.AwalongGameDayEntity
 import org.walks.gamecopilot.awalong.data.AwalongGameState
 import org.walks.gamecopilot.data.RandomItem
@@ -70,6 +73,11 @@ class MainViewmodel : ViewModel() {
         AwalongConfig.Standard_5
     )
     val awalongConfigState: StateFlow<AwalongConfig> = _awalongConfigState
+
+    private val _awalongCustomConfigState = MutableStateFlow<AwalongCustomConfig>(
+        DefaultCustomConfig
+    )
+    val awalongCustomConfigState: StateFlow<AwalongCustomConfig> = _awalongCustomConfigState
 
     private val _awalongGameState = MutableStateFlow<AwalongGameState>(AwalongGameState())
     val awalongGameState: StateFlow<AwalongGameState> = _awalongGameState
@@ -397,6 +405,20 @@ class MainViewmodel : ViewModel() {
 
             }
 
+            is AwalongIntent.StartCustomGame -> {
+                _awalongCustomConfigState.update {
+                    intent.customConfig
+                }
+                resetAwalongGameStateWithCustomConfig()
+            }
+
+            is AwalongIntent.StartCustomGame -> {
+                _awalongCustomConfigState.update {
+                    intent.customConfig
+                }
+                resetAwalongGameStateWithCustomConfig()
+            }
+
             AwalongIntent.RestartGame -> {
                 resetAwalongGameState()
             }
@@ -641,6 +663,41 @@ class MainViewmodel : ViewModel() {
                     }
                 },
                 nickNameList = (1..config.role.size).map { it.toString() }
+                    .toMutableList(),
+                // 初始化扩展包字段
+                ladyOfLakeUsed = false,
+                sirGalahadUsed = false,
+                morguseUsed = false,
+                prophetChecked = null,
+                ladyOfLakeChecked = null,
+                lancolotConverted = false,
+                shapeshifterTarget = null
+            )
+        }
+    }
+
+    @OptIn(ExperimentalTime::class)
+    private fun resetAwalongGameStateWithCustomConfig() {
+        val customConfig = awalongCustomConfigState.value
+        val roleList = customConfig.generateRoleList()
+        _awalongGameState.update {
+            AwalongGameState(
+                playTime = Clock.System.now().toEpochMilliseconds(),
+                roleList = roleList.optimizedShuffle().toMutableList(),
+                dayList = mutableListOf<AwalongGameDayEntity>().apply {
+                    customConfig.process.forEachIndexed { index, taskSize ->
+                        // 根据任务大小判断是否需要2张失败卡（通常是较大的任务）
+                        val requiresTwoFailures = taskSize >= 4 && customConfig.totalPlayers >= 7
+                        this.add(
+                            AwalongGameDayEntity(
+                                day = index,
+                                captain = roleList.indices.random(),
+                                requiresTwoFailures = requiresTwoFailures
+                            )
+                        )
+                    }
+                },
+                nickNameList = (1..customConfig.totalPlayers).map { it.toString() }
                     .toMutableList(),
                 // 初始化扩展包字段
                 ladyOfLakeUsed = false,

@@ -7,7 +7,8 @@ import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import org.walks.gamecopilot.MainViewmodel
-import org.walks.gamecopilot.awalong.AwalongGamePage
+import org.walks.gamecopilot.awalong.AwalongGamePageOptimized
+
 
 import org.walks.gamecopilot.event.NavigationEvent
 import org.walks.gamecopilot.ui.page.game.localspy.LocalSpyGamePage
@@ -35,7 +36,7 @@ fun NavigationHost(viewmodel: MainViewmodel, navi: NavHostController) {
                     NaviRoute.LOCAL_SPY -> LocalSpyGamePage(viewmodel) { navi.popBackStack() }
                     NaviRoute.ROOM -> RoomPage(viewmodel)
                     NaviRoute.RANDOM -> RandomPage(viewmodel)
-                    NaviRoute.AWALONG-> AwalongGamePage(viewmodel)
+                    NaviRoute.AWALONG -> AwalongGamePageOptimized(viewmodel)
                     // 显式列出所有路由，移除else分支
                     // 当新增路由时编译器会提示需要补充分支
                     else-> ErrorPage()

@@ -9,6 +9,7 @@ import org.walks.gamecopilot.awalong.data.AwalongGameDayEntity
 
 sealed class AwalongIntent {
     data class StartGame(val gameConfig:  AwalongConfig) : AwalongIntent()
+    data class StartCustomGame(val customConfig: AwalongCustomConfig) : AwalongIntent()
     data object RestartGame : AwalongIntent()
     data class ChangeNickName(val nickName: String, val sn: Int) : AwalongIntent()
     data class CheckTask(val task:AwalongGameDayEntity) : AwalongIntent()
