@@ -1,6 +1,17 @@
 package org.walks.gamecopilot.awalong
 
-import org.walks.gamecopilot.awalong.AwalongRole.*
+import org.walks.gamecopilot.awalong.AwalongRole.AOBOLUN
+import org.walks.gamecopilot.awalong.AwalongRole.CISHA
+import org.walks.gamecopilot.awalong.AwalongRole.LADY_OF_LAKE
+import org.walks.gamecopilot.awalong.AwalongRole.LANCELOT
+import org.walks.gamecopilot.awalong.AwalongRole.MEILING
+import org.walks.gamecopilot.awalong.AwalongRole.MODELEDE
+import org.walks.gamecopilot.awalong.AwalongRole.MOGANNA
+import org.walks.gamecopilot.awalong.AwalongRole.MORGUSE
+import org.walks.gamecopilot.awalong.AwalongRole.PAIXIWEIWEIER
+import org.walks.gamecopilot.awalong.AwalongRole.PROPHET
+import org.walks.gamecopilot.awalong.AwalongRole.SHAPESHIFTER
+import org.walks.gamecopilot.awalong.AwalongRole.SIR_GALAHAD
 import org.walks.gamecopilot.awalong.data.AwalongGameState
 
 /**
@@ -95,6 +106,9 @@ object AwalongGameLogic {
 
     /**
      * 检查任务是否需要2张失败卡才判定失败
+     * 根据标准阿瓦隆规则：
+     * - 7人游戏：第4个任务需要2张失败卡
+     * - 8-10人游戏：第4个及以后的任务需要2张失败卡
      */
     fun requiresTwoFailures(taskIndex: Int, playerNum: Int): Boolean {
         return when (playerNum) {
@@ -110,22 +124,36 @@ object AwalongGameLogic {
     fun checkGameEnd(gameState: AwalongGameState): GameEndResult? {
         val successTasks = gameState.dayList.count { it.taskResult == 1 }
         val failedTasks = gameState.dayList.count { it.taskResult == -1 }
-        
-        // 检查蓝方胜利条件
-        if (successTasks >= 3) {
-            // 需要检查刺杀阶段
-            return GameEndResult(
-                winner = if (checkAssassinationSuccess(gameState)) "红方" else "蓝方",
-                reason = if (checkAssassinationSuccess(gameState)) "刺客成功刺杀梅林" else "完成3个成功任务"
-            )
-        }
-        
-        // 检查红方胜利条件
+
+        // 调试信息：打印当前任务状态
+        println("游戏结束检查：成功任务=$successTasks, 失败任务=$failedTasks")
+
+        // 检查红方胜利条件（优先检查，因为红方胜利条件更直接）
         if (failedTasks >= 3) {
+            println("红方胜利：破坏3个任务")
             return GameEndResult(
                 winner = "红方",
                 reason = "破坏3个任务"
             )
+        }
+        
+        // 检查蓝方胜利条件
+        if (successTasks >= 3) {
+            println("蓝方完成3个任务，检查刺客角色")
+            // 蓝方完成3个任务，但如果有刺客，需要进入刺杀阶段
+            if (gameState.roleList.contains(CISHA)) {
+                println("有刺客，进入刺杀阶段")
+                return GameEndResult(
+                    winner = "蓝方",
+                    reason = "完成3个成功任务，进入刺杀阶段"
+                )
+            } else {
+                println("无刺客，蓝方直接胜利")
+                return GameEndResult(
+                    winner = "蓝方",
+                    reason = "完成3个成功任务"
+                )
+            }
         }
         
         // 检查奥伯伦单独胜利条件
@@ -134,23 +162,24 @@ object AwalongGameLogic {
             // 奥伯伦需要单独胜利：至少破坏2个任务 + 蓝方达成3胜后刺杀梅林 + 未被揭露
             if (gameState.prophetChecked?.let { it.first == oberonIndex || it.second == oberonIndex } != true &&
                 gameState.ladyOfLakeChecked != oberonIndex) {
+                println("奥伯伦独立胜利")
                 return GameEndResult(
                     winner = "奥伯伦",
                     reason = "独立胜利：破坏2个任务且未被揭露身份"
                 )
             }
         }
-        
+
+        println("游戏未结束")
         return null
     }
 
     /**
      * 检查刺杀是否成功（简化逻辑）
      */
-    private fun checkAssassinationSuccess(gameState: AwalongGameState): Boolean {
-        // 这里需要实际的刺杀逻辑，暂时返回false
-        // 实际游戏中需要玩家选择刺杀目标
-        return false
+    fun checkAssassinationSuccess(assassinationTarget: Int, gameState: AwalongGameState): Boolean {
+        // 检查刺杀目标是否是梅林
+        return gameState.roleList[assassinationTarget] == MEILING
     }
 
     /**

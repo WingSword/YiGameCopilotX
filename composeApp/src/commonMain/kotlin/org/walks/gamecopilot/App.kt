@@ -262,7 +262,8 @@ fun AppView(viewmodel: MainViewmodel) {
             if (!isStartRoute(currentRoute) &&
                 currentRoute != NaviRoute.HOME.route &&
                 currentRoute != NaviRoute.RANDOM.route &&
-                currentRoute != NaviRoute.SETTING.route
+                currentRoute != NaviRoute.SETTING.route &&
+                currentRoute != NaviRoute.AWALONG.route
             ) {
                 AppTopBar(navi, viewmodel)
             }

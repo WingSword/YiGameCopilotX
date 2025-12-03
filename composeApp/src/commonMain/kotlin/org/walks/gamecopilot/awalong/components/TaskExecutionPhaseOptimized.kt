@@ -52,6 +52,7 @@ fun TaskExecutionPhaseOptimized(
     nicknameList: List<String>,
     taskPlayer: List<Int>,
     taskVotes: MutableMap<Int, Boolean>,
+    requiresTwoFailures: Boolean,
     onExecutionComplete: (Map<Int, Boolean>, Boolean) -> Unit,
     onBackToTeamFormation: () -> Unit
 ) {
@@ -124,10 +125,20 @@ fun TaskExecutionPhaseOptimized(
                             
                             // 检查是否所有玩家都已投票
                             if (localTaskVotes.value.size == taskPlayerIndices.size) {
-                                val successVotes = localTaskVotes.value.values.count { it }
-                                val totalVotes = localTaskVotes.value.size
-                                val allSuccess = successVotes == totalVotes
-                                onExecutionComplete(localTaskVotes.value.toMap(), allSuccess)
+                                localTaskVotes.value.values.count { it }
+                                val failureVotes = localTaskVotes.value.values.count { !it }
+                                localTaskVotes.value.size
+
+                                // 根据阿瓦隆规则判断任务结果
+                                val isSuccess = if (requiresTwoFailures) {
+                                    // 需要2张失败卡才失败的特殊任务
+                                    failureVotes < 2
+                                } else {
+                                    // 普通任务：只要有1张失败卡就失败
+                                    failureVotes == 0
+                                }
+
+                                onExecutionComplete(localTaskVotes.value.toMap(), isSuccess)
                             }
                         }
                     )

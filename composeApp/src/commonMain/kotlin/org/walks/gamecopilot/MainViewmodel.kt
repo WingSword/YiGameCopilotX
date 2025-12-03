@@ -412,13 +412,6 @@ class MainViewmodel : ViewModel() {
                 resetAwalongGameStateWithCustomConfig()
             }
 
-            is AwalongIntent.StartCustomGame -> {
-                _awalongCustomConfigState.update {
-                    intent.customConfig
-                }
-                resetAwalongGameStateWithCustomConfig()
-            }
-
             AwalongIntent.RestartGame -> {
                 resetAwalongGameState()
             }
@@ -644,35 +637,82 @@ class MainViewmodel : ViewModel() {
 
     @OptIn(ExperimentalTime::class)
     private fun resetAwalongGameState() {
-        val config = awalongConfigState.value
-        _awalongGameState.update {
-            AwalongGameState(
-                playTime = Clock.System.now().toEpochMilliseconds(),
-                roleList = config.role.optimizedShuffle().toMutableList(),
-                dayList = mutableListOf<AwalongGameDayEntity>().apply {
-                    config.process.forEachIndexed { index, taskSize ->
-                        // 根据任务大小判断是否需要2张失败卡（通常是较大的任务）
-                        val requiresTwoFailures = taskSize >= 4 && config.playerNum >= 7
-                        this.add(
-                            AwalongGameDayEntity(
-                                day = index,
-                                captain = config.role.indices.random(),
-                                requiresTwoFailures = requiresTwoFailures
+        val currentState = _awalongGameState.value
+        val customConfig = awalongCustomConfigState.value
+        val standardConfig = awalongConfigState.value
+
+        // 检查是否使用自定义配置
+        val isUsingCustomConfig = currentState.roleList.size == customConfig.totalPlayers
+
+        if (isUsingCustomConfig) {
+            // 使用自定义配置重置
+            val roleList = customConfig.generateRoleList()
+            _awalongGameState.update {
+                AwalongGameState(
+                    playTime = Clock.System.now().toEpochMilliseconds(),
+                    roleList = roleList.optimizedShuffle().toMutableList(),
+                    dayList = mutableListOf<AwalongGameDayEntity>().apply {
+                        customConfig.process.forEachIndexed { index, taskSize ->
+                            // 根据阿瓦隆规则判断是否需要2张失败卡
+                            val requiresTwoFailures = AwalongGameLogic.requiresTwoFailures(
+                                index,
+                                customConfig.totalPlayers
                             )
-                        )
-                    }
-                },
-                nickNameList = (1..config.role.size).map { it.toString() }
-                    .toMutableList(),
-                // 初始化扩展包字段
-                ladyOfLakeUsed = false,
-                sirGalahadUsed = false,
-                morguseUsed = false,
-                prophetChecked = null,
-                ladyOfLakeChecked = null,
-                lancolotConverted = false,
-                shapeshifterTarget = null
-            )
+                            this.add(
+                                AwalongGameDayEntity(
+                                    day = index,
+                                    captain = roleList.indices.random(),
+                                    requiresTwoFailures = requiresTwoFailures
+                                )
+                            )
+                        }
+                    },
+                    // 保留当前的昵称列表，而不是重置为默认值
+                    nickNameList = currentState.nickNameList,
+                    // 初始化扩展包字段
+                    ladyOfLakeUsed = false,
+                    sirGalahadUsed = false,
+                    morguseUsed = false,
+                    prophetChecked = null,
+                    ladyOfLakeChecked = null,
+                    lancolotConverted = false,
+                    shapeshifterTarget = null
+                )
+            }
+        } else {
+            // 使用标准配置重置
+            _awalongGameState.update {
+                AwalongGameState(
+                    playTime = Clock.System.now().toEpochMilliseconds(),
+                    roleList = standardConfig.role.optimizedShuffle().toMutableList(),
+                    dayList = mutableListOf<AwalongGameDayEntity>().apply {
+                        standardConfig.process.forEachIndexed { index, taskSize ->
+                            // 根据阿瓦隆规则判断是否需要2张失败卡
+                            val requiresTwoFailures = AwalongGameLogic.requiresTwoFailures(
+                                index,
+                                standardConfig.playerNum
+                            )
+                            this.add(
+                                AwalongGameDayEntity(
+                                    day = index,
+                                    captain = standardConfig.role.indices.random(),
+                                    requiresTwoFailures = requiresTwoFailures
+                                )
+                            )
+                        }
+                    },
+                    // 保留当前的昵称列表，而不是重置为默认值
+                    nickNameList = currentState.nickNameList,
+                    // 初始化扩展包字段
+                    ladyOfLakeUsed = false,
+                    sirGalahadUsed = false,
+                    morguseUsed = false,
+                    prophetChecked = null,
+                    ladyOfLakeChecked = null,
+                    lancolotConverted = false,
+                    shapeshifterTarget = null
+                )
+            }
         }
     }
 
@@ -686,8 +726,9 @@ class MainViewmodel : ViewModel() {
                 roleList = roleList.optimizedShuffle().toMutableList(),
                 dayList = mutableListOf<AwalongGameDayEntity>().apply {
                     customConfig.process.forEachIndexed { index, taskSize ->
-                        // 根据任务大小判断是否需要2张失败卡（通常是较大的任务）
-                        val requiresTwoFailures = taskSize >= 4 && customConfig.totalPlayers >= 7
+                        // 根据阿瓦隆规则判断是否需要2张失败卡
+                        val requiresTwoFailures =
+                            AwalongGameLogic.requiresTwoFailures(index, customConfig.totalPlayers)
                         this.add(
                             AwalongGameDayEntity(
                                 day = index,

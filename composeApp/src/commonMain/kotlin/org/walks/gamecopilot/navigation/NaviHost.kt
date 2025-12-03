@@ -36,7 +36,7 @@ fun NavigationHost(viewmodel: MainViewmodel, navi: NavHostController) {
                     NaviRoute.LOCAL_SPY -> LocalSpyGamePage(viewmodel) { navi.popBackStack() }
                     NaviRoute.ROOM -> RoomPage(viewmodel)
                     NaviRoute.RANDOM -> RandomPage(viewmodel)
-                    NaviRoute.AWALONG -> AwalongGamePageOptimized(viewmodel)
+                    NaviRoute.AWALONG -> AwalongGamePageOptimized(navi, viewmodel)
                     NaviRoute.SETTING -> SettingPage(viewmodel)
                     // 显式列出所有路由，移除else分支
                     // 当新增路由时编译器会提示需要补充分支

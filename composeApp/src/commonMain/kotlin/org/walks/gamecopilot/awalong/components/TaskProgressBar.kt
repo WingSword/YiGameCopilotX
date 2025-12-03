@@ -39,21 +39,15 @@ import org.walks.gamecopilot.awalong.data.AwalongGameDayEntity
 fun TaskProgressBar(
     currentDay: Int,
     dayList: List<AwalongGameDayEntity>,
-    gameConfig: AwalongConfig
+    gameConfig: AwalongConfig,
+    actualProcess: List<Int>
 ) {
     Column(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(bottom = 24.dp)
+
     ) {
-        Text(
-            text = "任务进度：",
-            color = MaterialTheme.colorScheme.secondary,
-            fontSize = 14.sp,
-            fontWeight = FontWeight.Medium,
-            modifier = Modifier.padding(bottom = 8.dp)
-        )
-        
+
         // 进度条背景
         Card(
             modifier = Modifier
@@ -76,9 +70,10 @@ fun TaskProgressBar(
                         index = index,
                         day = day,
                         dayList = dayList,
-                        taskNum = if (index < gameConfig.process.size) gameConfig.process[index] else 0,
+                        taskNum = if (index < actualProcess.size) actualProcess[index] else 0,
                         isCurrent = index == currentDay,
-                        totalItems = dayList.size
+                        totalItems = dayList.size,
+                        requiresTwoFailures = day.requiresTwoFailures
                     )
                 }
             }
@@ -97,7 +92,8 @@ private fun TaskProgressItem(
     dayList: List<AwalongGameDayEntity>,
     taskNum: Int,
     isCurrent: Boolean,
-    totalItems: Int
+    totalItems: Int,
+    requiresTwoFailures: Boolean
 ) {
     val isCompleted = day.gamePhase == "TASK_RESULT"
     val isSuccess = day.taskResult == 1
@@ -158,7 +154,7 @@ private fun TaskProgressItem(
             }
             
             Text(
-                text = "${taskNum}人",
+                text = "${taskNum}人${if (requiresTwoFailures) "*" else ""}",
                 color = if (isCompleted) Color.White else MaterialTheme.colorScheme.onSurfaceVariant,
                 fontSize = 10.sp,
                 fontWeight = if (isCurrent) FontWeight.Bold else FontWeight.Medium

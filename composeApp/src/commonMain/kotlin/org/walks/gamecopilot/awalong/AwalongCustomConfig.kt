@@ -111,12 +111,12 @@ data class AwalongCustomConfig(
  */
 private fun calculateProcess(totalPlayers: Int): List<Int> {
     return when (totalPlayers) {
-        5 -> listOf(2, 3, 2, 3)
-        6 -> listOf(2, 3, 4, 3, 4)
-        7 -> listOf(2, 3, 3, 4, 4)
-        8 -> listOf(3, 4, 4, 5, 5)
-        9 -> listOf(3, 4, 4, 5, 5)
-        10 -> listOf(3, 4, 4, 5, 5)
+        5 -> listOf(2, 3, 2, 3) // 5人游戏：4轮任务
+        6 -> listOf(2, 3, 4, 3, 4) // 6人游戏：5轮任务
+        7 -> listOf(2, 3, 3, 4, 4) // 7人游戏：5轮任务
+        8 -> listOf(3, 4, 4, 5, 5) // 8人游戏：5轮任务
+        9 -> listOf(3, 4, 4, 5, 5) // 9人游戏：5轮任务
+        10 -> listOf(3, 4, 4, 5, 5) // 10人游戏：5轮任务
         else -> listOf(2, 3, 2, 3) // 默认5人配置
     }
 }
@@ -137,18 +137,19 @@ val DefaultCustomConfig = AwalongCustomConfig(
 val PredefinedConfigs = listOf(
     // 5人标准配置
     AwalongCustomConfig(
-        blueRoles = listOf(AwalongRole.MEILING, AwalongRole.PAIXIWEIWEIER),
+        blueRoles = listOf(AwalongRole.MEILING, AwalongRole.PAIXIWEIWEIER, AwalongRole.ZHONGCHEN),
         blueCount = 3,
         redRoles = listOf(AwalongRole.MOGANNA, AwalongRole.CISHA),
         redCount = 2
     ),
 
-    // 6人配置（带湖中仙女）
+    // 6人配置（带圆桌骑士）
     AwalongCustomConfig(
         blueRoles = listOf(
             AwalongRole.MEILING,
             AwalongRole.PAIXIWEIWEIER,
-            AwalongRole.LADY_OF_LAKE
+            AwalongRole.SIR_GALAHAD,
+            AwalongRole.ZHONGCHEN
         ),
         blueCount = 4,
         redRoles = listOf(AwalongRole.MOGANNA, AwalongRole.CISHA),
@@ -157,18 +158,31 @@ val PredefinedConfigs = listOf(
 
     // 7人配置（带预言者）
     AwalongCustomConfig(
-        blueRoles = listOf(AwalongRole.MEILING, AwalongRole.PAIXIWEIWEIER, AwalongRole.PROPHET),
-        blueCount = 4,
-        redRoles = listOf(AwalongRole.MOGANNA, AwalongRole.CISHA, AwalongRole.MODELEDE),
-        redCount = 3
+        blueRoles = listOf(
+            AwalongRole.MEILING,
+            AwalongRole.PAIXIWEIWEIER,
+            AwalongRole.PROPHET,
+            AwalongRole.ZHONGCHEN,
+            AwalongRole.ZHONGCHEN
+        ),
+        blueCount = 5,
+        redRoles = listOf(AwalongRole.MOGANNA, AwalongRole.CISHA),
+        redCount = 2
     ),
 
     // 8人配置（带变形者）
     AwalongCustomConfig(
-        blueRoles = listOf(AwalongRole.MEILING, AwalongRole.PAIXIWEIWEIER, AwalongRole.PROPHET),
-        blueCount = 5,
+        blueRoles = listOf(
+            AwalongRole.MEILING,
+            AwalongRole.PAIXIWEIWEIER,
+            AwalongRole.PROPHET,
+            AwalongRole.ZHONGCHEN,
+            AwalongRole.ZHONGCHEN,
+            AwalongRole.ZHONGCHEN
+        ),
+        blueCount = 6,
         redRoles = listOf(AwalongRole.MOGANNA, AwalongRole.CISHA, AwalongRole.SHAPESHIFTER),
-        redCount = 3
+        redCount = 2
     ),
 
     // 9人配置（带多个扩展角色）
@@ -177,7 +191,9 @@ val PredefinedConfigs = listOf(
             AwalongRole.MEILING,
             AwalongRole.PAIXIWEIWEIER,
             AwalongRole.PROPHET,
-            AwalongRole.LADY_OF_LAKE
+            AwalongRole.SIR_GALAHAD,
+            AwalongRole.ZHONGCHEN,
+            AwalongRole.ZHONGCHEN
         ),
         blueCount = 6,
         redRoles = listOf(AwalongRole.MOGANNA, AwalongRole.CISHA, AwalongRole.MODELEDE),

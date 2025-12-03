@@ -1,8 +1,12 @@
 package org.walks.gamecopilot.awalong
 
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.LinearEasing
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -13,18 +17,22 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.PagerState
 import androidx.compose.foundation.pager.rememberPagerState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.sharp.ArrowBack
+import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.IconButtonDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -35,12 +43,15 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.navigation.NavController
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import org.jetbrains.compose.resources.painterResource
 import org.walks.gamecopilot.MainViewmodel
@@ -52,6 +63,7 @@ import org.walks.gamecopilot.awalong.components.TaskProgressBar
 import org.walks.gamecopilot.awalong.data.AwalongGameDayEntity
 import org.walks.gamecopilot.awalong.data.AwalongGameState
 import yigamecopilotx.composeapp.generated.resources.Res
+import yigamecopilotx.composeapp.generated.resources.icon_close
 import yigamecopilotx.composeapp.generated.resources.icon_info
 
 /**
@@ -60,8 +72,9 @@ import yigamecopilotx.composeapp.generated.resources.icon_info
  */
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
-fun AwalongGamePageOptimized(viewmodel: MainViewmodel) {
+fun AwalongGamePageOptimized(navi: NavController, viewmodel: MainViewmodel) {
     val gameConfig = viewmodel.awalongConfigState.value
+    val customConfig = viewmodel.awalongCustomConfigState.value
     val gameState = viewmodel.awalongGameState.value
     var showRulesDialog by remember { mutableStateOf(false) }
 
@@ -71,19 +84,36 @@ fun AwalongGamePageOptimized(viewmodel: MainViewmodel) {
         viewmodel.handleAwalongGameIntent(AwalongIntent.ChangeNickName(newName, no))
     }
 
+    // 检测是否使用自定义配置：如果游戏状态中的玩家数量与自定义配置匹配，则使用自定义配置
+    val isUsingCustomConfig = gameState.roleList.size == customConfig.totalPlayers
+
+    // 使用正确的配置流程
+    val actualProcess = if (isUsingCustomConfig) {
+        customConfig.process
+    } else {
+        gameConfig.process
+    }
+
     // 计算总页面数
-    val totalPages = gameConfig.process.size + 1
+    val totalPages = actualProcess.size + 1
 
     val pageState = rememberPagerState(initialPage = 0, pageCount = { totalPages })
 
     // 构建页面列表，传递 pageState 和 scope
     // 使用 remember 来避免不必要的重新构建，但监听游戏状态变化
-    val pages = remember(gameState.playTime) {
-        buildPages(viewmodel, gameConfig, nameChange, pageState, scope) { showRulesDialog = true }
+    val pages = remember(gameState.playTime, actualProcess) {
+        buildPages(
+            viewmodel,
+            gameConfig,
+            actualProcess,
+            nameChange,
+            pageState,
+            scope
+        ) { showRulesDialog = true }
     }
 
     // 计算当前可以访问的最大页面索引 - 实时计算
-    val maxAccessiblePage = calculateMaxAccessiblePage(gameState)
+    val maxAccessiblePage = calculateMaxAccessiblePage(gameState, actualProcess)
 
     // 完全禁止用户滑动，只允许通过程序控制页面切换
     val userScrollEnabled = false
@@ -94,31 +124,141 @@ fun AwalongGamePageOptimized(viewmodel: MainViewmodel) {
             pageState.scrollToPage(maxAccessiblePage) // 使用scrollToPage而不是animateScrollToPage
         }
     }
+    // 游戏结束状态
+    var gameEndResult by remember { mutableStateOf<GameEndResult?>(null) }
+    var showAssassinationDialog by remember { mutableStateOf(false) }
+    var isGameLocked by remember { mutableStateOf(false) }
+    var showGameResultDialog by remember { mutableStateOf(false) }
+    // 监听游戏状态变化，自动翻页和检测游戏结束
+    LaunchedEffect(gameState.dayList, pageState.currentPage) {
+        val newMaxPage = calculateMaxAccessiblePage(gameState, actualProcess)
 
-    // 监听游戏状态变化，立即重新计算可访问页面
-    LaunchedEffect(gameState.dayList) {
-        val newMaxPage = calculateMaxAccessiblePage(gameState)
+        // 调试信息：打印当前页面和最大可访问页面
+        println("页面状态：当前页=${pageState.currentPage}, 最大可访问页=$newMaxPage, 任务完成数=${gameState.dayList.count { it.gamePhase == "TASK_RESULT" }}")
+
+        // 检查是否有新完成的任务需要自动翻页
+        val completedTasks = gameState.dayList.count { it.gamePhase == "TASK_RESULT" }
+
+        // 如果当前页面是任务页面且任务已完成，自动翻到下一页
+        if (pageState.currentPage > 0 && pageState.currentPage < completedTasks && !isGameLocked) {
+            val nextPage = pageState.currentPage + 1
+            if (nextPage <= newMaxPage) {
+                println("自动翻页：从${pageState.currentPage}页到${nextPage}页")
+                pageState.scrollToPage(nextPage)
+            }
+        }
+
+        // 如果当前页面超过最大可访问页面，调整到正确页面
         if (pageState.currentPage > newMaxPage) {
-            pageState.scrollToPage(newMaxPage) // 使用scrollToPage而不是animateScrollToPage
+            pageState.scrollToPage(newMaxPage)
         }
     }
 
+
+    // 检查游戏结束状态 - 监听所有相关状态变化
+    LaunchedEffect(gameState.dayList, gameState.roleList, gameState.playTime) {
+        val result = AwalongGameLogic.checkGameEnd(gameState)
+
+        // 调试信息：打印游戏状态和检测结果
+        println("游戏状态检测：成功任务数=${gameState.dayList.count { it.taskResult == 1 }}, 失败任务数=${gameState.dayList.count { it.taskResult == -1 }}")
+        println("游戏结束检测结果：$result")
+        println("当前弹窗状态：showAssassinationDialog=$showAssassinationDialog, gameEndResult=$gameEndResult, isGameLocked=$isGameLocked")
+
+        if (result != null && !isGameLocked) {
+            // 如果是蓝方胜利且场上有刺客，显示刺杀弹窗
+            if (result.winner == "蓝方" && gameState.roleList.contains(AwalongRole.CISHA) && result.reason.contains(
+                    "进入刺杀阶段"
+                )
+            ) {
+                if (!showAssassinationDialog && gameEndResult == null) {
+                    println("触发刺杀弹窗")
+                    showAssassinationDialog = true
+                    isGameLocked = true
+                }
+            } else if (gameEndResult == null && !showAssassinationDialog) {
+                // 其他情况直接显示游戏结果弹窗
+                println("触发游戏结果弹窗：$result")
+                gameEndResult = result
+                isGameLocked = true
+
+                // 游戏结束后自动返回到第0页
+                scope.launch {
+                    delay(2000) // 延迟2秒后返回，给用户足够时间查看结果
+                    pageState.scrollToPage(0)
+                    // 重置游戏结束状态，以便下次游戏
+                    gameEndResult = null
+                    isGameLocked = false
+                }
+            }
+        }
+    }
+
+    // 监听页面退出事件，重置游戏状态
+    LaunchedEffect(Unit) {
+        // 当页面被销毁时，重置游戏状态
+        // 使用DisposableEffect来监听页面生命周期
+    }
+    
     Column {
+        // 统一的顶部导航栏
+        TopNavigationBar(
+            title = when (pageState.currentPage) {
+                0 -> "第零日"
+                else -> "第${pageState.currentPage}日"
+            },
+            currentPage = pageState.currentPage + 1,
+            totalPages = totalPages,
+            onClose = {
+                // 退出当前游戏，返回到游戏选择界面
+                // 重置游戏状态后再退出
+                viewmodel.handleAwalongGameIntent(AwalongIntent.RestartGame)
+                navi.popBackStack()
+            },
+            onShowRules = { showRulesDialog = true },
+            onRestartGame = if (pageState.currentPage == 0) {
+                {
+                    // 重置游戏时保留昵称，只重置任务进度
+                    gameState.nickNameList
+                    viewmodel.handleAwalongGameIntent(AwalongIntent.RestartGame)
+                    // 重置页面到第零日
+                    scope.launch {
+                        pageState.scrollToPage(0)
+                    }
+                    // 重置游戏状态
+                    gameEndResult = null
+                    showAssassinationDialog = false
+                    isGameLocked = false
+                }
+            } else null
+        )
+
         HorizontalPager(
             state = pageState,
-            userScrollEnabled = userScrollEnabled, // 完全禁止用户滑动
-            modifier = Modifier.weight(1f) // 让HorizontalPager占用剩余空间
+            userScrollEnabled = userScrollEnabled && !isGameLocked, // 游戏锁定时禁止滑动
+            modifier = Modifier.weight(1f)
         ) { page ->
-            pages[page]()
+            // 简化的页面内容，只包含核心内容
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(MaterialTheme.colorScheme.background)
+                    .padding(16.dp)
+            ) {
+                pages[page]()
+            }
         }
 
-        // 统一的底部导航按钮
-        PageNavigationButtons(
+        // 底部导航和进度条
+        BottomNavigationWithProgress(
             currentPage = pageState.currentPage,
-            maxAccessiblePage = maxAccessiblePage,
+            maxAccessiblePage = if (isGameLocked) pageState.currentPage else maxAccessiblePage,
             totalPages = pages.size,
             scope = scope,
-            pageState = pageState
+            pageState = pageState,
+            gameState = gameState,
+            gameConfig = gameConfig,
+            actualProcess = actualProcess,
+            isGameLocked = isGameLocked
         )
 
         // 规则弹窗
@@ -128,16 +268,64 @@ fun AwalongGamePageOptimized(viewmodel: MainViewmodel) {
                 gameConfig = gameConfig
             )
         }
+
+        // 刺杀弹窗
+        if (showAssassinationDialog) {
+            AssassinationDialog(
+                gameState = gameState,
+                onAssassinationComplete = { success ->
+                    showAssassinationDialog = false
+                    if (success) {
+                        // 刺杀成功，红方胜利
+                        gameEndResult = GameEndResult("红方", "刺客成功刺杀梅林")
+                    } else {
+                        // 刺杀失败，蓝方胜利
+                        gameEndResult = GameEndResult("蓝方", "刺客未能刺杀梅林")
+                    }
+                }
+            )
+        }
+
+        // 游戏结束弹窗
+        gameEndResult?.let { result ->
+            GameEndDialog(
+                result = result,
+                onDismiss = {
+                    gameEndResult = null
+                    showGameResultDialog = true
+                }
+            )
+        }
+
+        // 查看结果弹窗
+        if (showGameResultDialog) {
+            GameResultDialog(
+                gameState = gameState,
+                gameConfig = gameConfig,
+                onDismiss = {
+                    showGameResultDialog = false
+                    // 游戏结束后自动返回到第0页
+                    scope.launch {
+                        delay(1000)
+                        pageState.scrollToPage(0)
+                        // 重置游戏结束状态，以便下次游戏
+                        gameEndResult = null
+                        isGameLocked = false
+                    }
+                }
+            )
+        }
     }
 }
 
 /**
- * 构建所有页面
+ * 构建所有页面（简化版，只包含核心内容）
  */
 @OptIn(ExperimentalFoundationApi::class)
 private fun buildPages(
     viewmodel: MainViewmodel,
     gameConfig: AwalongConfig,
+    actualProcess: List<Int>,
     nameChange: (String, Int) -> Unit,
     pageState: PagerState,
     scope: CoroutineScope,
@@ -147,83 +335,45 @@ private fun buildPages(
 
     // 第零日页面
     pages.add {
-        // 使用remember来观察状态变化，确保重启时重新组合
         val currentGameState by viewmodel.awalongGameState.collectAsState()
-        PageContent(
-            title = "第零日",
-            gameConfig = gameConfig,
-            bgColor = MaterialTheme.colorScheme.background,
-            currentPage = 1,
-            totalPages = gameConfig.process.size + 1,
-            showRulesDialog = onShowRulesDialog,
-            onRestartGame = {
+        AwalongDayZeroPage(
+            roleList = currentGameState.roleList,
+            nicknameList = currentGameState.nickNameList,
+            playTime = currentGameState.playTime,
+            onNameChange = nameChange,
+            onRefreshRoles = {
                 viewmodel.handleAwalongGameIntent(AwalongIntent.RestartGame)
             }
-        ) {
-            Box(contentAlignment = Alignment.BottomCenter) {
-                // 第零日内容
-                AwalongDayZeroPage(
-                    roleList = currentGameState.roleList,
-                    nicknameList = currentGameState.nickNameList,
-                    playTime = currentGameState.playTime,
-                    onNameChange = nameChange,
-                    onRefreshRoles = {
-                        viewmodel.handleAwalongGameIntent(AwalongIntent.RestartGame)
-                    }
-                )
-            }
-        }
+        )
     }
 
     // 任务日页面
-    gameConfig.process.forEachIndexed { index, taskNum ->
+    actualProcess.forEachIndexed { index, taskNum ->
         pages.add {
-            // 使用collectAsState来观察状态变化，确保重启时重新组合
             val currentGameState by viewmodel.awalongGameState.collectAsState()
-            PageContent(
-                title = "第${index + 1}日",
+            PageDayTaskOptimized(
+                roleList = currentGameState.roleList,
+                nicknameList = currentGameState.nickNameList,
+                taskNum = taskNum,
+                dayEntity = currentGameState.dayList.getOrNull(index),
+                taskIndex = index,
                 gameConfig = gameConfig,
-                bgColor = MaterialTheme.colorScheme.background,
-                currentPage = index + 2,
-                totalPages = gameConfig.process.size + 1,
-                showRulesDialog = onShowRulesDialog,
-                onRestartGame = {
-                    viewmodel.handleAwalongGameIntent(AwalongIntent.RestartGame)
-                }
-            ) {
-                Box(contentAlignment = Alignment.BottomCenter) {
-                    PageDayTaskOptimized(
-                        roleList = currentGameState.roleList,
-                        nicknameList = currentGameState.nickNameList,
-                        taskNum = gameConfig.process[index],
-                        dayEntity = currentGameState.dayList.getOrNull(index),
-                        taskIndex = index,
-                        gameConfig = gameConfig,
-                        gameState = currentGameState,
-                        viewmodel = viewmodel,
-                        onCheck = { map, result, cap ->
-                            val completedTask = AwalongGameDayEntity(
-                                day = index,
-                                mainTask = map,
-                                taskResult = result,
-                                murderTask = -1,
-                                captain = cap,
-                                gamePhase = "TASK_RESULT" // 标记任务已完成
-                            )
-                            viewmodel.handleAwalongGameIntent(AwalongIntent.CheckTask(completedTask))
-                        },
-                        pageState = pageState,
-                        scope = scope
+                gameState = currentGameState,
+                viewmodel = viewmodel,
+                onCheck = { map, result, cap ->
+                    val completedTask = AwalongGameDayEntity(
+                        day = index,
+                        mainTask = map,
+                        taskResult = result,
+                        murderTask = -1,
+                        captain = cap,
+                        gamePhase = "TASK_RESULT"
                     )
-
-                    // 优化的任务进度显示
-                    TaskProgressBar(
-                        currentDay = index,
-                        dayList = currentGameState.dayList,
-                        gameConfig = gameConfig
-                    )
-                }
-            }
+                    viewmodel.handleAwalongGameIntent(AwalongIntent.CheckTask(completedTask))
+                },
+                pageState = pageState,
+                scope = scope
+            )
         }
     }
 
@@ -234,7 +384,7 @@ private fun buildPages(
  * 计算当前可以访问的最大页面索引
  * 页面0：第零日，页面1：第1日（对应任务索引0），页面2：第2日（对应任务索引1）...
  */
-private fun calculateMaxAccessiblePage(gameState: AwalongGameState): Int {
+private fun calculateMaxAccessiblePage(gameState: AwalongGameState, actualProcess: List<Int>): Int {
     // 第0页（第零日）总是可以访问下一页（第1页）
     var maxAccessiblePage = 1 // 第0页总是可以到第1页
 
@@ -245,6 +395,11 @@ private fun calculateMaxAccessiblePage(gameState: AwalongGameState): Int {
 
     // 检查每个任务日是否完成
     for (taskIndex in gameState.dayList.indices) {
+        // 确保任务索引不超过实际流程的范围
+        if (taskIndex >= actualProcess.size) {
+            break
+        }
+        
         val dayEntity = gameState.dayList[taskIndex]
 
         if (dayEntity.gamePhase == "TASK_RESULT") {
@@ -258,113 +413,291 @@ private fun calculateMaxAccessiblePage(gameState: AwalongGameState): Int {
         }
     }
 
-    // 确保最大可访问页面不超过总页面数
-    val totalPages = gameState.dayList.size + 1 // 第零日 + 任务日数量
+    // 确保最大可访问页面不超过总页面数（基于实际流程配置）
+    val totalPages = actualProcess.size + 1 // 第零日 + 任务日数量
     return maxAccessiblePage.coerceAtMost(totalPages - 1)
 }
 
 /**
- * 页面导航按钮组件
+ * 底部导航和进度条组件
  */
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
-private fun PageNavigationButtons(
+private fun BottomNavigationWithProgress(
     currentPage: Int,
     maxAccessiblePage: Int,
     totalPages: Int,
     scope: CoroutineScope,
-    pageState: PagerState
+    pageState: PagerState,
+    gameState: AwalongGameState,
+    gameConfig: AwalongConfig,
+    actualProcess: List<Int>,
+    isGameLocked: Boolean
 ) {
-    Row(
+    Column(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(16.dp),
-        horizontalArrangement = Arrangement.SpaceBetween
+            .padding(16.dp)
     ) {
+        // 导航按钮和进度条在同一行
         AnimatedVisibility(currentPage > 0) {
-            Button(
-                onClick = {
-                    if (currentPage > 0) {
-                        scope.launch {
-                            pageState.scrollToPage(currentPage - 1)
-                        }
-                    }
-                },
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = Color.Red // 红色确保可见
-                )
-            ) {
-                Icon(
-                    imageVector = Icons.AutoMirrored.Sharp.ArrowBack,
-                    contentDescription = null,
-                    tint = Color.White
-                )
+            Text(
+                text = "任务进度${if (gameState.roleList.size >= 7) "（*代表需要至少两位人员阻止任务才会失败）" else ""}：",
+                color = MaterialTheme.colorScheme.secondary,
+                fontSize = 12.sp,
+                fontWeight = FontWeight.Medium,
+                modifier = Modifier.padding(bottom = 8.dp)
+            )
+        }
 
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            // 返回按钮
+            AnimatedVisibility(currentPage > 0 && !isGameLocked) {
+                Button(
+                    onClick = {
+                        if (currentPage > 0) {
+                            scope.launch {
+                                pageState.scrollToPage(currentPage - 1)
+                            }
+                        }
+                    },
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = MaterialTheme.colorScheme.primary
+                    )
+                ) {
+                    Icon(
+                        imageVector = Icons.AutoMirrored.Sharp.ArrowBack,
+                        contentDescription = "返回",
+                        tint = Color.White
+                    )
+                }
+            }
+
+            // 任务进度条（放在返回按钮旁边）
+            if (currentPage > 0) {
+                val currentDay = currentPage - 1
+                if (currentDay < gameState.dayList.size) {
+                    Box(
+                        modifier = Modifier.weight(1f)
+                    ) {
+                        TaskProgressBar(
+                            currentDay = currentDay,
+                            dayList = gameState.dayList,
+                            gameConfig = gameConfig, // 使用正确的配置
+                            actualProcess = actualProcess
+                        )
+                    }
+                }
+            } else {
+                Spacer(modifier = Modifier.weight(1f))
+            }
+
+            // 前进按钮（只在第零日显示）
+            val isNextEnabled = currentPage == 0 || currentPage < maxAccessiblePage
+            AnimatedVisibility(isNextEnabled && currentPage == 0 && !isGameLocked) {
+                Button(
+                    onClick = {
+                        scope.launch {
+                            pageState.scrollToPage(currentPage + 1)
+                        }
+                    },
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = MaterialTheme.colorScheme.primary
+                    )
+                ) {
+                    Icon(
+                        imageVector = Icons.AutoMirrored.Sharp.ArrowBack,
+                        contentDescription = "前进",
+                        tint = Color.White,
+                        modifier = Modifier.rotate(180f)
+                    )
+                }
             }
         }
-        Spacer(modifier = Modifier.weight(1f))
-        val isNextEnabled = currentPage == 0 || currentPage < maxAccessiblePage
 
-        AnimatedVisibility(isNextEnabled && currentPage == 0) {
-            Button(
-                onClick = {
-                    scope.launch {
-                        pageState.scrollToPage(currentPage + 1)
-                    }
-                },
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = Color.Blue // 强制蓝色确保可见
-                )
-            ) {
-                Icon(
-                    imageVector = Icons.AutoMirrored.Sharp.ArrowBack,
-                    contentDescription = null,
-                    tint = Color.White,
-                    modifier = Modifier.rotate(180f)
-                )
-            }
+        // 游戏锁定提示
+        if (isGameLocked) {
+            Text(
+                text = "游戏已结束，无法进行导航操作",
+                color = MaterialTheme.colorScheme.error,
+                fontSize = 12.sp,
+                fontWeight = FontWeight.Medium,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(top = 8.dp)
+                    .align(Alignment.CenterHorizontally)
+            )
         }
     }
 }
 
 
 /**
- * 页面内容容器组件
+ * 刺杀弹窗组件
  */
 @Composable
-private fun PageContent(
-    title: String,
-    gameConfig: AwalongConfig,
-    bgColor: Color,
-    currentPage: Int,
-    totalPages: Int,
-    showRulesDialog: () -> Unit,
-    onRestartGame: (() -> Unit)? = null,
-    content: @Composable () -> Unit
+private fun AssassinationDialog(
+    gameState: AwalongGameState,
+    onAssassinationComplete: (Boolean) -> Unit
 ) {
-    Column(
-        modifier = Modifier.fillMaxSize()
-    ) {
-        // 顶部导航栏
-        TopNavigationBar(
-            title = title,
-            currentPage = currentPage,
-            totalPages = totalPages,
-            onShowRules = showRulesDialog,
-            onRestartGame = onRestartGame
-        )
+    var selectedTarget by remember { mutableStateOf<Int?>(null) }
 
-        // 主内容区域 - 使用weight让内容区域自适应
-        Box(
-            modifier = Modifier
-                .weight(1f)
-                .fillMaxWidth()
-                .background(bgColor)
-                .padding(16.dp)
-        ) {
-            content()
+    androidx.compose.material3.AlertDialog(
+        onDismissRequest = { onAssassinationComplete(false) },
+        title = { Text("刺客刺杀阶段") },
+        text = {
+            Column {
+                Text("蓝方已完成3个任务，刺客请选择刺杀目标。")
+                Text("刺杀梅林则红方胜利，否则蓝方胜利。", fontSize = 14.sp)
+
+                Spacer(modifier = Modifier.padding(8.dp))
+
+                Text("请选择刺杀目标：", fontWeight = FontWeight.Bold)
+
+                // 显示所有玩家供选择
+                gameState.nickNameList.forEachIndexed { index, name ->
+                    val isSelected = selectedTarget == index
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(vertical = 4.dp)
+                            .clickable { selectedTarget = index }
+                            .background(
+                                if (isSelected) MaterialTheme.colorScheme.primaryContainer
+                                else Color.Transparent
+                            )
+                            .padding(8.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Box(
+                            modifier = Modifier
+                                .size(20.dp)
+                                .background(
+                                    if (isSelected) MaterialTheme.colorScheme.primary
+                                    else MaterialTheme.colorScheme.outline
+                                )
+                                .padding(2.dp)
+                        ) {
+                            if (isSelected) {
+                                Text("✓", color = Color.White, fontSize = 12.sp)
+                            }
+                        }
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text("${index + 1}号玩家：$name")
+                    }
+                }
+            }
+        },
+        confirmButton = {
+            androidx.compose.material3.TextButton(
+                onClick = {
+                    selectedTarget?.let { target ->
+                        val success = AwalongGameLogic.checkAssassinationSuccess(target, gameState)
+                        onAssassinationComplete(success)
+                    }
+                },
+                enabled = selectedTarget != null
+            ) {
+                Text("确认刺杀")
+            }
+        },
+        dismissButton = {
+            androidx.compose.material3.TextButton(
+                onClick = { onAssassinationComplete(false) }
+            ) {
+                Text("取消")
+            }
         }
-    }
+    )
+}
+
+
+/**
+ * 游戏结束弹窗组件
+ */
+@Composable
+private fun GameEndDialog(
+    result: GameEndResult,
+    onDismiss: () -> Unit
+) {
+    androidx.compose.material3.AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("游戏结束") },
+        text = {
+            Column {
+                Text("${result.winner}胜利！", fontWeight = FontWeight.Bold)
+                Text(result.reason)
+            }
+        },
+        confirmButton = {
+            androidx.compose.material3.TextButton(
+                onClick = onDismiss
+            ) {
+                Text("查看结果")
+            }
+        }
+    )
+}
+
+/**
+ * 查看结果弹窗组件
+ */
+@Composable
+private fun GameResultDialog(
+    gameState: AwalongGameState,
+    gameConfig: AwalongConfig,
+    onDismiss: () -> Unit
+) {
+    androidx.compose.material3.AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("游戏结果详情") },
+        text = {
+            Column {
+                Text("玩家身份信息：", fontWeight = FontWeight.Bold)
+                Spacer(modifier = Modifier.padding(4.dp))
+
+                // 显示所有玩家身份
+                gameState.roleList.forEachIndexed { index, role ->
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
+                        Text("${index + 1}号玩家：${gameState.nickNameList.getOrNull(index) ?: "玩家${index + 1}"}")
+                        Text(
+                            "${role.title}",
+                            color = if (role.roleType == GOOD_PERSON) Color.Blue else Color.Red
+                        )
+                    }
+                }
+
+                Spacer(modifier = Modifier.padding(8.dp))
+
+                Text("任务结果：", fontWeight = FontWeight.Bold)
+                Spacer(modifier = Modifier.padding(4.dp))
+
+                // 显示任务结果
+                gameState.dayList.forEachIndexed { index, day ->
+                    val resultText = when (day.taskResult) {
+                        1 -> "成功"
+                        -1 -> "失败"
+                        else -> "未完成"
+                    }
+                    Text("第${index + 1}日任务：$resultText")
+                }
+            }
+        },
+        confirmButton = {
+            androidx.compose.material3.TextButton(
+                onClick = onDismiss
+            ) {
+                Text("确定")
+            }
+        }
+    )
 }
 
 /**
@@ -375,9 +708,14 @@ private fun TopNavigationBar(
     title: String,
     currentPage: Int,
     totalPages: Int,
+    onClose: () -> Unit,
     onShowRules: () -> Unit,
     onRestartGame: (() -> Unit)? = null
 ) {
+    // 协程作用域：用于处理动画等异步操作
+    val scope = rememberCoroutineScope()
+    // 旋转动画：刷新按钮的旋转动画控制
+    val rotation = remember { Animatable(0f) }
     Surface(
         modifier = Modifier.fillMaxWidth(),
         color = MaterialTheme.colorScheme.surface,
@@ -390,6 +728,28 @@ private fun TopNavigationBar(
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
+            IconButton(
+                modifier = Modifier
+                    .clip(CircleShape)
+                    .border(
+                        width = 2.dp,
+                        color = MaterialTheme.colorScheme.secondaryContainer,
+                        shape = CircleShape
+                    ),
+                onClick = {
+                    onClose()
+                },
+                colors = IconButtonDefaults.iconButtonColors(
+                    containerColor = MaterialTheme.colorScheme.secondaryContainer,
+                    contentColor = MaterialTheme.colorScheme.onSecondaryContainer,
+                )
+            ) {
+                Icon(
+                    painter = painterResource(Res.drawable.icon_close),
+                    contentDescription = "返回",
+                    modifier = Modifier.size(24.dp)
+                )
+            }
             // 页面标题和进度
             Column {
                 Text(
@@ -398,34 +758,15 @@ private fun TopNavigationBar(
                     fontWeight = FontWeight.Bold,
                     color = MaterialTheme.colorScheme.onSurface
                 )
-                Text(
-                    text = "进度 $currentPage / $totalPages",
-                    fontSize = 12.sp,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
+//                Text(
+//                    text = "进度 $currentPage / $totalPages",
+//                    fontSize = 12.sp,
+//                    color = MaterialTheme.colorScheme.onSurfaceVariant
+//                )
             }
 
             // 操作按钮
-            Row {
-                // 添加重新开始按钮
-                onRestartGame?.let {
-                    AnimatedVisibility(currentPage == 1) {
-                        TextButton(onClick = {
-                            PlatformHelper.getInstance().vibrateLongMethod()
-                            it.invoke()
-                        }, colors = ButtonDefaults.textButtonColors()) {
-                            Text(
-                                text = "重新开始",
-                                fontSize = 14.sp,
-                                modifier = Modifier
-                                    .padding(horizontal = 8.dp, vertical = 4.dp)
-                            )
-                        }
-
-                    }
-
-                }
-
+            Row(verticalAlignment = Alignment.CenterVertically) {
                 Icon(
                     painter = painterResource(Res.drawable.icon_info),
                     contentDescription = "游戏规则",
@@ -436,6 +777,49 @@ private fun TopNavigationBar(
                             onShowRules()
                         }
                 )
+
+                // 添加重新开始按钮
+                onRestartGame?.let {
+                    AnimatedVisibility(currentPage == 1) {
+                        IconButton(
+                            modifier = Modifier
+                                .padding(start = 16.dp)
+                                .clip(CircleShape)
+                                .border(
+                                    width = 2.dp,
+                                    color = MaterialTheme.colorScheme.tertiaryContainer,
+                                    shape = CircleShape
+                                ).rotate(rotation.value),
+                            onClick = {
+                                scope.launch {
+                                    rotation.animateTo(
+                                        targetValue = 360f,
+                                        animationSpec = tween(
+                                            durationMillis = 500,
+                                            easing = LinearEasing
+                                        )
+                                    )
+                                    rotation.snapTo(0f) // 重置角度准备下次旋转
+                                }
+                                PlatformHelper.getInstance().vibrateLongMethod()
+                                it.invoke()
+                            },
+                            colors = IconButtonDefaults.iconButtonColors(
+                                containerColor = MaterialTheme.colorScheme.tertiaryContainer,
+                                contentColor = MaterialTheme.colorScheme.onTertiaryContainer,
+                            ),
+                            content = {
+                                Icon(
+                                    modifier = Modifier.fillMaxSize(),
+                                    imageVector = Icons.Filled.Refresh,
+                                    contentDescription = "刷新房间人数",
+                                    tint = MaterialTheme.colorScheme.onSecondary.copy(alpha = 0.33f)
+                                )
+                            }
+                        )
+                    }
+
+                }
             }
         }
     }

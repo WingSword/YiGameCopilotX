@@ -166,6 +166,7 @@ fun PageDayTaskOptimized(
                     nicknameList = nicknameList,
                     taskPlayer = taskPlayer,
                     taskVotes = taskVotes,
+                    requiresTwoFailures = currentDayState?.requiresTwoFailures ?: false,
                     onExecutionComplete = { votes, success ->
                         // 立即更新本地状态
                         taskVotes = votes.toMutableMap()
