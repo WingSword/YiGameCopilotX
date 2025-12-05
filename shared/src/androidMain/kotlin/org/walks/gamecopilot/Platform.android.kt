@@ -1,8 +1,6 @@
 package org.walks.gamecopilot
 
-import android.content.Context
 import android.os.Build
-import com.tencent.mmkv.MMKV
 import org.walks.gamecopilot.mmkv.MMKVDelegate
 
 class AndroidPlatform : Platform {
@@ -11,7 +9,7 @@ class AndroidPlatform : Platform {
 
 actual fun getPlatform(): Platform = AndroidPlatform()
 actual fun initMMKV(context: Any?) {
-    MMKV.initialize(context as Context)
+
 }
 
 fun MMKVDelegate(): MMKVDelegate = MMKVDelegate()

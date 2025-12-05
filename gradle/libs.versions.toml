@@ -1,6 +1,6 @@
 [versions]
 agp = "9.0.0-beta03"
-android-compileSdk = "35"
+android-compileSdk = "36"
 android-minSdk = "24"
 android-targetSdk = "34"
 androidx-activityCompose = "1.10.1"
@@ -14,7 +14,7 @@ kotlinxDatetime = "0.6.0"
 ktor = "3.3.3"
 logback = "1.5.7"
 mmkv = "2.2.4"
-mmkvKotlin = "1.3.1"
+mmkvKotlin = "1.2.18"
 navigationComposeVersion = "2.8.0-alpha10"
 places = "4.0.0"
 serializationJson="1.7.3"
@@ -22,8 +22,12 @@ kotlinxCoroutinesVersion="1.9.0"
 server-kot="2.3.13"
 lifecycleCommonJvm = "2.8.7"
 androidx-room = "2.7.1"
-napier = "2.6.1"
-multiplatform-settings = "1.1.1"
+
+napier-settings = "2.7.1"
+multiplatform-settings = "1.3.0"
+
+
+
 
 [libraries]
 fluent = { module = "com.konyaco:fluent", version.ref = "fluent" }
@@ -52,6 +56,7 @@ ktor-server-netty = { module = "io.ktor:ktor-server-netty-jvm", version.ref = "k
 ktor-server-tests = { module = "io.ktor:ktor-server-tests-jvm", version.ref = "server-kot" }
 ctrip-mmkv-kotlin = { module = "com.ctrip.flight.mmkv:mmkv-kotlin", version.ref = "mmkvKotlin" }
 mmkv = { module = "com.tencent:mmkv", version.ref = "mmkv" }
+
 places = { group = "com.google.android.libraries.places", name = "places", version.ref = "places" }
 androidx-lifecycle-common-jvm = { group = "androidx.lifecycle", name = "lifecycle-common-jvm", version.ref = "lifecycleCommonJvm" }
 # 网络库
@@ -62,13 +67,19 @@ androidx-room-runtime = { group = "androidx.room", name = "room-runtime", versio
 androidx-room-ktx = { group = "androidx.room", name = "room-ktx", version.ref = "androidx-room" }
 androidx-room-compiler = { group = "androidx.room", name = "room-compiler", version.ref = "androidx-room" }
 # 日志库
-napier = { group = "io.github.aakira", name = "napier", version.ref = "napier" }
 
-# 本地存储
-multiplatform-settings = { group = "com.russhwolf", name = "multiplatform-settings", version.ref = "multiplatform-settings" }
+# Napier Settings 跨平台持久化存储
+napier = { group = "io.github.aakira", name = "napier", version.ref = "napier-settings" }
+# Multiplatform Settings 跨平台键值存储
+multiplatform-settings = { group = "com.russhwolf", name = "multiplatform-settings-no-arg", version.ref = "multiplatform-settings" }
+# Multiplatform Settings 跨平台键值存储
+
 
 # 协程
 kotlinx-coroutines-core = { group = "org.jetbrains.kotlinx", name = "kotlinx-coroutines-core", version = "1.8.1" }
+
+
+
 [plugins]
 androidApplication = { id = "com.android.application", version.ref = "agp" }
 androidLibrary = { id = "com.android.library", version.ref = "agp" }
@@ -78,3 +89,4 @@ kotlinJvm = { id = "org.jetbrains.kotlin.jvm", version.ref = "kotlin" }
 ktor = { id = "io.ktor.plugin", version.ref = "ktor" }
 kotlinMultiplatform = { id = "org.jetbrains.kotlin.multiplatform", version.ref = "kotlin" }
 androidx-room-gradle-plugin = { id = "androidx-room-gradle-plugin",  version.ref = "androidx-room" }
+

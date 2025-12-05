@@ -9,7 +9,7 @@ plugins {
     alias(libs.plugins.jetbrainsCompose)
     alias(libs.plugins.compose.compiler)
 }
-val appName = "FindSpy"
+val appName = "桌游助手"
 // 修改版本声明为：
 val composeHtmlVersion = "1.6.11" // 保持与compose.compiler版本一致
 
@@ -19,7 +19,7 @@ kotlin {
         browser {
             val projectDirPath = project.projectDir.path
             commonWebpackConfig {
-                outputFileName = "spyapp.js"
+                outputFileName = "$appName.js"
                 devServer = (devServer ?: KotlinWebpackConfig.DevServer()).apply {
                     static = (static ?: mutableListOf()).apply {
                         // Serve sources to debug inside browser
@@ -89,8 +89,7 @@ kotlin {
             // 常用多平台库
             implementation(libs.ktor.client.darwin)  // 网络请求
             implementation(libs.kotlinx.coroutines.core) // 协程
-            implementation(libs.napier) // 日志
-            implementation(libs.multiplatform.settings) // 本地存储
+
 
             // 共享模块必须显式导出
             api(projects.shared)
