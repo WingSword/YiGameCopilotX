@@ -10,7 +10,6 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.size
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
@@ -25,6 +24,7 @@ import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.launch
 import org.jetbrains.compose.resources.painterResource
+import org.walks.gamecopilot.clickableWithoutRipple
 import org.walks.gamecopilot.ui.widget.DiceFace
 import yigamecopilotx.composeapp.generated.resources.Res
 import yigamecopilotx.composeapp.generated.resources.icon_dice_roll
@@ -58,7 +58,7 @@ fun DiceAnimation(modifier: Modifier = Modifier, range: IntRange = 1..6,isRollin
     }
     Box(
         modifier = modifier
-            .clickable(enabled = !isRolling) {
+            .clickableWithoutRipple {
                 currentValue = range.random()
             }
             .graphicsLayer {

@@ -31,7 +31,6 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.sharp.Add
-import androidx.compose.material.icons.sharp.Build
 import androidx.compose.material.icons.sharp.Clear
 import androidx.compose.material3.Button
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -61,6 +60,7 @@ import org.jetbrains.compose.resources.painterResource
 import org.walks.gamecopilot.RANDOM_PAGE_CONFIG_CATE_CARD
 import org.walks.gamecopilot.RANDOM_PAGE_CONFIG_CATE_COIN
 import org.walks.gamecopilot.RANDOM_PAGE_CONFIG_CATE_DICE
+import org.walks.gamecopilot.clickableWithoutRipple
 import org.walks.gamecopilot.data.RandomItem
 import org.walks.gamecopilot.data.RandomListEntity
 import org.walks.gamecopilot.ui.picker.WeSingleColumnPicker
@@ -151,7 +151,7 @@ fun AddNewRandomCateActionBar(select: String, onClick: (RandomCate) -> Unit) {
                             shape = CircleShape
                         )
                         .padding(4.dp)
-                        .clickable { onClick(cate) },
+                        .clickableWithoutRipple { onClick(cate) },
                     tint = if (isSelected) Color.Unspecified
                     else MaterialTheme.colorScheme.secondary.copy(0.5f)
                 )
@@ -163,31 +163,169 @@ fun AddNewRandomCateActionBar(select: String, onClick: (RandomCate) -> Unit) {
 
 
 @Composable
-fun AddRandomDiceContent() {
-    LazyColumn {
-        item {
-            Row(
-                modifier = Modifier.height(44.dp).fillParentMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(5.dp)
-            ) {
-                Text(
-                    "选择最小面 ",
-                    color = MaterialTheme.colorScheme.secondary,
-                    modifier = Modifier.weight(1f)
-                )
-                Text(
-                    "选择最大面 ",
-                    color = MaterialTheme.colorScheme.secondary,
-                    modifier = Modifier.weight(1f)
-                )
-                Icon(
-                    imageVector = Icons.Sharp.Build,
-                    contentDescription = null,
-                    tint = MaterialTheme.colorScheme.secondary
-                )
-            }
+fun AddRandomDiceContent(
+    diceListState: SnapshotStateList<RandomItem>
+) {
+    Column(
+        modifier = Modifier.padding(horizontal = 10.dp),
+        verticalArrangement = Arrangement.spacedBy(16.dp)
+    ) {
+        // 添加骰子配置按钮
+        Row(
+            horizontalArrangement = Arrangement.Center,
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            Icon(
+                imageVector = Icons.Sharp.Add,
+                contentDescription = "新增骰子配置",
+                modifier = Modifier
+                    .size(40.dp)
+                    .clickable {
+                        diceListState.add(RandomItem(first = "1", second = "6"))
+                    }
+                    .border(
+                        shape = RoundedCornerShape(8.dp),
+                        color = MaterialTheme.colorScheme.secondary.copy(0.6f),
+                        width = 2.dp
+                    )
+                    .padding(8.dp),
+                tint = MaterialTheme.colorScheme.secondary,
+            )
+        }
+
+        // 骰子配置列表
+        diceListState.forEachIndexed { index, diceState ->
+            DiceItemInput(
+                diceState = diceState,
+                onDelete = {
+                    diceListState.remove(diceState)
+                }
+            )
         }
     }
+}
+
+@Composable
+fun DiceItemInput(
+    diceState: RandomItem,
+    onDelete: () -> Unit
+) {
+    var minValue by remember { mutableStateOf(diceState.first) }
+    var maxValue by remember { mutableStateOf(diceState.second) }
+    var showMinPicker by remember { mutableStateOf(false) }
+    var showMaxPicker by remember { mutableStateOf(false) }
+
+    Row(
+        verticalAlignment = Alignment.CenterVertically,
+        modifier = Modifier.fillMaxWidth()
+    ) {
+        // 最小面输入
+        OutlinedTextField(
+            onValueChange = {
+                diceState.first = it
+                minValue = it
+            },
+            label = { Text(text = "最小面", fontSize = 12.sp) },
+            value = minValue,
+            modifier = Modifier
+                .weight(1f)
+                .clickable { showMinPicker = true },
+            supportingText = {
+                Text(
+                    text = "点击选择数字",
+                    fontSize = 12.sp,
+                    color = MaterialTheme.colorScheme.secondary.copy(0.55f)
+                )
+            },
+            shape = RoundedCornerShape(8.dp),
+            colors = OutlinedTextFieldDefaults.colors(
+                unfocusedBorderColor = MaterialTheme.colorScheme.secondary.copy(0.55f),
+                unfocusedTextColor = MaterialTheme.colorScheme.secondary.copy(0.55f),
+                focusedBorderColor = MaterialTheme.colorScheme.secondary.copy(0.88f),
+                focusedTextColor = MaterialTheme.colorScheme.secondary,
+            )
+        )
+
+        Spacer(Modifier.width(8.dp))
+
+        Text(
+            "到",
+            color = MaterialTheme.colorScheme.secondary,
+            modifier = Modifier.padding(horizontal = 8.dp)
+        )
+
+        Spacer(Modifier.width(8.dp))
+
+        // 最大面输入
+        OutlinedTextField(
+            onValueChange = {
+                diceState.second = it
+                maxValue = it
+            },
+            label = { Text(text = "最大面", fontSize = 12.sp) },
+            value = maxValue,
+            modifier = Modifier
+                .weight(1f)
+                .clickable { showMaxPicker = true },
+            supportingText = {
+                Text(
+                    text = "点击选择数字",
+                    fontSize = 12.sp,
+                    color = MaterialTheme.colorScheme.secondary.copy(0.55f)
+                )
+            },
+            shape = RoundedCornerShape(8.dp),
+            colors = OutlinedTextFieldDefaults.colors(
+                unfocusedBorderColor = MaterialTheme.colorScheme.primary.copy(0.55f),
+                unfocusedTextColor = MaterialTheme.colorScheme.primary.copy(0.55f),
+                focusedBorderColor = MaterialTheme.colorScheme.primary.copy(0.88f),
+                focusedTextColor = MaterialTheme.colorScheme.primary,
+            )
+        )
+
+        Spacer(Modifier.width(8.dp))
+
+        // 删除按钮
+        Icon(
+            imageVector = Icons.Sharp.Clear,
+            contentDescription = "删除",
+            modifier = Modifier
+                .size(24.dp)
+                .clickable { onDelete() },
+            tint = MaterialTheme.colorScheme.error
+        )
+    }
+
+    // 数字选择器
+    val numberList = listOf("1", "2", "3", "4", "5", "6", "7", "8", "9", "10")
+
+    WeSingleColumnPicker(
+        visible = showMinPicker,
+        title = "选择最小面",
+        onCancel = { showMinPicker = false },
+        range = numberList,
+        onChange = { selectedIndex ->
+            val selectedValue = numberList[selectedIndex]
+            diceState.first = selectedValue
+            minValue = selectedValue
+            showMinPicker = false
+        },
+        value = numberList.indexOf(minValue).coerceAtLeast(0)
+    )
+
+    WeSingleColumnPicker(
+        visible = showMaxPicker,
+        title = "选择最大面",
+        onCancel = { showMaxPicker = false },
+        range = numberList,
+        onChange = { selectedIndex ->
+            val selectedValue = numberList[selectedIndex]
+            diceState.second = selectedValue
+            maxValue = selectedValue
+            showMaxPicker = false
+        },
+        value = numberList.indexOf(maxValue).coerceAtLeast(0)
+    )
 }
 
 @OptIn(ExperimentalFoundationApi::class)
@@ -450,7 +588,7 @@ fun AddNewRandomDialog(
                     // 内容编辑区域
                     when (selectedCate) {
                         RANDOM_PAGE_CONFIG_CATE_DICE -> {
-                            AddRandomDiceContent()
+                            AddRandomDiceContent(diceListState = cardListState)
                         }
 
                         else -> {

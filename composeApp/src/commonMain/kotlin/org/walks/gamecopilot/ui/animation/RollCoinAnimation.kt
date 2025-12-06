@@ -31,12 +31,16 @@ import kotlin.random.Random
  * 硬币翻转动画组件
  * @param onFlipComplete 翻转完成回调，返回布尔值表示正面(true)或反面(false)
  * @param modifier 修饰符
+ * @param frontText 硬币正面文字
+ * @param backText 硬币反面文字
  */
 @Composable
 fun RollCoinAnimation(
     onFlipComplete: (Boolean) -> Unit,
     modifier: Modifier = Modifier,
-    isRolling: Boolean = false
+    isRolling: Boolean = false,
+    frontText: String = "正",
+    backText: String = "反"
 ) {
     val isHeads = remember { Random.nextBoolean() }
     val rotationY = remember { Animatable(0f) }
@@ -60,7 +64,31 @@ fun RollCoinAnimation(
                 cameraDistance = 8f * density
             }
     ) {
-        CoinFace(isHeads = isHeads)
+        // 正面（0度）
+        CoinFace(
+            isHeads = true,
+            text = frontText,
+            modifier = Modifier
+                .fillMaxSize()
+                .graphicsLayer {
+                    // 当旋转超过90度时隐藏正面
+                    alpha = if (rotationY.value <= 90f || rotationY.value >= 270f) 1f else 0f
+                }
+        )
+
+        // 反面（180度）
+        CoinFace(
+            isHeads = false,
+            text = backText,
+            modifier = Modifier
+                .fillMaxSize()
+                .graphicsLayer {
+                    // 当旋转在90-270度之间时显示反面
+                    alpha = if (rotationY.value > 90f && rotationY.value < 270f) 1f else 0f
+                    // 反面硬币需要初始旋转180度
+                    this.rotationY = 180f
+                }
+        )
     }
 }
 
@@ -74,9 +102,17 @@ private suspend fun flipCoinAnimation(rotationY: Animatable<Float, AnimationVect
         animationSpec = tween(800, easing = FastOutSlowInEasing)
     )
 
+    // 计算最终角度：确保回正到0度或180度
+    val currentAngle = rotationY.value % 360f
+    val targetAngle = if (currentAngle < 180f) {
+        if (currentAngle < 90f) 0f else 180f
+    } else {
+        if (currentAngle < 270f) 180f else 0f
+    }
+
     // 缓慢停止到最终位置
     rotationY.animateTo(
-        targetValue = rotationY.value % 360f,
+        targetValue = targetAngle,
         animationSpec = tween(200)
     )
 }
@@ -85,9 +121,13 @@ private suspend fun flipCoinAnimation(rotationY: Animatable<Float, AnimationVect
  * 硬币面组件
  */
 @Composable
-fun CoinFace(isHeads: Boolean) {
+fun CoinFace(
+    isHeads: Boolean,
+    text: String = if (isHeads) "正" else "反",
+    modifier: Modifier = Modifier
+) {
     Box(
-        modifier = Modifier
+        modifier = modifier
             .fillMaxSize()
             .shadow(8.dp, CircleShape)
             .background(
@@ -101,7 +141,7 @@ fun CoinFace(isHeads: Boolean) {
         contentAlignment = Alignment.Center
     ) {
         Text(
-            text = if (isHeads) "正" else "反",
+            text = text,
             fontSize = 24.sp,
             fontWeight = FontWeight.Bold,
             color = if (isHeads) Color(0xFF8B4513) else Color(0xFF2F4F4F)

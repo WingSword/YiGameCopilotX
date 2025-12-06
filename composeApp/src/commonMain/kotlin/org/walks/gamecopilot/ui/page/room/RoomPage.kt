@@ -11,14 +11,12 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.material3.Button
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -30,7 +28,6 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import org.walks.gamecopilot.KeepScreenOn
 import org.walks.gamecopilot.MainViewmodel
-import org.walks.gamecopilot.data.entity.MemberEntry
 import org.walks.gamecopilot.intent.GameRoomIntent
 
 
@@ -77,10 +74,17 @@ fun RoomPage(viewmodel: MainViewmodel) {
     val roomState = viewmodel.roomEntityState.collectAsState()
     val memberList = viewmodel.roomEntityState.collectAsState().value.users
 
-    memberList?.find { it.index==roomState.value.index }?.isMine=true
+    // 标记当前用户为"我的" - 创建新的可变列表
+    val markedMemberList = memberList?.map { user ->
+        if (user.index == roomState.value.index) {
+            user.copy(isMine = true)
+        } else {
+            user
+        }
+    }
 
     if (roomState.value.role.isNullOrBlank() || roomState.value.role == "NOROLE") {
-        PrepairPage(memberList?.size?:0, roomState.value.isRoomOwner, startGame = {
+        PrepairPage(markedMemberList?.size ?: 0, roomState.value.isRoomOwner, startGame = {
             viewmodel.handleRoomIntent(GameRoomIntent.StartGame)
         })
     } else {

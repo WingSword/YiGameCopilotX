@@ -1,5 +1,7 @@
 package org.walks.gamecopilot.ui.page.random
 
+import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.spring
@@ -57,6 +59,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.TransformOrigin
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalDensity
@@ -460,9 +463,12 @@ fun AnimatedShuffleContent(
         )
     }
 
+    // 只有卡牌类型才应用洗牌动画
+    val shouldShuffle = isShuffling && contentCate == RandomCate.Card
+
     // 水平位移动画（向中心聚拢）
     val offsetX by animateFloatAsState(
-        targetValue = if (isShuffling) {
+        targetValue = if (shouldShuffle) {
             // 根据网格位置计算偏移量
             val column = index % 3
             when (column) {
@@ -480,7 +486,7 @@ fun AnimatedShuffleContent(
 
     // 垂直位移动画（向中间聚拢）
     val offsetY by animateFloatAsState(
-        targetValue = if (isShuffling) {
+        targetValue = if (shouldShuffle) {
             // 计算实际行数（每行3个）
             val row = index / 3
             // 计算总行数（精确算法）
@@ -500,7 +506,7 @@ fun AnimatedShuffleContent(
 
     // 旋转动画
     val rotation by animateFloatAsState(
-        targetValue = if (isShuffling) randomRotate else 0f,
+        targetValue = if (shouldShuffle) randomRotate else 0f,
         animationSpec = spring(
             dampingRatio = Spring.DampingRatioMediumBouncy,
             stiffness = Spring.StiffnessLow
@@ -510,7 +516,7 @@ fun AnimatedShuffleContent(
 
     // 3D旋转
     val rotateX by animateFloatAsState(
-        targetValue = if (isShuffling) 25f else 0f,
+        targetValue = if (shouldShuffle) 25f else 0f,
         animationSpec = spring(
             dampingRatio = Spring.DampingRatioMediumBouncy,
             stiffness = Spring.StiffnessLow
@@ -522,7 +528,7 @@ fun AnimatedShuffleContent(
         modifier = Modifier
             .fillMaxWidth()
             .padding(4.dp)
-            .clickable {
+            .clickable(interactionSource = MutableInteractionSource(), indication = null) {
                 // 点击触发随机事件
                 onTriggerRandom()
             }
@@ -532,7 +538,7 @@ fun AnimatedShuffleContent(
                 translationY = offsetY
                 rotationZ = rotation
                 rotationX = rotateX
-                transformOrigin = androidx.compose.ui.graphics.TransformOrigin(0.5f, 0.5f)
+                transformOrigin = TransformOrigin(0.5f, 0.5f)
             }
     ) {
         when (contentCate.key) {
@@ -550,6 +556,8 @@ fun AnimatedShuffleContent(
                         PlatformHelper.getInstance().vibrateMethod()
                     },
                     isRolling = isShuffling,
+                    frontText = card.first,
+                    backText = card.second,
                     modifier = Modifier
                         .aspectRatio(1f)
                         .padding(4.dp),
@@ -726,4 +734,106 @@ fun <T> List<T>.shuffledWithAnimation(): List<T> {
         .map { it to Random.nextFloat() }
         .sortedBy { it.second }
         .map { it.first }
+}
+
+/**
+ * 文本骰子动画组件 - 显示用户输入的文本而不是数字
+ */
+@Composable
+fun TextDiceAnimation(
+    frontText: String,
+    backText: String,
+    isRolling: Boolean = false,
+    modifier: Modifier = Modifier
+) {
+    val rotationY = remember { Animatable(0f) }
+    val scope = rememberCoroutineScope()
+    var showFront by remember { mutableStateOf(true) }
+
+    LaunchedEffect(isRolling) {
+        if (isRolling) {
+            scope.launch {
+                // 骰子翻转动画
+                rotationY.animateTo(
+                    targetValue = (720..1080).random().toFloat(),
+                    animationSpec = tween(800, easing = FastOutSlowInEasing)
+                )
+
+                // 计算最终角度：确保回正到0度或180度
+                val currentAngle = rotationY.value % 360f
+                val targetAngle = if (currentAngle < 180f) {
+                    if (currentAngle < 90f) 0f else 180f
+                } else {
+                    if (currentAngle < 270f) 180f else 0f
+                }
+
+                // 缓慢停止到最终位置
+                rotationY.animateTo(
+                    targetValue = targetAngle,
+                    animationSpec = tween(200)
+                )
+
+                // 根据最终角度确定显示哪一面
+                showFront = targetAngle < 90f || targetAngle > 270f
+            }
+        }
+    }
+
+    Box(
+        modifier = modifier
+            .graphicsLayer {
+                this.rotationY = rotationY.value
+                transformOrigin = TransformOrigin.Center
+                cameraDistance = 8f * density
+            }
+    ) {
+        // 正面文本
+        TextDiceFace(
+            text = frontText,
+            modifier = Modifier
+                .fillMaxSize()
+                .graphicsLayer {
+                    // 当旋转超过90度时隐藏正面
+                    alpha = if (rotationY.value <= 90f || rotationY.value >= 270f) 1f else 0f
+                }
+        )
+
+        // 背面文本
+        TextDiceFace(
+            text = backText,
+            modifier = Modifier
+                .fillMaxSize()
+                .graphicsLayer {
+                    // 当旋转在90-270度之间时显示背面
+                    alpha = if (rotationY.value > 90f && rotationY.value < 270f) 1f else 0f
+                    // 背面文字需要反向旋转180度以保持正向显示
+
+                }
+        )
+    }
+}
+
+/**
+ * 文本骰子面组件
+ */
+@Composable
+fun TextDiceFace(
+    text: String,
+    modifier: Modifier = Modifier
+) {
+    Box(
+        modifier = modifier
+            .background(Color.White, RoundedCornerShape(16.dp))
+            .border(2.dp, Color.Black, RoundedCornerShape(16.dp)),
+        contentAlignment = Alignment.Center
+    ) {
+        Text(
+            text = text,
+            fontSize = 16.sp,
+            fontWeight = FontWeight.Bold,
+            color = Color.Black,
+            textAlign = TextAlign.Center,
+            maxLines = 2
+        )
+    }
 }
