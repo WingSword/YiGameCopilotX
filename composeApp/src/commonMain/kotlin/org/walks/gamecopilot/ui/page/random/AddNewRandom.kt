@@ -8,16 +8,16 @@ import androidx.compose.animation.core.infiniteRepeatable
 import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.ExperimentalFoundationApi
-import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -28,29 +28,34 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.sharp.Add
 import androidx.compose.material.icons.sharp.Build
 import androidx.compose.material.icons.sharp.Clear
+import androidx.compose.material3.Button
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshots.SnapshotStateList
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.window.Dialog
+import androidx.compose.ui.window.DialogProperties
 import org.jetbrains.compose.resources.DrawableResource
 import org.jetbrains.compose.resources.painterResource
 import org.walks.gamecopilot.RANDOM_PAGE_CONFIG_CATE_CARD
@@ -58,14 +63,12 @@ import org.walks.gamecopilot.RANDOM_PAGE_CONFIG_CATE_COIN
 import org.walks.gamecopilot.RANDOM_PAGE_CONFIG_CATE_DICE
 import org.walks.gamecopilot.data.RandomItem
 import org.walks.gamecopilot.data.RandomListEntity
-import org.walks.gamecopilot.ui.input.HalfRadioTextField
 import org.walks.gamecopilot.ui.picker.WeSingleColumnPicker
-import org.walks.gamecopilot.ui.popup.WePopup
 import yigamecopilotx.composeapp.generated.resources.Res
 import yigamecopilotx.composeapp.generated.resources.icon_card
 import yigamecopilotx.composeapp.generated.resources.icon_coin
 import yigamecopilotx.composeapp.generated.resources.icon_dice
-import yigamecopilotx.composeapp.generated.resources.icon_spy_one
+
 
 /**
  *  Created by Wing at 09:45 on 2025/4/27
@@ -90,13 +93,13 @@ enum class RandomCate(val key: String, val iconRes: DrawableResource?) {
 
         fun getCateByItem(item: String): RandomCate {
             return if (item.startsWith(RANDOM_PAGE_CONFIG_CATE_CARD))
-                RandomCate.Card
+                Card
             else if (item.startsWith(RANDOM_PAGE_CONFIG_CATE_DICE))
-                RandomCate.Dice
+                Dice
             else if (item.startsWith(RANDOM_PAGE_CONFIG_CATE_COIN))
-                RandomCate.Coin
+                Coin
             else
-                RandomCate.Empty
+                Empty
         }
     }
 
@@ -160,129 +163,6 @@ fun AddNewRandomCateActionBar(select: String, onClick: (RandomCate) -> Unit) {
 
 
 @Composable
-fun AddNewRandomDialog(
-    isShow: Boolean,
-    editRandomState: RandomListEntity? = null,
-    onDismiss: () -> Unit,
-    onSave: (RandomListEntity) -> Unit
-) {
-    var pageState by remember {
-        mutableStateOf(0)
-    }
-    val randomItemListState = remember {
-        mutableStateListOf(RandomItem())
-    }
-    var randomTitle by remember {
-        mutableStateOf("")
-    }
-    var randomCate by remember {
-        mutableStateOf(RandomCate.entries.first().key)
-    }
-
-    LaunchedEffect(randomCate){
-        randomItemListState.clear()
-        randomItemListState.add(RandomItem())
-        pageState = 0
-        randomTitle = ""
-    }
-    WePopup(
-        visible = isShow,
-        onClose = {
-            onDismiss()
-        }
-    ) {
-        Row(
-            horizontalArrangement = Arrangement.spacedBy(8.dp),
-            modifier = Modifier.padding(12.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Text(
-                textAlign = TextAlign.Center,
-                text = if (pageState != 0) "上一步" else "",
-                modifier = Modifier.weight(1f).clickable {
-                    if (pageState == 0) {
-                        return@clickable
-                    }
-                    pageState = 0
-                }.clip(CircleShape)
-                    .border(
-                        width = 3.dp,
-                        color =if (pageState==0) Color.Transparent else MaterialTheme.colorScheme.secondary,
-                        shape = CircleShape
-                    ).padding(vertical = 4.dp, horizontal = 10.dp) ,
-                color = MaterialTheme.colorScheme.secondary,
-            )
-            Text(
-                text = "新增配置",
-                fontSize = 18.sp,
-                modifier = Modifier.weight(1f),
-                textAlign = TextAlign.Center,
-                color = MaterialTheme.colorScheme.secondary
-            )
-            Text(
-                textAlign = TextAlign.Center,
-                text = if (pageState == 0) "下一步" else "保存",
-                modifier = Modifier.weight(1f).clickable {
-                    if (pageState == 0) {
-                        pageState = 1
-                        return@clickable
-                    }
-                    onSave(RandomListEntity(randomItemListState, randomCate + randomTitle))
-                    randomItemListState.clear()
-                    randomItemListState.add(RandomItem())
-                    pageState = 0
-                    randomTitle = ""
-                }.background(
-                    shape = CircleShape,
-                    color = if (pageState == 0) Color.Transparent else MaterialTheme.colorScheme.primary
-                )
-                    .border(
-                        width = 3.dp,
-                        color = MaterialTheme.colorScheme.primary,
-                        shape = CircleShape
-                    )
-                    .padding(vertical = 4.dp, horizontal = 10.dp),
-                color = MaterialTheme.colorScheme.secondary,
-            )
-        }
-
-
-        AddNewRandomCateActionBar(randomCate, onClick = {
-            randomCate = it.key
-        })
-        Column(
-            modifier = Modifier.heightIn(max = 600.dp)
-                .background(MaterialTheme.colorScheme.surface)
-                .padding(start = 4.dp, end = 4.dp, top = 12.dp)
-        ) {
-
-            when (pageState) {
-                0 -> {
-                    AddRandomListContent(randomItemListState, randomCate)
-                }
-
-                1 -> {
-                    HalfRadioTextField(
-                        value = randomTitle,
-                        onValueChange = {
-                            randomTitle = it
-                        },
-                        label = "请输入配置名称"
-                    )
-                }
-            }
-
-
-            Spacer(modifier = Modifier.height(8.dp))
-
-
-
-        }
-
-    }
-}
-
-@Composable
 fun AddRandomDiceContent() {
     LazyColumn {
         item {
@@ -327,10 +207,14 @@ fun AddRandomListContent(
             ) {
                 Icon(
                     imageVector = Icons.Sharp.Add,
-                    contentDescription= "新增一项",
+                    contentDescription = "新增一项",
                     modifier = Modifier.fillMaxWidth(0.25f).clickable {
                         cardListState.add(RandomItem())
-                    }.border(shape = RoundedCornerShape(8.dp), color = MaterialTheme.colorScheme.secondary.copy(0.6f), width = 2.dp)
+                    }.border(
+                        shape = RoundedCornerShape(8.dp),
+                        color = MaterialTheme.colorScheme.secondary.copy(0.6f),
+                        width = 2.dp
+                    )
                         .padding(vertical = 4.dp, horizontal = 24.dp),
                     tint = MaterialTheme.colorScheme.secondary,
                 )
@@ -338,7 +222,7 @@ fun AddRandomListContent(
             }
         }
         items(cardListState) { cardState ->
-            ItemInput(cardState, randomCate,{
+            ItemInput(cardState, randomCate, {
                 cardListState.remove(cardState)
             })
         }
@@ -351,7 +235,11 @@ fun saveSetting() {
 }
 
 @Composable
-fun ItemInput(cardState: RandomItem, randomCate: String = RANDOM_PAGE_CONFIG_CATE_CARD,onDelete:()->Unit) {
+fun ItemInput(
+    cardState: RandomItem,
+    randomCate: String = RANDOM_PAGE_CONFIG_CATE_CARD,
+    onDelete: () -> Unit
+) {
     var textBack by remember {
         mutableStateOf(cardState.first)
     }
@@ -481,4 +369,139 @@ fun ItemInput(cardState: RandomItem, randomCate: String = RANDOM_PAGE_CONFIG_CAT
     }
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun AddNewRandomDialog(
+    show: Boolean,
+    onDismiss: () -> Unit,
+    onSave: (RandomListEntity) -> Unit
+) {
+    if (show) {
+        Dialog(
+            onDismissRequest = onDismiss,
+            properties = DialogProperties(usePlatformDefaultWidth = false)
+        ) {
+            Surface(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .fillMaxHeight(0.9f),
+                shape = RoundedCornerShape(16.dp),
+                color = MaterialTheme.colorScheme.surface
+            ) {
+                var randomName by remember { mutableStateOf("") }
+                var selectedCate by remember { mutableStateOf(RANDOM_PAGE_CONFIG_CATE_CARD) }
+                val cardListState = remember { SnapshotStateList<RandomItem>() }
 
+                Column(
+                    modifier = Modifier.fillMaxSize().padding(16.dp)
+                ) {
+                    // 顶部标题栏
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(
+                            text = "添加新随机配置",
+                            style = MaterialTheme.typography.headlineSmall,
+                            color = MaterialTheme.colorScheme.primary
+                        )
+
+                        IconButton(onClick = onDismiss) {
+                            Icon(
+                                imageVector = Icons.Default.Close,
+                                contentDescription = "关闭"
+                            )
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.height(16.dp))
+
+                    // 配置名称输入
+                    OutlinedTextField(
+                        value = randomName,
+                        onValueChange = { randomName = it },
+                        label = { Text("配置名称") },
+                        modifier = Modifier.fillMaxWidth(),
+                        singleLine = true,
+                        shape = RoundedCornerShape(8.dp)
+                    )
+
+                    Spacer(modifier = Modifier.height(16.dp))
+
+                    // 类型选择栏
+                    Text(
+                        text = "选择类型",
+                        style = MaterialTheme.typography.titleMedium,
+                        color = MaterialTheme.colorScheme.secondary
+                    )
+                    Spacer(modifier = Modifier.height(8.dp))
+
+                    AddNewRandomCateActionBar(
+                        select = selectedCate,
+                        onClick = { cate ->
+                            selectedCate = cate.key
+                            cardListState.clear()
+                        }
+                    )
+
+                    Spacer(modifier = Modifier.height(16.dp))
+
+                    // 内容编辑区域
+                    when (selectedCate) {
+                        RANDOM_PAGE_CONFIG_CATE_DICE -> {
+                            AddRandomDiceContent()
+                        }
+
+                        else -> {
+                            AddRandomListContent(
+                                cardListState = cardListState,
+                                randomCate = selectedCate
+                            )
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.height(16.dp))
+
+                    // 底部操作按钮
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceEvenly
+                    ) {
+                        OutlinedButton(
+                            onClick = onDismiss,
+                            modifier = Modifier.weight(1f)
+                        ) {
+                            Text("取消")
+                        }
+
+                        Spacer(modifier = Modifier.width(16.dp))
+
+                        Button(
+                            onClick = {
+                                if (randomName.isNotBlank()) {
+                                    onSave(
+                                        RandomListEntity(
+                                            name = selectedCate + randomName,
+                                            list = cardListState.toList()
+                                        )
+                                    )
+                                }
+                            },
+                            modifier = Modifier.weight(1f),
+                            enabled = randomName.isNotBlank()
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Check,
+                                contentDescription = null,
+                                modifier = Modifier.size(18.dp)
+                            )
+                            Spacer(modifier = Modifier.width(4.dp))
+                            Text("保存")
+                        }
+                    }
+                }
+            }
+        }
+    }
+}

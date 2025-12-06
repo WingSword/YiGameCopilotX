@@ -19,7 +19,6 @@ import org.walks.gamecopilot.awalong.AwalongGameLogic
 import org.walks.gamecopilot.awalong.AwalongIntent
 import org.walks.gamecopilot.awalong.AwalongRole
 import org.walks.gamecopilot.awalong.DefaultCustomConfig
-
 import org.walks.gamecopilot.awalong.data.AwalongGameDayEntity
 import org.walks.gamecopilot.awalong.data.AwalongGameState
 import org.walks.gamecopilot.data.RandomItem
@@ -37,7 +36,6 @@ import org.walks.gamecopilot.mmkv.MMKVUtils
 import org.walks.gamecopilot.mmkv.MMKV_RANDOM_CARDS_SETTING_KEY
 import org.walks.gamecopilot.mmkv.MMKV_RANDOM_LABEL_NAME_KEY
 import org.walks.gamecopilot.navigation.NaviRoute
-import org.walks.gamecopilot.ui.page.random.optimizedShuffle
 import org.walks.gamecopilot.utils.DateTimeUtils
 import kotlin.time.Clock
 import kotlin.time.ExperimentalTime
@@ -85,6 +83,9 @@ class MainViewmodel : ViewModel() {
     private var userId = ""
 
     init {
+        // 初始化预置随机配置
+        initDefaultRandomConfigs()
+        
         // 监听连接状态
         roomModule.connectionState
             .onEach { state ->
@@ -249,6 +250,13 @@ class MainViewmodel : ViewModel() {
 
             is RandomPageIntent.OnCancelLabel -> {
                 randomLabelChange("")
+            }
+
+            RandomPageIntent.TriggerRandom -> {
+                // 触发随机事件，增加refreshTime来触发洗牌动画
+                _currentRandomContentState.update { current ->
+                    current.copy(refreshTime = Clock.System.now().toEpochMilliseconds())
+                }
             }
 
             RandomPageIntent.OnAddNewRandomDialogSave -> TODO()
@@ -871,5 +879,59 @@ class MainViewmodel : ViewModel() {
         PlatformHelper.getInstance().vibrateMethod()
     }
 
+    /**
+     * 初始化预置随机配置
+     */
+    private fun initDefaultRandomConfigs() {
+        viewModelScope.launch {
+            try {
+                // 获取当前已保存的配置列表
+                val existingLabels =
+                    MMKVUtils.getSet(MMKV_RANDOM_LABEL_NAME_KEY)?.toMutableSet() ?: mutableSetOf()
+
+                // 预置配置名称
+                val diceConfigName = RANDOM_PAGE_CONFIG_CATE_DICE + "六面骰子"
+                val coinConfigName = RANDOM_PAGE_CONFIG_CATE_COIN + "硬币"
+
+                // 检查并添加预置六面骰子
+                if (!existingLabels.contains(diceConfigName)) {
+                    val diceConfig = RandomListEntity(
+                        name = diceConfigName,
+                        list = listOf(
+                            RandomItem(first = "1", second = "6")
+                        )
+                    )
+
+                    // 保存骰子配置数据
+                    val diceJson = Json.encodeToString(RandomListEntity.serializer(), diceConfig)
+                    MMKVUtils.put(MMKV_RANDOM_CARDS_SETTING_KEY + diceConfig.name, diceJson)
+                    existingLabels.add(diceConfig.name)
+                }
+
+                // 检查并添加预置硬币
+                if (!existingLabels.contains(coinConfigName)) {
+                    val coinConfig = RandomListEntity(
+                        name = coinConfigName,
+                        list = listOf(
+                            RandomItem(first = "正面", second = "反面")
+                        )
+                    )
+
+                    // 保存硬币配置数据
+                    val coinJson = Json.encodeToString(RandomListEntity.serializer(), coinConfig)
+                    MMKVUtils.put(MMKV_RANDOM_CARDS_SETTING_KEY + coinConfig.name, coinJson)
+                    existingLabels.add(coinConfig.name)
+                }
+
+                // 保存更新后的配置列表
+                MMKVUtils.putSet(MMKV_RANDOM_LABEL_NAME_KEY, existingLabels)
+
+                // 更新状态
+                _randomLabelsState.value = existingLabels.toList()
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
+        }
+    }
 
 }

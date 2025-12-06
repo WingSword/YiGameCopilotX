@@ -15,4 +15,5 @@ sealed class RandomPageIntent {
     data object OnChangeNewRandomLabel : RandomPageIntent()
     data class OnSelectLabel(val label:String) : RandomPageIntent()
     data class OnCancelLabel(val label:String) : RandomPageIntent()
+    data object TriggerRandom : RandomPageIntent()
 }

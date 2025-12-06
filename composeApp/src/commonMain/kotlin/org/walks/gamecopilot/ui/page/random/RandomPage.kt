@@ -1,6 +1,5 @@
 package org.walks.gamecopilot.ui.page.random
 
-import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.spring
@@ -10,6 +9,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.combinedClickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -19,6 +19,7 @@ import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyRow
@@ -79,8 +80,6 @@ import org.walks.gamecopilot.data.RandomItem
 import org.walks.gamecopilot.intent.RandomPageIntent
 import org.walks.gamecopilot.ui.animation.DiceAnimation
 import org.walks.gamecopilot.ui.animation.RollCoinAnimation
-import yigamecopilotx.composeapp.generated.resources.Res
-import yigamecopilotx.composeapp.generated.resources.icon_card
 import kotlin.math.ceil
 import kotlin.random.Random
 
@@ -130,109 +129,125 @@ fun RandomPage(viewmodel: MainViewmodel) {
             delay(500L)
             isShuffling = !isShuffling
         }
-
     }
 
     Column(
-        modifier = Modifier.fillMaxSize().clickable { isEditMode = false }
+        modifier = Modifier.fillMaxSize().clickable(
+            indication = null,
+            interactionSource = MutableInteractionSource()
+        ) {
+            isEditMode = false
+        }
     ) {
         val currentType = RandomCate.getCateByItem(currentSelectLabel)
 
-        // 顶部操作栏 - 改为圆形布局
+        // 配置列表 - 圆形布局
         Box(
             modifier = Modifier
                 .fillMaxWidth()
-                .height(120.dp)
-                .background(MaterialTheme.colorScheme.surface)
-                .combinedClickable(onLongClick = { isEditMode = true }, onClick = {})
-        ) {
-            Column(
-                modifier = Modifier.fillMaxSize().padding(16.dp),
-                horizontalAlignment = Alignment.CenterHorizontally
-            ) {
-                // 一键翻转按钮（仅当选择卡片类型时显示）
-                if (currentType == RandomCate.Card) {
-                    AnimatedVisibility(currentType == RandomCate.Card) {
-                        TextButton(
-                            colors = ButtonDefaults.textButtonColors(
-                                containerColor = if (randomContentDisplayState.intValue == 0) MorandiBlue else MorandiGreen,
-                            ),
-                            onClick = {
-                                randomContentDisplayState.intValue =
-                                    if (randomContentDisplayState.intValue == 0) 1 else 0
-                            }
-                        ) {
-                            Text("一键翻转")
-                        }
-                    }
-                    Spacer(modifier = Modifier.height(8.dp))
-                }
+                .background(MaterialTheme.colorScheme.background)
 
-                // 配置列表 - 圆形布局
-                LazyRow(
-                    horizontalArrangement = Arrangement.spacedBy(16.dp),
-                    modifier = Modifier.fillMaxWidth()
-                ) {
-                    items(
-                        items = randomLabelsList,
-                        key = { it.hashCode() }
-                    ) { i ->
-                        val currentSelectLabelType = RandomCate.getCateByItem(i)
-                        RandomConfigCircleItem(
-                            isSelected = currentSelectLabel == i,
-                            isEdit = isEditMode,
-                            label = i.replaceFirst(currentSelectLabelType.key, ""),
-                            iconRes = currentSelectLabelType.iconRes ?: Res.drawable.icon_card,
-                            onClick = {
-                                isEditMode = false
-                                if (currentSelectLabel == i) {
-                                    currentSelectLabel = ""
-                                    viewmodel.handleRandomPageIntent(
-                                        RandomPageIntent.OnCancelLabel("")
-                                    )
-                                } else {
-                                    currentSelectLabel = i
-                                    viewmodel.handleRandomPageIntent(
-                                        RandomPageIntent.OnSelectLabel(i)
-                                    )
-                                }
-                            },
-                            onDelete = {
-                                viewmodel.handleRandomPageIntent(
-                                    RandomPageIntent.DeleteRandomConfig(i)
-                                )
-                                isEditMode = false
-                            }
+                .padding(top = 10.dp)
+        ) {
+            RandomConfigList(
+                randomLabelsList = randomLabelsList,
+                currentSelectLabel = currentSelectLabel,
+                isEditMode = isEditMode,
+                onItemClick = { i ->
+                    isEditMode = false
+                    if (currentSelectLabel == i) {
+                        currentSelectLabel = ""
+                        viewmodel.handleRandomPageIntent(
+                            RandomPageIntent.OnCancelLabel("")
+                        )
+                    } else {
+                        currentSelectLabel = i
+                        viewmodel.handleRandomPageIntent(
+                            RandomPageIntent.OnSelectLabel(i)
                         )
                     }
+                },
+                onDelete = { i ->
+                    if (isEditMode) {
+                        viewmodel.handleRandomPageIntent(
+                            RandomPageIntent.DeleteRandomConfig(i)
+                        )
+                    }
+                    isEditMode = false
+                },
+                onLongClick = {
+                    isEditMode = !isEditMode
+                }
+            )
+        }
+
+        // 内容区域 - 上面带圆角的白色区域
+        Column(
+            modifier = Modifier
+                .background(
+                    shape = RoundedCornerShape(32.dp, 32.dp, 0.dp, 0.dp),
+                    color = MaterialTheme.colorScheme.surface
+                )
+                .weight(1f)
+                .fillMaxWidth()
+                .padding(top = 10.dp, start = 10.dp, end = 10.dp, bottom = 10.dp)
+        ) {
+            LazyVerticalGrid(
+                columns = GridCells.Fixed(3),
+                modifier = Modifier.fillMaxSize()
+            ) {
+                items(itemList) { randomItem ->
+                    AnimatedShuffleContent(
+                        card = randomItem,
+                        isShuffling = isShuffling,
+                        index = itemList.indexOf(randomItem),
+                        total = itemList.size,
+                        contentCate = currentType,
+                        randomState = randomContentDisplayState,
+                        onTriggerRandom = {
+                            viewmodel.handleRandomPageIntent(RandomPageIntent.TriggerRandom)
+                        }
+                    )
                 }
             }
         }
 
-        // 内容区域
-        LazyVerticalGrid(
-            columns = GridCells.Fixed(3),
-            modifier = Modifier.weight(1f)
-        ) {
-
-            items(itemList) { randomItem ->
-                AnimatedShuffleContent(
-                    card = randomItem,
-                    isShuffling = isShuffling,
-                    index = itemList.indexOf(randomItem),
-                    total = itemList.size,
-                    contentCate = currentType,
-                    randomState = randomContentDisplayState
-                )
+        // 底部一键翻转按钮（仅当选择卡片类型时显示）
+        if (currentType == RandomCate.Card) {
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(16.dp)
+                    .background(MaterialTheme.colorScheme.surface),
+                contentAlignment = Alignment.Center
+            ) {
+                if (currentType == RandomCate.Card) {
+                    TextButton(
+                        colors = ButtonDefaults.textButtonColors(
+                            containerColor = if (randomContentDisplayState.intValue == 0) MorandiBlue else MorandiGreen,
+                        ),
+                        onClick = {
+                            randomContentDisplayState.intValue =
+                                if (randomContentDisplayState.intValue == 0) 1 else 0
+                        }
+                    ) {
+                        Text("一键翻转")
+                    }
+                }
             }
         }
+        AddNewRandomDialog(
+            addRandomDialogShow,
+            onDismiss = { addRandomDialogShow = false },
+            onSave = {
+                addRandomDialogShow = false
+                viewmodel.handleRandomPageIntent(RandomPageIntent.OnAddNewRandom(it))
+                viewmodel.handleRandomPageIntent(RandomPageIntent.OnChangeNewRandomLabel)
+            })
     }
-    AddNewRandomDialog(addRandomDialogShow, onDismiss = { addRandomDialogShow = false }, onSave = {
-        addRandomDialogShow = false
-        viewmodel.handleRandomPageIntent(RandomPageIntent.OnAddNewRandom(it))
-        viewmodel.handleRandomPageIntent(RandomPageIntent.OnChangeNewRandomLabel)
-    })
 }
+
+// ========== 独立组件函数 ==========
 
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
@@ -255,36 +270,13 @@ fun AnimatedShuffleDice(
                 onLongClickLabel = "长按删除",
                 onLongClick = {
                     PlatformHelper.getInstance().vibrateMethod()
-
                 },
                 onClick = {
                     PlatformHelper.getInstance().vibrateMethod()
                 }
             )
         )
-
     }
-
-}
-
-// 创建扩展函数
-fun <T> List<T>.shuffledWithAnimation(): List<T> {
-    return this
-        .map { it to Random.nextFloat() }
-        .sortedBy { it.second }
-        .map { it.first }
-}
-
-// 使用 Fisher-Yates 洗牌算法
-fun <T> List<T>.optimizedShuffle(): List<T> {
-    val list = this.toMutableList()
-    for (i in list.size - 1 downTo 1) {
-        val j = Random.nextInt(i + 1)
-        val temp = list[i]
-        list[i] = list[j]
-        list[j] = temp
-    }
-    return list
 }
 
 @Composable
@@ -305,8 +297,7 @@ fun FlippableCard(
     val rotation = animateFloatAsState(
         targetValue = if (flipped) 180f else 0f,
         animationSpec = tween(animationDuration), label = "cardRotation",
-
-        )
+    )
 
     val cameraDistance = 12f * LocalDensity.current.density
 
@@ -348,7 +339,7 @@ fun FlippableCard(
 }
 
 @Composable
-private fun CardContent(
+fun CardContent(
     rotation: Float,
     isFront: Boolean,
     content: @Composable () -> Unit
@@ -365,7 +356,6 @@ private fun CardContent(
                     !isFront && rotation > 90f -> (rotation - 90f) / 90f
                     else -> 0f
                 }
-
             }
             .padding(10.dp)
     ) {
@@ -400,7 +390,6 @@ fun RandomModFilterChip(
     onclick: (Boolean) -> Unit,
     onDelete: () -> Unit
 ) {
-
     FilterChip(
         colors = FilterChipDefaults.filterChipColors(
             containerColor = if (isSelected) {
@@ -451,15 +440,15 @@ fun RandomModFilterChip(
     )
 }
 
-
 @Composable
-private fun AnimatedShuffleContent(
+fun AnimatedShuffleContent(
     card: RandomItem,
     isShuffling: Boolean,
     index: Int,
     total: Int,
     contentCate: RandomCate = RandomCate.Card,
-    randomState: MutableIntState
+    randomState: MutableIntState,
+    onTriggerRandom: () -> Unit = {}
 ) {
     val density = LocalDensity.current.density
 
@@ -509,7 +498,6 @@ private fun AnimatedShuffleContent(
         label = "verticalCenterOffset"
     )
 
-
     // 旋转动画
     val rotation by animateFloatAsState(
         targetValue = if (isShuffling) randomRotate else 0f,
@@ -534,6 +522,10 @@ private fun AnimatedShuffleContent(
         modifier = Modifier
             .fillMaxWidth()
             .padding(4.dp)
+            .clickable {
+                // 点击触发随机事件
+                onTriggerRandom()
+            }
             .graphicsLayer {
                 cameraDistance = 12f * density
                 translationX = offsetX
@@ -557,15 +549,14 @@ private fun AnimatedShuffleContent(
                         // 处理硬币翻转结果
                         PlatformHelper.getInstance().vibrateMethod()
                     },
+                    isRolling = isShuffling,
                     modifier = Modifier
                         .aspectRatio(1f)
                         .padding(4.dp),
-
                 )
             }
 
             else -> {
-
                 FlippableCard(
                     modifier = Modifier
                         .aspectRatio(1f)
@@ -589,8 +580,6 @@ private fun AnimatedShuffleContent(
                                 modifier = Modifier.fillMaxHeight()
                             )
                         }
-
-
                     },
                     front = { Text(card.second, color = MorandiBlue) },
                     flippedState = randomState
@@ -600,7 +589,48 @@ private fun AnimatedShuffleContent(
     }
 }
 
+// 配置列表组件 - 横向滚动布局
+@Composable
+fun RandomConfigList(
+    randomLabelsList: List<String>,
+    currentSelectLabel: String,
+    isEditMode: Boolean,
+    onItemClick: (String) -> Unit,
+    onDelete: (String) -> Unit,
+    onLongClick: (String) -> Unit
+) {
+    // 过滤掉空的配置项（没有类别的配置）
+    val filteredLabels = randomLabelsList.filter { item ->
+        val cate = RandomCate.getCateByItem(item)
+        cate != RandomCate.Empty
+    }
+
+    LazyRow(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 16.dp, vertical = 8.dp),
+        horizontalArrangement = Arrangement.spacedBy(8.dp)
+    ) {
+        items(filteredLabels) { item ->
+            val currentSelectLabelType = RandomCate.getCateByItem(item)
+            // 确保有有效的图标资源
+            val iconRes = currentSelectLabelType.iconRes ?: return@items
+
+            RandomConfigCircleItem(
+                isSelected = currentSelectLabel == item,
+                isEdit = isEditMode,
+                label = item.replaceFirst(currentSelectLabelType.key, ""),
+                iconRes = iconRes,
+                onClick = { onItemClick(item) },
+                onDelete = { onDelete(item) },
+                onLongClick = { onLongClick(item) }
+            )
+        }
+    }
+}
+
 // 圆形配置项组件
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun RandomConfigCircleItem(
     isSelected: Boolean,
@@ -608,48 +638,92 @@ fun RandomConfigCircleItem(
     label: String,
     iconRes: DrawableResource,
     onClick: () -> Unit,
-    onDelete: () -> Unit
+    onDelete: () -> Unit,
+    onLongClick: () -> Unit
 ) {
-    Box(
+    Column(
         modifier = Modifier
-            .size(60.dp)
-            .clip(CircleShape)
-            .background(
-                if (isSelected) MaterialTheme.colorScheme.primary
-                else MaterialTheme.colorScheme.surfaceVariant
-            )
-            .clickable { onClick() },
-        contentAlignment = Alignment.Center
+            .padding(4.dp),
+        horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        Column(
-            horizontalAlignment = Alignment.CenterHorizontally
-        ) {
-            Icon(
-                painter = painterResource(iconRes),
-                contentDescription = label,
-                modifier = Modifier.size(24.dp),
-                tint = if (isSelected) MaterialTheme.colorScheme.onPrimary
-                else MaterialTheme.colorScheme.onSurfaceVariant
-            )
+        Box {
+            Box(
+                modifier = Modifier
+                    .size(56.dp)
+                    .clip(CircleShape)
+                    .background(
+                        if (isSelected) MaterialTheme.colorScheme.primary
+                        else MaterialTheme.colorScheme.background
+                    )
+                    .border(
+                        width = 2.dp,
+                        color = if (isSelected)
+                            MaterialTheme.colorScheme.primaryContainer
+                        else
+                            MaterialTheme.colorScheme.outline,
+                        shape = CircleShape
+                    )
+                    .combinedClickable(
+                        onLongClick = { onLongClick() },
+                        interactionSource = remember { MutableInteractionSource() },
+                        indication = null
+                    ) {
 
-            Text(
-                text = label.take(4), // 限制显示长度
-                fontSize = 10.sp,
-                color = if (isSelected) MaterialTheme.colorScheme.onPrimary
-                else MaterialTheme.colorScheme.onSurfaceVariant,
-                maxLines = 1
-            )
+                        onClick()
 
+                    },
+                contentAlignment = Alignment.Center
+            ) {
+                // 主图标
+                Icon(
+                    painter = painterResource(iconRes),
+                    contentDescription = label,
+                    modifier = Modifier.size(28.dp),
+                    tint = if (isSelected) MaterialTheme.colorScheme.onPrimary
+                    else MaterialTheme.colorScheme.onBackground
+                )
+            }
+            // 删除按钮（编辑模式下显示在右上角）
             if (isEdit) {
                 Icon(
                     imageVector = Icons.Default.Close,
                     contentDescription = "删除",
                     modifier = Modifier
-                        .size(16.dp)
-                        .clickable { onDelete() },
+                        .size(18.dp)
+                        .align(Alignment.TopEnd)
+                        .offset(x = (-3).dp, y = (-3).dp)
+                        .clickable(
+                            interactionSource = remember { MutableInteractionSource() },
+                            indication = null
+                        ) { onDelete() }
+                        .background(
+                            Color.White,
+                            CircleShape
+                        )
+                        .padding(2.dp),
                     tint = Color.Red
                 )
             }
         }
+
+
+        // 标签文字
+        Text(
+            text = label.take(4), // 限制显示长度
+            modifier = Modifier.padding(top = 6.dp),
+            fontSize = 11.sp,
+            color = if (isSelected) MaterialTheme.colorScheme.primary
+            else MaterialTheme.colorScheme.onBackground,
+            textAlign = TextAlign.Center,
+            maxLines = 1
+        )
     }
+}
+
+// 创建扩展函数
+fun <T> List<T>.shuffledWithAnimation(): List<T> {
+    return this
+        .map { it to Random.nextFloat() }
+        .sortedBy { it.second }
+        .map { it.first }
 }
