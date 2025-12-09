@@ -23,6 +23,7 @@ import org.walks.gamecopilot.awalong.data.AwalongGameDayEntity
 import org.walks.gamecopilot.awalong.data.AwalongGameState
 import org.walks.gamecopilot.data.RandomItem
 import org.walks.gamecopilot.data.RandomListEntity
+import org.walks.gamecopilot.data.WheelItem
 import org.walks.gamecopilot.data.WsRoomDataEntity
 import org.walks.gamecopilot.data.entity.GameEntity
 import org.walks.gamecopilot.data.entity.LocalSpyEntity
@@ -61,6 +62,10 @@ class MainViewmodel : ViewModel() {
 
     private val _currentRandomContentState = MutableStateFlow(RandomListEntity())
     val currentRandomContentState: StateFlow<RandomListEntity> = _currentRandomContentState
+
+    // 转盘选项状态
+    private val _wheelItemsState = MutableStateFlow(getDefaultWheelItems())
+    val wheelItemsState: StateFlow<List<WheelItem>> = _wheelItemsState
     private val _randomLabelsState = MutableStateFlow(listOf<String>())
     val randomLabelsState: StateFlow<List<String>> = _randomLabelsState
 
@@ -934,4 +939,24 @@ class MainViewmodel : ViewModel() {
         }
     }
 
+    /**
+     * 更新转盘选项
+     */
+    fun updateWheelItems(items: List<WheelItem>) {
+        _wheelItemsState.value = items
+    }
+}
+
+/**
+ * 获取默认的转盘选项
+ */
+private fun getDefaultWheelItems(): List<WheelItem> {
+    return listOf(
+        WheelItem("1", "选项1", WheelItem.DEFAULT_COLORS[0]),
+        WheelItem("2", "选项2", WheelItem.DEFAULT_COLORS[1]),
+        WheelItem("3", "选项3", WheelItem.DEFAULT_COLORS[2]),
+        WheelItem("4", "选项4", WheelItem.DEFAULT_COLORS[3]),
+        WheelItem("5", "选项5", WheelItem.DEFAULT_COLORS[4]),
+        WheelItem("6", "选项6", WheelItem.DEFAULT_COLORS[5])
+    )
 }

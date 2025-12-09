@@ -11,25 +11,32 @@ import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Arrangement.spacedBy
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.ArrowDropDown
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.KeyboardArrowUp
 import androidx.compose.material.icons.sharp.Add
 import androidx.compose.material.icons.sharp.Clear
 import androidx.compose.material3.Button
@@ -51,6 +58,7 @@ import androidx.compose.runtime.snapshots.SnapshotStateList
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
@@ -60,6 +68,7 @@ import org.jetbrains.compose.resources.painterResource
 import org.walks.gamecopilot.RANDOM_PAGE_CONFIG_CATE_CARD
 import org.walks.gamecopilot.RANDOM_PAGE_CONFIG_CATE_COIN
 import org.walks.gamecopilot.RANDOM_PAGE_CONFIG_CATE_DICE
+import org.walks.gamecopilot.RANDOM_PAGE_CONFIG_CATE_WHEEL
 import org.walks.gamecopilot.clickableWithoutRipple
 import org.walks.gamecopilot.data.RandomItem
 import org.walks.gamecopilot.data.RandomListEntity
@@ -68,6 +77,7 @@ import yigamecopilotx.composeapp.generated.resources.Res
 import yigamecopilotx.composeapp.generated.resources.icon_card
 import yigamecopilotx.composeapp.generated.resources.icon_coin
 import yigamecopilotx.composeapp.generated.resources.icon_dice
+import yigamecopilotx.composeapp.generated.resources.icon_wheel_svg
 
 
 /**
@@ -79,7 +89,8 @@ enum class RandomCate(val key: String, val iconRes: DrawableResource?) {
     Empty("", null),
     Card(RANDOM_PAGE_CONFIG_CATE_CARD, Res.drawable.icon_card),
     Dice(RANDOM_PAGE_CONFIG_CATE_DICE, Res.drawable.icon_dice),
-    Coin(RANDOM_PAGE_CONFIG_CATE_COIN, Res.drawable.icon_coin);
+    Coin(RANDOM_PAGE_CONFIG_CATE_COIN, Res.drawable.icon_coin),
+    Wheel(RANDOM_PAGE_CONFIG_CATE_WHEEL, Res.drawable.icon_wheel_svg);
 
     companion object {
         fun getCateByKey(key: String): RandomCate {
@@ -87,6 +98,7 @@ enum class RandomCate(val key: String, val iconRes: DrawableResource?) {
                 RANDOM_PAGE_CONFIG_CATE_CARD -> Card
                 RANDOM_PAGE_CONFIG_CATE_DICE -> Dice
                 RANDOM_PAGE_CONFIG_CATE_COIN -> Coin
+                RANDOM_PAGE_CONFIG_CATE_WHEEL -> Wheel
                 else -> Empty
             }
         }
@@ -98,6 +110,8 @@ enum class RandomCate(val key: String, val iconRes: DrawableResource?) {
                 Dice
             else if (item.startsWith(RANDOM_PAGE_CONFIG_CATE_COIN))
                 Coin
+            else if (item.startsWith(RANDOM_PAGE_CONFIG_CATE_WHEEL))
+                Wheel
             else
                 Empty
         }
@@ -107,7 +121,7 @@ enum class RandomCate(val key: String, val iconRes: DrawableResource?) {
 
 @Composable
 fun AddNewRandomCateActionBar(select: String, onClick: (RandomCate) -> Unit) {
-    LazyRow(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+    LazyRow(horizontalArrangement = spacedBy(4.dp)) {
         items(RandomCate.entries) { cate ->
             val isSelected = select == cate.key
             // 边框宽度动画
@@ -168,7 +182,7 @@ fun AddRandomDiceContent(
 ) {
     Column(
         modifier = Modifier.padding(horizontal = 10.dp),
-        verticalArrangement = Arrangement.spacedBy(16.dp)
+        verticalArrangement = spacedBy(16.dp)
     ) {
         // 添加骰子配置按钮
         Row(
@@ -334,37 +348,41 @@ fun AddRandomListContent(
     cardListState: SnapshotStateList<RandomItem>,
     randomCate: String = RANDOM_PAGE_CONFIG_CATE_CARD
 ) {
-    LazyColumn(
+    Column(
         modifier = Modifier.padding(horizontal = 10.dp),
-        verticalArrangement = Arrangement.spacedBy(4.dp),
+        verticalArrangement = spacedBy(4.dp),
     ) {
-        stickyHeader {
-            Row(
-                horizontalArrangement = Arrangement.Center,
-                modifier = Modifier.padding(vertical = 4.dp)
-            ) {
-                Icon(
-                    imageVector = Icons.Sharp.Add,
-                    contentDescription = "新增一项",
-                    modifier = Modifier.fillMaxWidth(0.25f).clickable {
+        // 添加按钮
+        Row(
+            horizontalArrangement = Arrangement.Center,
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(vertical = 4.dp)
+        ) {
+            Icon(
+                imageVector = Icons.Sharp.Add,
+                contentDescription = "新增一项",
+                modifier = Modifier
+                    .fillMaxWidth(0.25f)
+                    .clickable {
                         cardListState.add(RandomItem())
-                    }.border(
+                    }
+                    .border(
                         shape = RoundedCornerShape(8.dp),
                         color = MaterialTheme.colorScheme.secondary.copy(0.6f),
                         width = 2.dp
                     )
-                        .padding(vertical = 4.dp, horizontal = 24.dp),
-                    tint = MaterialTheme.colorScheme.secondary,
-                )
-
-            }
+                    .padding(vertical = 4.dp, horizontal = 24.dp),
+                tint = MaterialTheme.colorScheme.secondary,
+            )
         }
-        items(cardListState) { cardState ->
+
+        // 列表项
+        cardListState.forEach { cardState ->
             ItemInput(cardState, randomCate, {
                 cardListState.remove(cardState)
             })
         }
-
     }
 }
 
@@ -522,16 +540,20 @@ fun AddNewRandomDialog(
             Surface(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .fillMaxHeight(0.9f),
+                    .heightIn(max = 600.dp),
                 shape = RoundedCornerShape(16.dp),
                 color = MaterialTheme.colorScheme.surface
             ) {
                 var randomName by remember { mutableStateOf("") }
                 var selectedCate by remember { mutableStateOf(RANDOM_PAGE_CONFIG_CATE_CARD) }
                 val cardListState = remember { SnapshotStateList<RandomItem>() }
+                val scrollState = rememberScrollState()
 
                 Column(
-                    modifier = Modifier.fillMaxSize().padding(16.dp)
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .verticalScroll(scrollState)
+                        .padding(16.dp)
                 ) {
                     // 顶部标题栏
                     Row(
@@ -590,7 +612,9 @@ fun AddNewRandomDialog(
                         RANDOM_PAGE_CONFIG_CATE_DICE -> {
                             AddRandomDiceContent(diceListState = cardListState)
                         }
-
+                        RANDOM_PAGE_CONFIG_CATE_WHEEL -> {
+                            AddRandomWheelContent(wheelListState = cardListState)
+                        }
                         else -> {
                             AddRandomListContent(
                                 cardListState = cardListState,
@@ -640,6 +664,190 @@ fun AddNewRandomDialog(
                     }
                 }
             }
+        }
+    }
+}
+
+/**
+ * 转盘配置内容组件
+ */
+@OptIn(ExperimentalLayoutApi::class)
+@Composable
+fun AddRandomWheelContent(
+    wheelListState: SnapshotStateList<RandomItem>
+) {
+    Column(
+        modifier = Modifier.padding(horizontal = 10.dp),
+        verticalArrangement = spacedBy(16.dp)
+    ) {
+        // 添加转盘选项按钮
+        Row(
+            horizontalArrangement = Arrangement.Center,
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            Icon(
+                imageVector = Icons.Sharp.Add,
+                contentDescription = "新增转盘选项",
+                modifier = Modifier
+                    .size(40.dp)
+                    .clickable {
+                        if (wheelListState.size < 20) {
+                            wheelListState.add(
+                                RandomItem(
+                                    first = "选项${wheelListState.size + 1}",
+                                    second = ""
+                                )
+                            )
+                        }
+                    }
+                    .border(
+                        shape = RoundedCornerShape(8.dp),
+                        color = MaterialTheme.colorScheme.secondary.copy(0.6f),
+                        width = 2.dp
+                    )
+                    .padding(8.dp),
+                tint = MaterialTheme.colorScheme.secondary,
+            )
+        }
+
+        // 显示当前选项数量
+        Text(
+            text = "当前选项: ${wheelListState.size}/20",
+            color = MaterialTheme.colorScheme.secondary,
+            fontSize = 12.sp
+        )
+
+        // 转盘选项列表 - 使用FlowRow实现两列布局
+        FlowRow(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = spacedBy(8.dp),
+            verticalArrangement = spacedBy(8.dp)
+        ) {
+            wheelListState.forEachIndexed { index, wheelState ->
+                Box(modifier = Modifier.weight(0.5f)) {
+                    WheelItemInput(
+                        wheelState = wheelState,
+                        index = index,
+                        onDelete = {
+                            wheelListState.remove(wheelState)
+                        }
+                    )
+                }
+            }
+        }
+    }
+}
+
+/**
+ * 转盘选项输入组件
+ */
+@Composable
+fun WheelItemInput(
+    wheelState: RandomItem,
+    index: Int,
+    onDelete: () -> Unit
+) {
+    var optionText by remember { mutableStateOf(wheelState.first) }
+    var descriptionText by remember { mutableStateOf(wheelState.second) }
+    var isDescriptionExpanded by remember { mutableStateOf(false) }
+
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .border(
+                width = 1.dp,
+                color = MaterialTheme.colorScheme.outline.copy(0.3f),
+                shape = RoundedCornerShape(8.dp)
+            )
+            .padding(8.dp)
+    ) {
+        // 选项编号
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            Text(
+                text = "选项 ${index + 1}",
+                color = MaterialTheme.colorScheme.primary,
+                fontSize = 14.sp,
+                fontWeight = FontWeight.Bold,
+                modifier = Modifier.weight(1f)
+            )
+
+            // 删除按钮
+            Icon(
+                imageVector = Icons.Sharp.Clear,
+                contentDescription = "删除",
+                modifier = Modifier
+                    .size(20.dp)
+                    .clickable { onDelete() },
+                tint = MaterialTheme.colorScheme.error
+            )
+        }
+
+        Spacer(modifier = Modifier.height(8.dp))
+
+        // 选项名称输入
+        OutlinedTextField(
+            onValueChange = {
+                wheelState.first = it
+                optionText = it
+            },
+            label = { Text(text = "选项名称", fontSize = 12.sp) },
+            value = optionText,
+            modifier = Modifier.fillMaxWidth(),
+            shape = RoundedCornerShape(8.dp),
+            colors = OutlinedTextFieldDefaults.colors(
+                unfocusedBorderColor = MaterialTheme.colorScheme.secondary.copy(0.55f),
+                unfocusedTextColor = MaterialTheme.colorScheme.secondary.copy(0.55f),
+                focusedBorderColor = MaterialTheme.colorScheme.secondary.copy(0.88f),
+                focusedTextColor = MaterialTheme.colorScheme.secondary,
+            )
+        )
+
+        Spacer(modifier = Modifier.height(8.dp))
+
+        // 描述部分（可折叠）
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            modifier = Modifier.clickable {
+                isDescriptionExpanded = !isDescriptionExpanded
+            }
+        ) {
+            Text(
+                text = "描述",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.secondary,
+                modifier = Modifier.weight(1f)
+            )
+
+            // 展开/折叠图标
+            Icon(
+                imageVector = if (isDescriptionExpanded) Icons.Default.ArrowDropDown else Icons.Default.KeyboardArrowUp,
+                contentDescription = if (isDescriptionExpanded) "折叠描述" else "展开描述",
+                modifier = Modifier.size(16.dp),
+                tint = MaterialTheme.colorScheme.secondary
+            )
+        }
+
+        // 展开的描述输入框
+        if (isDescriptionExpanded) {
+            Spacer(modifier = Modifier.height(4.dp))
+            OutlinedTextField(
+                onValueChange = {
+                    wheelState.second = it
+                    descriptionText = it
+                },
+                value = descriptionText,
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(8.dp),
+                colors = OutlinedTextFieldDefaults.colors(
+                    unfocusedBorderColor = MaterialTheme.colorScheme.primary.copy(0.55f),
+                    unfocusedTextColor = MaterialTheme.colorScheme.primary.copy(0.55f),
+                    focusedBorderColor = MaterialTheme.colorScheme.primary.copy(0.88f),
+                    focusedTextColor = MaterialTheme.colorScheme.primary,
+                )
+            )
         }
     }
 }

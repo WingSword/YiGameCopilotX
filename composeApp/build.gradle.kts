@@ -1,7 +1,7 @@
+
 import org.jetbrains.kotlin.gradle.ExperimentalKotlinGradlePluginApi
 import org.jetbrains.kotlin.gradle.ExperimentalWasmDsl
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
-import org.jetbrains.kotlin.gradle.targets.js.webpack.KotlinWebpackConfig
 
 plugins {
     alias(libs.plugins.kotlinMultiplatform)
@@ -13,18 +13,20 @@ val appName = "桌游助手"
 // 修改版本声明为：
 val composeHtmlVersion = "1.6.11" // 保持与compose.compiler版本一致
 
+repositories {
+    mavenCentral()
+    google()
+    maven("https://maven.pkg.jetbrains.space/public/p/compose/dev")
+}
+
 kotlin {
     @OptIn(ExperimentalWasmDsl::class)
     wasmJs {
         browser {
-            val projectDirPath = project.projectDir.path
             commonWebpackConfig {
-                outputFileName = "$appName.js"
-                devServer = (devServer ?: KotlinWebpackConfig.DevServer()).apply {
-                    static = (static ?: mutableListOf()).apply {
-                        // Serve sources to debug inside browser
-                        add(projectDirPath)
-                    }
+                outputFileName = "composeApp.js"
+                cssSupport {
+                    enabled.set(true)
                 }
             }
         }
@@ -78,6 +80,13 @@ kotlin {
             implementation(libs.androidx.lifecycle.runtime.compose)
             api(projects.shared)
 
+        }
+
+        wasmJsMain.dependencies {
+            implementation(compose.runtime)
+            implementation(compose.ui)
+            implementation(compose.foundation)
+            implementation(compose.material3)
         }
 
         iosMain.dependencies {

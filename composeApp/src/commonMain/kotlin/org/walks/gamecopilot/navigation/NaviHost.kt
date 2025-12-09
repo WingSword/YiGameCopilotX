@@ -12,7 +12,6 @@ import org.walks.gamecopilot.awalong.AwalongGamePageOptimized
 import org.walks.gamecopilot.event.NavigationEvent
 import org.walks.gamecopilot.ui.page.game.localspy.LocalSpyGamePage
 import org.walks.gamecopilot.ui.page.home.HomePage
-import org.walks.gamecopilot.ui.page.other.ErrorPage
 import org.walks.gamecopilot.ui.page.random.RandomPage
 import org.walks.gamecopilot.ui.page.room.RoomPage
 import org.walks.gamecopilot.ui.page.setting.SettingPage
@@ -40,7 +39,6 @@ fun NavigationHost(viewmodel: MainViewmodel, navi: NavHostController) {
                     NaviRoute.SETTING -> SettingPage(viewmodel)
                     // 显式列出所有路由，移除else分支
                     // 当新增路由时编译器会提示需要补充分支
-                    else -> ErrorPage()
                 }
             }
         }

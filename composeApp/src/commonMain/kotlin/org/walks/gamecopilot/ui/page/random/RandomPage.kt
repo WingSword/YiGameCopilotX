@@ -33,14 +33,8 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
-import androidx.compose.material.icons.filled.Done
-import androidx.compose.material3.AssistChip
-import androidx.compose.material3.AssistChipDefaults
 import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.FilterChip
-import androidx.compose.material3.FilterChipDefaults
 import androidx.compose.material3.Icon
-import androidx.compose.material3.InputChipDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -61,7 +55,6 @@ import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.TransformOrigin
 import androidx.compose.ui.graphics.graphicsLayer
-import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -80,6 +73,7 @@ import org.walks.gamecopilot.PlatformHelper
 import org.walks.gamecopilot.RANDOM_PAGE_CONFIG_CATE_COIN
 import org.walks.gamecopilot.RANDOM_PAGE_CONFIG_CATE_DICE
 import org.walks.gamecopilot.data.RandomItem
+import org.walks.gamecopilot.data.WheelItem
 import org.walks.gamecopilot.intent.RandomPageIntent
 import org.walks.gamecopilot.ui.animation.DiceAnimation
 import org.walks.gamecopilot.ui.animation.RollCoinAnimation
@@ -195,22 +189,54 @@ fun RandomPage(viewmodel: MainViewmodel) {
                 .fillMaxWidth()
                 .padding(top = 10.dp, start = 10.dp, end = 10.dp, bottom = 10.dp)
         ) {
-            LazyVerticalGrid(
-                columns = GridCells.Fixed(3),
-                modifier = Modifier.fillMaxSize()
-            ) {
-                items(itemList) { randomItem ->
-                    AnimatedShuffleContent(
-                        card = randomItem,
-                        isShuffling = isShuffling,
-                        index = itemList.indexOf(randomItem),
-                        total = itemList.size,
-                        contentCate = currentType,
-                        randomState = randomContentDisplayState,
+            // 转盘类型单独显示完整的转盘组件
+            if (currentType == RandomCate.Wheel) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(16.dp),
+                    contentAlignment = Alignment.TopCenter
+                ) {
+                    // 获取转盘选项列表 - 使用当前配置的选项
+                    val wheelItems = itemList.mapIndexed { index, randomItem ->
+                        WheelItem(
+                            id = randomItem.id.toString(),
+                            text = randomItem.first,
+                            color = WheelItem.DEFAULT_COLORS.getOrElse(index) { Color.Gray }
+                        )
+                    }
+
+                    WheelRandomComponent(
+                        items = wheelItems,
+                        onItemsChange = { newItems ->
+                            // 这里需要实现更新转盘选项的逻辑
+                            viewmodel.updateWheelItems(newItems)
+                        },
                         onTriggerRandom = {
                             viewmodel.handleRandomPageIntent(RandomPageIntent.TriggerRandom)
                         }
                     )
+                }
+            } else {
+                // 其他类型（卡片、骰子、硬币）保持原来的网格布局
+                LazyVerticalGrid(
+                    columns = GridCells.Fixed(3),
+                    modifier = Modifier.fillMaxSize()
+                ) {
+                    items(itemList) { randomItem ->
+                        AnimatedShuffleContent(
+                            card = randomItem,
+                            isShuffling = isShuffling,
+                            index = itemList.indexOf(randomItem),
+                            total = itemList.size,
+                            contentCate = currentType,
+                            randomState = randomContentDisplayState,
+                            onTriggerRandom = {
+                                viewmodel.handleRandomPageIntent(RandomPageIntent.TriggerRandom)
+                            },
+                            viewmodel = viewmodel
+                        )
+                    }
                 }
             }
         }
@@ -366,82 +392,7 @@ fun CardContent(
     }
 }
 
-@Composable
-fun AssistChipRandom(icon: ImageVector, onclick: () -> Unit, text: String) {
-    AssistChip(
-        onClick = {
-            onclick()
-        },
-        label = { Text(text, color = MaterialTheme.colorScheme.tertiary) },
-        leadingIcon = {
-            Icon(
-                icon,
-                contentDescription = "Localized description",
-                Modifier.size(AssistChipDefaults.IconSize)
-            )
-        }
-    )
-}
 
-@OptIn(ExperimentalFoundationApi::class)
-@Composable
-fun RandomModFilterChip(
-    label: String,
-    leadingIcon: @Composable (() -> Unit)? = null,
-    isEdit: Boolean = false,
-    isSelected: Boolean = false,
-    onclick: (Boolean) -> Unit,
-    onDelete: () -> Unit
-) {
-    FilterChip(
-        colors = FilterChipDefaults.filterChipColors(
-            containerColor = if (isSelected) {
-                MaterialTheme.colorScheme.primaryContainer
-            } else {
-                MaterialTheme.colorScheme.surfaceDim
-            },
-        ),
-        border = FilterChipDefaults.filterChipBorder(
-            enabled = true,
-            selected = true,
-            borderColor = Color.Transparent,
-            selectedBorderColor = Color.Transparent
-        ),
-        modifier = Modifier.height(44.dp),
-        shape = CircleShape,
-        onClick = {
-            onclick(false)
-        },
-        label = {
-            Text(label)
-        },
-        selected = isSelected,
-        leadingIcon = if (isSelected) {
-            {
-                Icon(
-                    imageVector = Icons.Filled.Done,
-                    contentDescription = "Done icon",
-                    modifier = Modifier.size(FilterChipDefaults.IconSize)
-                )
-            }
-        } else {
-            {
-                leadingIcon?.invoke()
-            }
-        },
-        trailingIcon = {
-            if (isEdit) {
-                Icon(
-                    Icons.Default.Close,
-                    contentDescription = "Localized description",
-                    Modifier.size(InputChipDefaults.AvatarSize).clickable {
-                        onDelete()
-                    }
-                )
-            }
-        },
-    )
-}
 
 @Composable
 fun AnimatedShuffleContent(
@@ -451,7 +402,8 @@ fun AnimatedShuffleContent(
     total: Int,
     contentCate: RandomCate = RandomCate.Card,
     randomState: MutableIntState,
-    onTriggerRandom: () -> Unit = {}
+    onTriggerRandom: () -> Unit = {},
+    viewmodel: MainViewmodel
 ) {
     val density = LocalDensity.current.density
 
@@ -563,6 +515,8 @@ fun AnimatedShuffleContent(
                         .padding(4.dp),
                 )
             }
+
+            // 转盘类型现在单独显示，不再显示在网格中
 
             else -> {
                 FlippableCard(
@@ -687,7 +641,7 @@ fun RandomConfigCircleItem(
                     painter = painterResource(iconRes),
                     contentDescription = label,
                     modifier = Modifier.size(28.dp),
-                    tint = if (isSelected) MaterialTheme.colorScheme.onPrimary
+                    tint = if (isSelected) Color.Unspecified
                     else MaterialTheme.colorScheme.onBackground
                 )
             }
@@ -837,3 +791,7 @@ fun TextDiceFace(
         )
     }
 }
+
+
+
+
