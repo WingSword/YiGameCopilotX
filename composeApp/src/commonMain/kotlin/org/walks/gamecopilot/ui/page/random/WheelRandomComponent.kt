@@ -28,7 +28,6 @@ import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.drawscope.DrawScope
-import androidx.compose.ui.graphics.drawscope.rotate
 import androidx.compose.ui.graphics.drawscope.translate
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.drawText
@@ -36,7 +35,6 @@ import androidx.compose.ui.text.rememberTextMeasurer
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.yi.yigamecopilot.android.theme.ZhuQing
 import kotlinx.coroutines.launch
 import org.walks.gamecopilot.PlatformHelper
 import org.walks.gamecopilot.data.WheelItem
@@ -244,16 +242,11 @@ private fun DrawScope.drawWheel(
             color = Color.White
         )
 
-        // 文本位置：在转盘边缘，竖直向内排列
+        // 文本位置：在扇形区域的中心线上
         // 使用转盘半径的70%作为文本半径，让文字稍微靠近圆心
         val textRadius = radius * 0.70f
-        // 绘制文本 - 让文字竖直向内排列
+        // 计算扇形中心线的角度（相对于顶部）
         val textAngle = startAngle + sweepAngle / 2
-
-        // 计算文本在转盘上的位置
-        val textAngleRad = textAngle * PI.toFloat() / 180f
-        centerX + textRadius * cos(textAngleRad)
-        centerY + textRadius * sin(textAngleRad)
 
         // 测量文本
         val textLayoutResult = textMeasurer.measure(
@@ -266,38 +259,42 @@ private fun DrawScope.drawWheel(
             )
         )
 
-        // 使用DrawScope的原生rotate和translate方法，确保位置准确
-        rotate(degrees = textAngle + 90f) {
-            // 在旋转后的坐标系中，文本位置应该沿着径向向外
-            translate(left = textRadius, top = 0f) {
-                // 绘制半透明圆角背景
-                val backgroundPadding = 18f
-                val backgroundSize = Size(
-                    width = textLayoutResult.size.width + backgroundPadding * 2,
-                    height = textLayoutResult.size.height + backgroundPadding * 2
-                )
-                val backgroundTopLeft = Offset(
-                    (-backgroundSize.width / 2f) + 66f,
-                    (-backgroundSize.height / 2f) + 66f
-                )
+        // 先计算文本在旋转前的位置
+        val textAngleRad = (textAngle) * PI.toFloat() / 180f
+        val textX = centerX + textRadius * cos(textAngleRad)
+        val textY = centerY + textRadius * sin(textAngleRad)
 
-                // 绘制圆角矩形背景
-                drawRoundRect(
-                    color = ZhuQing.copy(alpha = 0.4f),
-                    topLeft = backgroundTopLeft,
-                    size = backgroundSize,
-                    cornerRadius = androidx.compose.ui.geometry.CornerRadius(18.dp.toPx())
-                )
+        // 保存当前画布状态
+        Offset(centerX, centerY)
 
-                // 绘制文本
-                drawText(
-                    textLayoutResult = textLayoutResult,
-                    topLeft = Offset(
-                        (-textLayoutResult.size.width / 2f) + 66f,
-                        (-textLayoutResult.size.height / 2f) + 66f
-                    )
+        // 平移到文本位置，然后旋转文本使其沿着径向
+        translate(left = textX, top = textY) {
+            // 绘制半透明圆角背景
+            val backgroundPadding = 8f
+            val backgroundSize = Size(
+                width = textLayoutResult.size.width + backgroundPadding * 2,
+                height = textLayoutResult.size.height + backgroundPadding * 2
+            )
+
+            // 绘制圆角矩形背景
+            drawRoundRect(
+                color = Color.Black.copy(alpha = 0.4f),
+                topLeft = Offset(
+                    -backgroundSize.width / 2f,
+                    -backgroundSize.height / 2f
+                ),
+                size = backgroundSize,
+                cornerRadius = androidx.compose.ui.geometry.CornerRadius(6.dp.toPx())
+            )
+
+            // 绘制文本
+            drawText(
+                textLayoutResult = textLayoutResult,
+                topLeft = Offset(
+                    -textLayoutResult.size.width / 2f,
+                    -textLayoutResult.size.height / 2f
                 )
-            }
+            )
         }
     }
 }

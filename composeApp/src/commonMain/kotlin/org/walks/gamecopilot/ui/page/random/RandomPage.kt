@@ -15,27 +15,40 @@ import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.Settings
+import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -48,6 +61,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.snapshots.SnapshotStateList
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -61,18 +75,24 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.window.Dialog
+import androidx.compose.ui.window.DialogProperties
 import com.yi.yigamecopilot.android.theme.MorandiBlue
 import com.yi.yigamecopilot.android.theme.MorandiGreen
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
+import kotlinx.serialization.json.Json
 import org.jetbrains.compose.resources.DrawableResource
 import org.jetbrains.compose.resources.painterResource
 import org.walks.gamecopilot.MainViewmodel
 import org.walks.gamecopilot.PlatformHelper
+import org.walks.gamecopilot.RANDOM_PAGE_CONFIG_CATE_CARD
 import org.walks.gamecopilot.RANDOM_PAGE_CONFIG_CATE_COIN
 import org.walks.gamecopilot.RANDOM_PAGE_CONFIG_CATE_DICE
+import org.walks.gamecopilot.RANDOM_PAGE_CONFIG_CATE_WHEEL
 import org.walks.gamecopilot.data.RandomItem
+import org.walks.gamecopilot.data.RandomListEntity
 import org.walks.gamecopilot.data.WheelItem
 import org.walks.gamecopilot.intent.RandomPageIntent
 import org.walks.gamecopilot.ui.animation.DiceAnimation
@@ -100,6 +120,8 @@ private const val MIN_SCALE = 0.8f
 @Composable
 fun RandomPage(viewmodel: MainViewmodel) {
     var addRandomDialogShow by remember { mutableStateOf(false) }
+    var editRandomDialogShow by remember { mutableStateOf(false) }
+    var editConfigName by remember { mutableStateOf("") }
     var isShuffling by remember { mutableStateOf(false) }
     val scope = rememberCoroutineScope()
     viewmodel.handleRandomPageIntent(RandomPageIntent.OnChangeNewRandomLabel)
@@ -174,6 +196,12 @@ fun RandomPage(viewmodel: MainViewmodel) {
                 },
                 onLongClick = {
                     isEditMode = !isEditMode
+                },
+                onEdit = { configName ->
+                    // 设置要编辑的配置名称
+                    editConfigName = configName
+                    editRandomDialogShow = true
+                    isEditMode = false
                 }
             )
         }
@@ -273,6 +301,17 @@ fun RandomPage(viewmodel: MainViewmodel) {
                 viewmodel.handleRandomPageIntent(RandomPageIntent.OnAddNewRandom(it))
                 viewmodel.handleRandomPageIntent(RandomPageIntent.OnChangeNewRandomLabel)
             })
+
+        EditRandomDialog(
+            editRandomDialogShow,
+            onDismiss = { editRandomDialogShow = false },
+            onSave = {
+                editRandomDialogShow = false
+                viewmodel.handleRandomPageIntent(RandomPageIntent.OnEditRandomConfig(it))
+                viewmodel.handleRandomPageIntent(RandomPageIntent.OnChangeNewRandomLabel)
+            },
+            configName = editConfigName
+        )
     }
 }
 
@@ -559,7 +598,8 @@ fun RandomConfigList(
     isEditMode: Boolean,
     onItemClick: (String) -> Unit,
     onDelete: (String) -> Unit,
-    onLongClick: (String) -> Unit
+    onLongClick: (String) -> Unit,
+    onEdit: (String) -> Unit = {}
 ) {
     // 过滤掉空的配置项（没有类别的配置）
     val filteredLabels = randomLabelsList.filter { item ->
@@ -585,7 +625,8 @@ fun RandomConfigList(
                 iconRes = iconRes,
                 onClick = { onItemClick(item) },
                 onDelete = { onDelete(item) },
-                onLongClick = { onLongClick(item) }
+                onLongClick = { onLongClick(item) },
+                onEdit = { onEdit(item) }
             )
         }
     }
@@ -601,7 +642,8 @@ fun RandomConfigCircleItem(
     iconRes: DrawableResource,
     onClick: () -> Unit,
     onDelete: () -> Unit,
-    onLongClick: () -> Unit
+    onLongClick: () -> Unit,
+    onEdit: () -> Unit = {}
 ) {
     Column(
         modifier = Modifier
@@ -626,13 +668,14 @@ fun RandomConfigCircleItem(
                         shape = CircleShape
                     )
                     .combinedClickable(
-                        onLongClick = { onLongClick() },
+                        onLongClick = {
+                            // 长按切换编辑模式
+                            onLongClick()
+                        },
                         interactionSource = remember { MutableInteractionSource() },
                         indication = null
                     ) {
-
                         onClick()
-
                     },
                 contentAlignment = Alignment.Center
             ) {
@@ -645,6 +688,7 @@ fun RandomConfigCircleItem(
                     else MaterialTheme.colorScheme.onBackground
                 )
             }
+
             // 删除按钮（编辑模式下显示在右上角）
             if (isEdit) {
                 Icon(
@@ -665,9 +709,28 @@ fun RandomConfigCircleItem(
                         .padding(2.dp),
                     tint = Color.Red
                 )
+
+                // 编辑按钮（编辑模式下显示在左上角）
+                Icon(
+                    imageVector = Icons.Default.Settings,
+                    contentDescription = "编辑",
+                    modifier = Modifier
+                        .size(18.dp)
+                        .align(Alignment.TopStart)
+                        .offset(x = (3).dp, y = (-3).dp)
+                        .clickable(
+                            interactionSource = remember { MutableInteractionSource() },
+                            indication = null
+                        ) { onEdit() }
+                        .background(
+                            Color.White,
+                            CircleShape
+                        )
+                        .padding(2.dp),
+                    tint = Color.Blue
+                )
             }
         }
-
 
         // 标签文字
         Text(
@@ -789,6 +852,196 @@ fun TextDiceFace(
             textAlign = TextAlign.Center,
             maxLines = 2
         )
+    }
+}
+
+/**
+ * 编辑配置对话框
+ */
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun EditRandomDialog(
+    show: Boolean,
+    onDismiss: () -> Unit,
+    onSave: (RandomListEntity) -> Unit,
+    configName: String
+) {
+    if (show && configName.isNotEmpty()) {
+        Dialog(
+            onDismissRequest = onDismiss,
+            properties = DialogProperties(usePlatformDefaultWidth = false)
+        ) {
+            Surface(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .heightIn(max = 600.dp),
+                shape = RoundedCornerShape(16.dp),
+                color = MaterialTheme.colorScheme.surface
+            ) {
+                var randomName by remember { mutableStateOf("") }
+                var selectedCate by remember { mutableStateOf(RANDOM_PAGE_CONFIG_CATE_CARD) }
+                val cardListState = remember { SnapshotStateList<RandomItem>() }
+                val scrollState = rememberScrollState()
+
+                // 从配置名称中提取类型和名称
+                LaunchedEffect(configName) {
+                    // 判断配置类型
+                    when {
+                        configName.startsWith(RANDOM_PAGE_CONFIG_CATE_CARD) -> {
+                            selectedCate = RANDOM_PAGE_CONFIG_CATE_CARD
+                            randomName = configName.replaceFirst(RANDOM_PAGE_CONFIG_CATE_CARD, "")
+                        }
+
+                        configName.startsWith(RANDOM_PAGE_CONFIG_CATE_DICE) -> {
+                            selectedCate = RANDOM_PAGE_CONFIG_CATE_DICE
+                            randomName = configName.replaceFirst(RANDOM_PAGE_CONFIG_CATE_DICE, "")
+                        }
+
+                        configName.startsWith(RANDOM_PAGE_CONFIG_CATE_COIN) -> {
+                            selectedCate = RANDOM_PAGE_CONFIG_CATE_COIN
+                            randomName = configName.replaceFirst(RANDOM_PAGE_CONFIG_CATE_COIN, "")
+                        }
+
+                        configName.startsWith(RANDOM_PAGE_CONFIG_CATE_WHEEL) -> {
+                            selectedCate = RANDOM_PAGE_CONFIG_CATE_WHEEL
+                            randomName = configName.replaceFirst(RANDOM_PAGE_CONFIG_CATE_WHEEL, "")
+                        }
+                    }
+
+                    // 加载配置数据
+                    try {
+                        val jsonCards = org.walks.gamecopilot.mmkv.MMKVUtils.getString(
+                            org.walks.gamecopilot.mmkv.MMKV_RANDOM_CARDS_SETTING_KEY + configName,
+                            ""
+                        )
+                        if (jsonCards.isNotEmpty()) {
+                            val config = Json.decodeFromString<RandomListEntity>(jsonCards)
+                            cardListState.clear()
+                            cardListState.addAll(config.list)
+                        }
+                    } catch (e: Exception) {
+                        e.printStackTrace()
+                    }
+                }
+
+                Column(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .verticalScroll(scrollState)
+                        .padding(16.dp)
+                ) {
+                    // 顶部标题栏
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(
+                            text = "编辑随机配置",
+                            style = MaterialTheme.typography.headlineSmall,
+                            color = MaterialTheme.colorScheme.primary
+                        )
+
+                        IconButton(onClick = onDismiss) {
+                            Icon(
+                                imageVector = Icons.Default.Close,
+                                contentDescription = "关闭"
+                            )
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.height(16.dp))
+
+                    // 配置名称输入
+                    OutlinedTextField(
+                        value = randomName,
+                        onValueChange = { randomName = it },
+                        label = { Text("配置名称") },
+                        modifier = Modifier.fillMaxWidth(),
+                        singleLine = true,
+                        shape = RoundedCornerShape(8.dp)
+                    )
+
+                    Spacer(modifier = Modifier.height(16.dp))
+
+                    // 类型选择栏
+                    Text(
+                        text = "选择类型",
+                        style = MaterialTheme.typography.titleMedium,
+                        color = MaterialTheme.colorScheme.secondary
+                    )
+                    Spacer(modifier = Modifier.height(8.dp))
+
+                    AddNewRandomCateActionBar(
+                        select = selectedCate,
+                        onClick = { cate ->
+                            selectedCate = cate.key
+                            // 注意：编辑时不应该清空列表，而是保留原有数据
+                        }
+                    )
+
+                    Spacer(modifier = Modifier.height(16.dp))
+
+                    // 内容编辑区域
+                    when (selectedCate) {
+                        RANDOM_PAGE_CONFIG_CATE_DICE -> {
+                            AddRandomDiceContent(diceListState = cardListState)
+                        }
+
+                        RANDOM_PAGE_CONFIG_CATE_WHEEL -> {
+                            AddRandomWheelContent(wheelListState = cardListState)
+                        }
+
+                        else -> {
+                            AddRandomListContent(
+                                cardListState = cardListState,
+                                randomCate = selectedCate
+                            )
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.height(16.dp))
+
+                    // 底部操作按钮
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceEvenly
+                    ) {
+                        OutlinedButton(
+                            onClick = onDismiss,
+                            modifier = Modifier.weight(1f)
+                        ) {
+                            Text("取消")
+                        }
+
+                        Spacer(modifier = Modifier.width(16.dp))
+
+                        Button(
+                            onClick = {
+                                if (randomName.isNotBlank()) {
+                                    onSave(
+                                        RandomListEntity(
+                                            name = selectedCate + randomName,
+                                            list = cardListState.toList()
+                                        )
+                                    )
+                                }
+                            },
+                            modifier = Modifier.weight(1f),
+                            enabled = randomName.isNotBlank()
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Check,
+                                contentDescription = null,
+                                modifier = Modifier.size(18.dp)
+                            )
+                            Spacer(modifier = Modifier.width(4.dp))
+                            Text("保存")
+                        }
+                    }
+                }
+            }
+        }
     }
 }
 

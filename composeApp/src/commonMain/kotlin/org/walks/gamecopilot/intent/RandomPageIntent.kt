@@ -12,6 +12,7 @@ sealed class RandomPageIntent {
     data object OnAddNewRandomDialogShow : RandomPageIntent()
     data object OnAddNewRandomDialogSave : RandomPageIntent()
     data class DeleteRandomConfig(val name:String) : RandomPageIntent()
+    data class OnEditRandomConfig(val randomListEntity: RandomListEntity) : RandomPageIntent()
     data object OnChangeNewRandomLabel : RandomPageIntent()
     data class OnSelectLabel(val label:String) : RandomPageIntent()
     data class OnCancelLabel(val label:String) : RandomPageIntent()

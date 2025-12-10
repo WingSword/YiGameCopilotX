@@ -37,6 +37,7 @@ import org.walks.gamecopilot.mmkv.MMKVUtils
 import org.walks.gamecopilot.mmkv.MMKV_RANDOM_CARDS_SETTING_KEY
 import org.walks.gamecopilot.mmkv.MMKV_RANDOM_LABEL_NAME_KEY
 import org.walks.gamecopilot.navigation.NaviRoute
+import org.walks.gamecopilot.ui.page.random.RandomCate
 import org.walks.gamecopilot.utils.DateTimeUtils
 import kotlin.time.Clock
 import kotlin.time.ExperimentalTime
@@ -204,6 +205,50 @@ class MainViewmodel : ViewModel() {
                     e.printStackTrace()
                     // 添加错误处理
 
+                }
+            }
+
+            is RandomPageIntent.OnEditRandomConfig -> {
+                try {
+                    // 序列化卡片列表
+                    val jsonCards = Json.encodeToString(intent.randomListEntity)
+                    // 保存到 MMKV（使用相同的key，会覆盖原有配置）
+                    MMKVUtils.apply {
+                        put(MMKV_RANDOM_CARDS_SETTING_KEY + intent.randomListEntity.name, jsonCards)
+                        // 如果配置名称改变了，需要更新名称列表
+                        val currentNameSet = getSet(MMKV_RANDOM_LABEL_NAME_KEY) ?: setOf()
+                        // 找到旧的配置名称（通过类型前缀匹配）
+                        val oldName = currentNameSet.find { name ->
+                            val type = RandomCate.getCateByItem(name)
+                            when (type) {
+                                RandomCate.Card -> RANDOM_PAGE_CONFIG_CATE_CARD
+                                RandomCate.Dice -> RANDOM_PAGE_CONFIG_CATE_DICE
+                                RandomCate.Coin -> RANDOM_PAGE_CONFIG_CATE_COIN
+                                RandomCate.Wheel -> RANDOM_PAGE_CONFIG_CATE_WHEEL
+                                else -> ""
+                            } == when (type) {
+                                RandomCate.Card -> RANDOM_PAGE_CONFIG_CATE_CARD
+                                RandomCate.Dice -> RANDOM_PAGE_CONFIG_CATE_DICE
+                                RandomCate.Coin -> RANDOM_PAGE_CONFIG_CATE_COIN
+                                RandomCate.Wheel -> RANDOM_PAGE_CONFIG_CATE_WHEEL
+                                else -> ""
+                            } && name.contains(intent.randomListEntity.name.substringAfter(type.key))
+                        }
+
+                        // 如果找到了旧名称且与当前名称不同，则更新
+                        if (oldName != null && oldName != intent.randomListEntity.name) {
+                            // 删除旧配置
+                            remove(MMKV_RANDOM_CARDS_SETTING_KEY + oldName)
+                            // 更新名称列表
+                            putSet(
+                                MMKV_RANDOM_LABEL_NAME_KEY,
+                                currentNameSet.minus(oldName).plus(intent.randomListEntity.name)
+                            )
+                        }
+                    }
+                } catch (e: Exception) {
+                    e.printStackTrace()
+                    // 添加错误处理
                 }
             }
 
