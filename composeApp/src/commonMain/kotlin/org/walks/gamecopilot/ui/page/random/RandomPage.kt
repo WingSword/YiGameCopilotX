@@ -39,7 +39,6 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Close
-import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -97,6 +96,8 @@ import org.walks.gamecopilot.data.WheelItem
 import org.walks.gamecopilot.intent.RandomPageIntent
 import org.walks.gamecopilot.ui.animation.DiceAnimation
 import org.walks.gamecopilot.ui.animation.RollCoinAnimation
+import yigamecopilotx.composeapp.generated.resources.Res
+import yigamecopilotx.composeapp.generated.resources.icon_edit
 import kotlin.math.ceil
 import kotlin.random.Random
 
@@ -227,10 +228,18 @@ fun RandomPage(viewmodel: MainViewmodel) {
                 ) {
                     // 获取转盘选项列表 - 使用当前配置的选项
                     val wheelItems = itemList.mapIndexed { index, randomItem ->
+                        // 尝试从second字段解析权重，如果无法解析则使用默认权重1.0
+                        val weight = try {
+                            randomItem.second.toFloatOrNull() ?: 1.0f
+                        } catch (e: Exception) {
+                            1.0f
+                        }
+                        
                         WheelItem(
                             id = randomItem.id.toString(),
                             text = randomItem.first,
-                            color = WheelItem.DEFAULT_COLORS.getOrElse(index) { Color.Gray }
+                            color = WheelItem.DEFAULT_COLORS.getOrElse(index) { Color.Gray },
+                            weight = weight
                         )
                     }
 
@@ -712,22 +721,21 @@ fun RandomConfigCircleItem(
 
                 // 编辑按钮（编辑模式下显示在左上角）
                 Icon(
-                    imageVector = Icons.Default.Settings,
+                    painter = painterResource(Res.drawable.icon_edit),
                     contentDescription = "编辑",
                     modifier = Modifier
-                        .size(18.dp)
-                        .align(Alignment.TopStart)
-                        .offset(x = (3).dp, y = (-3).dp)
+                        .size(33.dp)
+                        .align(Alignment.Center)
                         .clickable(
                             interactionSource = remember { MutableInteractionSource() },
                             indication = null
                         ) { onEdit() }
                         .background(
-                            Color.White,
+                            Color.White.copy(0.75F),
                             CircleShape
                         )
-                        .padding(2.dp),
-                    tint = Color.Blue
+                        .padding(4.dp),
+                    tint = Color.Unspecified
                 )
             }
         }

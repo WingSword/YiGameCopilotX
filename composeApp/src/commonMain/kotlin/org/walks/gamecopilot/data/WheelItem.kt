@@ -17,7 +17,8 @@ import com.yi.yigamecopilot.android.theme.MorandiYellow
 data class WheelItem(
     val id: String,
     val text: String,
-    val color: Color
+    val color: Color,
+    val weight: Float = 1.0f // 权重/比例，默认为1.0表示标准比例
 ) {
     companion object {
         // 预设颜色

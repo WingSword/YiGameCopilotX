@@ -40,6 +40,7 @@ import androidx.compose.material.icons.filled.KeyboardArrowUp
 import androidx.compose.material.icons.sharp.Add
 import androidx.compose.material.icons.sharp.Clear
 import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -78,6 +79,7 @@ import yigamecopilotx.composeapp.generated.resources.icon_card
 import yigamecopilotx.composeapp.generated.resources.icon_coin
 import yigamecopilotx.composeapp.generated.resources.icon_dice
 import yigamecopilotx.composeapp.generated.resources.icon_wheel_svg
+import kotlin.math.roundToInt
 
 
 /**
@@ -676,15 +678,73 @@ fun AddNewRandomDialog(
 fun AddRandomWheelContent(
     wheelListState: SnapshotStateList<RandomItem>
 ) {
+    // 自动校正其他选项的权重
+    fun balanceWeights() {
+        var totalWeight = 0.0
+        wheelListState.forEach {
+            try {
+                totalWeight += ((it.second.toFloatOrNull() ?: 1.0) as Double)
+            } catch (e: Exception) {
+                totalWeight += 1.0
+            }
+        }
+        val totalWeightFloat = totalWeight.toFloat()
+
+        if (totalWeightFloat > 0) {
+            // 找出需要调整的选项（权重不为0.5、1.0或2.0的选项）
+            val customWeights = mutableMapOf<Int, Float>()
+            var standardTotalWeight = 0f
+
+            wheelListState.forEachIndexed { index, item ->
+                val weight = try {
+                    item.second.toFloatOrNull() ?: 1.0f
+                } catch (e: Exception) {
+                    1.0f
+                }
+
+                // 检查是否是标准权重
+                if (weight != 0.5f && weight != 1.0f && weight != 2.0f) {
+                    customWeights[index] = weight
+                } else {
+                    standardTotalWeight += weight
+                }
+            }
+
+            // 如果有自定义权重，调整标准权重
+            if (customWeights.isNotEmpty() && standardTotalWeight > 0) {
+                var customTotalWeight = 0.0
+                customWeights.values.forEach { customTotalWeight += it.toDouble() }
+                val customTotalWeightFloat = customTotalWeight.toFloat()
+                val remainingWeight = 100f - customTotalWeightFloat
+                val standardWeightFactor = remainingWeight / standardTotalWeight
+
+                wheelListState.forEachIndexed { index, item ->
+                    if (!customWeights.containsKey(index)) {
+                        val originalWeight = try {
+                            item.second.toFloatOrNull() ?: 1.0f
+                        } catch (e: Exception) {
+                            1.0f
+                        }
+                        val newWeight = originalWeight * standardWeightFactor
+                        // 保留一位小数
+                        val rounded = (newWeight * 10).roundToInt() / 10f
+                        item.second = rounded.toString()
+                    }
+                }
+            }
+        }
+    }
+    
     Column(
         modifier = Modifier.padding(horizontal = 10.dp),
         verticalArrangement = spacedBy(16.dp)
     ) {
-        // 添加转盘选项按钮
+        // 添加转盘选项按钮和自动校正按钮
         Row(
-            horizontalArrangement = Arrangement.Center,
+            horizontalArrangement = Arrangement.SpaceBetween,
             modifier = Modifier.fillMaxWidth()
         ) {
+            // 添加选项按钮
             Icon(
                 imageVector = Icons.Sharp.Add,
                 contentDescription = "新增转盘选项",
@@ -695,7 +755,7 @@ fun AddRandomWheelContent(
                             wheelListState.add(
                                 RandomItem(
                                     first = "选项${wheelListState.size + 1}",
-                                    second = ""
+                                    second = "1.0" // 默认权重为1.0
                                 )
                             )
                         }
@@ -708,6 +768,17 @@ fun AddRandomWheelContent(
                     .padding(8.dp),
                 tint = MaterialTheme.colorScheme.secondary,
             )
+
+            // 自动校正按钮
+            OutlinedButton(
+                onClick = { balanceWeights() },
+                shape = RoundedCornerShape(8.dp),
+                colors = ButtonDefaults.outlinedButtonColors(
+                    contentColor = MaterialTheme.colorScheme.primary
+                )
+            ) {
+                Text("自动校正", fontSize = 12.sp)
+            }
         }
 
         // 显示当前选项数量
@@ -715,6 +786,13 @@ fun AddRandomWheelContent(
             text = "当前选项: ${wheelListState.size}/20",
             color = MaterialTheme.colorScheme.secondary,
             fontSize = 12.sp
+        )
+
+        // 权重提示
+        Text(
+            text = "提示：调整选项权重后，可点击自动校正按钮自动调整其他选项",
+            color = MaterialTheme.colorScheme.secondary.copy(0.7f),
+            fontSize = 11.sp
         )
 
         // 转盘选项列表 - 使用FlowRow实现两列布局
@@ -748,8 +826,16 @@ fun WheelItemInput(
     onDelete: () -> Unit
 ) {
     var optionText by remember { mutableStateOf(wheelState.first) }
-    var descriptionText by remember { mutableStateOf(wheelState.second) }
-    var isDescriptionExpanded by remember { mutableStateOf(false) }
+    var weightText by remember {
+        mutableStateOf(
+            try {
+                wheelState.second.toFloatOrNull()?.toString() ?: "1.0"
+            } catch (e: Exception) {
+                "1.0"
+            }
+        )
+    }
+    var isWeightExpanded by remember { mutableStateOf(false) }
 
     Column(
         modifier = Modifier
@@ -807,15 +893,15 @@ fun WheelItemInput(
 
         Spacer(modifier = Modifier.height(8.dp))
 
-        // 描述部分（可折叠）
+        // 权重部分（可折叠）
         Row(
             verticalAlignment = Alignment.CenterVertically,
             modifier = Modifier.clickable {
-                isDescriptionExpanded = !isDescriptionExpanded
+                isWeightExpanded = !isWeightExpanded
             }
         ) {
             Text(
-                text = "描述",
+                text = "权重/比例",
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.secondary,
                 modifier = Modifier.weight(1f)
@@ -823,24 +909,36 @@ fun WheelItemInput(
 
             // 展开/折叠图标
             Icon(
-                imageVector = if (isDescriptionExpanded) Icons.Default.ArrowDropDown else Icons.Default.KeyboardArrowUp,
-                contentDescription = if (isDescriptionExpanded) "折叠描述" else "展开描述",
+                imageVector = if (isWeightExpanded) Icons.Default.ArrowDropDown else Icons.Default.KeyboardArrowUp,
+                contentDescription = if (isWeightExpanded) "折叠权重" else "展开权重",
                 modifier = Modifier.size(16.dp),
                 tint = MaterialTheme.colorScheme.secondary
             )
         }
 
-        // 展开的描述输入框
-        if (isDescriptionExpanded) {
+        // 展开的权重输入框
+        if (isWeightExpanded) {
             Spacer(modifier = Modifier.height(4.dp))
             OutlinedTextField(
-                onValueChange = {
-                    wheelState.second = it
-                    descriptionText = it
+                onValueChange = { newText ->
+                    // 只允许输入数字和小数点
+                    val filteredText = newText.filter { it.isDigit() || it == '.' }
+                    if (filteredText != newText) return@OutlinedTextField
+
+                    weightText = filteredText
+                    // 保存到 wheelState.second
+                    wheelState.second = filteredText
                 },
-                value = descriptionText,
+                value = weightText,
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(8.dp),
+                supportingText = {
+                    Text(
+                        text = "数值越大，选项在转盘上占比越大",
+                        fontSize = 12.sp,
+                        color = MaterialTheme.colorScheme.secondary.copy(0.55f)
+                    )
+                },
                 colors = OutlinedTextFieldDefaults.colors(
                     unfocusedBorderColor = MaterialTheme.colorScheme.primary.copy(0.55f),
                     unfocusedTextColor = MaterialTheme.colorScheme.primary.copy(0.55f),
