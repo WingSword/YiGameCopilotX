@@ -51,6 +51,7 @@ import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -79,7 +80,6 @@ import yigamecopilotx.composeapp.generated.resources.icon_card
 import yigamecopilotx.composeapp.generated.resources.icon_coin
 import yigamecopilotx.composeapp.generated.resources.icon_dice
 import yigamecopilotx.composeapp.generated.resources.icon_wheel_svg
-import kotlin.math.roundToInt
 
 
 /**
@@ -122,7 +122,11 @@ enum class RandomCate(val key: String, val iconRes: DrawableResource?) {
 }
 
 @Composable
-fun AddNewRandomCateActionBar(select: String, onClick: (RandomCate) -> Unit) {
+fun AddNewRandomCateActionBar(
+    select: String,
+    isEditing: Boolean = false,
+    onClick: (RandomCate) -> Unit
+) {
     LazyRow(horizontalArrangement = spacedBy(4.dp)) {
         items(RandomCate.entries) { cate ->
             val isSelected = select == cate.key
@@ -167,7 +171,11 @@ fun AddNewRandomCateActionBar(select: String, onClick: (RandomCate) -> Unit) {
                             shape = CircleShape
                         )
                         .padding(4.dp)
-                        .clickableWithoutRipple { onClick(cate) },
+                        .clickableWithoutRipple {
+                            // 如果正在编辑，不允许切换到其他类型
+                            if (isEditing && select != cate.key) return@clickableWithoutRipple
+                            onClick(cate)
+                        },
                     tint = if (isSelected) Color.Unspecified
                     else MaterialTheme.colorScheme.secondary.copy(0.5f)
                 )
@@ -644,6 +652,10 @@ fun AddNewRandomDialog(
                         Button(
                             onClick = {
                                 if (randomName.isNotBlank()) {
+                                    // 对于转盘类型，保存前先校正权重
+                                    if (selectedCate == RANDOM_PAGE_CONFIG_CATE_WHEEL) {
+                                        validateAndCorrectWheelWeights(cardListState)
+                                    }
                                     onSave(
                                         RandomListEntity(
                                             name = selectedCate + randomName,
@@ -671,6 +683,61 @@ fun AddNewRandomDialog(
 }
 
 /**
+ * 校正转盘权重，确保总和为100
+ */
+fun validateAndCorrectWheelWeights(wheelListState: SnapshotStateList<RandomItem>): Boolean {
+    if (wheelListState.isEmpty()) return false
+
+    // 解析所有权重为整数，无效的设为1
+    val weights = wheelListState.mapIndexed { index, item ->
+        val weight = item.second.toIntOrNull()
+        if (weight == null || weight < 1 || weight > 100) {
+            wheelListState[index].second = "1"
+            1
+        } else {
+            weight
+        }
+    }
+
+    // 计算总权重
+    val totalWeight = weights.sum()
+
+    if (totalWeight > 100) {
+        // 超过100，从最后一项开始扣减
+        var excess = totalWeight - 100
+        var currentIndex = wheelListState.size - 1
+
+        while (excess > 0 && currentIndex >= 0) {
+            val currentWeight = wheelListState[currentIndex].second.toIntOrNull() ?: 1
+            val minWeight = 1
+            val reduction = minOf(excess, currentWeight - minWeight)
+
+            if (reduction > 0) {
+                val newWeight = currentWeight - reduction
+                wheelListState[currentIndex].second = newWeight.toString()
+                excess -= reduction
+            }
+            currentIndex--
+        }
+    } else if (totalWeight < 100) {
+        // 不足100，在最后一项加上差额
+        val deficit = 100 - totalWeight
+        val lastIndex = wheelListState.size - 1
+        val currentWeight = wheelListState[lastIndex].second.toIntOrNull() ?: 1
+        val newWeight = currentWeight + deficit
+
+        if (newWeight <= 100) {
+            wheelListState[lastIndex].second = newWeight.toString()
+        } else {
+            // 如果加上后会超过100，设为100
+            wheelListState[lastIndex].second = "100"
+        }
+    }
+
+    return true
+}
+
+/**
  * 转盘配置内容组件
  */
 @OptIn(ExperimentalLayoutApi::class)
@@ -678,63 +745,6 @@ fun AddNewRandomDialog(
 fun AddRandomWheelContent(
     wheelListState: SnapshotStateList<RandomItem>
 ) {
-    // 自动校正其他选项的权重
-    fun balanceWeights() {
-        var totalWeight = 0.0
-        wheelListState.forEach {
-            try {
-                totalWeight += ((it.second.toFloatOrNull() ?: 1.0) as Double)
-            } catch (e: Exception) {
-                totalWeight += 1.0
-            }
-        }
-        val totalWeightFloat = totalWeight.toFloat()
-
-        if (totalWeightFloat > 0) {
-            // 找出需要调整的选项（权重不为0.5、1.0或2.0的选项）
-            val customWeights = mutableMapOf<Int, Float>()
-            var standardTotalWeight = 0f
-
-            wheelListState.forEachIndexed { index, item ->
-                val weight = try {
-                    item.second.toFloatOrNull() ?: 1.0f
-                } catch (e: Exception) {
-                    1.0f
-                }
-
-                // 检查是否是标准权重
-                if (weight != 0.5f && weight != 1.0f && weight != 2.0f) {
-                    customWeights[index] = weight
-                } else {
-                    standardTotalWeight += weight
-                }
-            }
-
-            // 如果有自定义权重，调整标准权重
-            if (customWeights.isNotEmpty() && standardTotalWeight > 0) {
-                var customTotalWeight = 0.0
-                customWeights.values.forEach { customTotalWeight += it.toDouble() }
-                val customTotalWeightFloat = customTotalWeight.toFloat()
-                val remainingWeight = 100f - customTotalWeightFloat
-                val standardWeightFactor = remainingWeight / standardTotalWeight
-
-                wheelListState.forEachIndexed { index, item ->
-                    if (!customWeights.containsKey(index)) {
-                        val originalWeight = try {
-                            item.second.toFloatOrNull() ?: 1.0f
-                        } catch (e: Exception) {
-                            1.0f
-                        }
-                        val newWeight = originalWeight * standardWeightFactor
-                        // 保留一位小数
-                        val rounded = (newWeight * 10).roundToInt() / 10f
-                        item.second = rounded.toString()
-                    }
-                }
-            }
-        }
-    }
-    
     Column(
         modifier = Modifier.padding(horizontal = 10.dp),
         verticalArrangement = spacedBy(16.dp)
@@ -755,7 +765,7 @@ fun AddRandomWheelContent(
                             wheelListState.add(
                                 RandomItem(
                                     first = "选项${wheelListState.size + 1}",
-                                    second = "1.0" // 默认权重为1.0
+                                    second = "1" // 默认权重为1
                                 )
                             )
                         }
@@ -769,15 +779,36 @@ fun AddRandomWheelContent(
                 tint = MaterialTheme.colorScheme.secondary,
             )
 
-            // 自动校正按钮
+            // 一键均分按钮
             OutlinedButton(
-                onClick = { balanceWeights() },
+                onClick = {
+                    // 计算每个选项的均分权重
+                    if (wheelListState.isNotEmpty()) {
+                        val equalWeight = 100 / wheelListState.size
+                        val remainder = 100 % wheelListState.size
+
+                        // 创建新的列表来触发状态更新
+                        val newList = wheelListState.mapIndexed { index, item ->
+                            val weight = equalWeight + if (index < remainder) 1 else 0
+                            RandomItem(
+                                id = item.id,
+                                first = item.first,
+                                second = weight.toString(),
+                                cate = item.cate
+                            )
+                        }
+
+                        // 清空并重新添加新项目，确保触发状态更新
+                        wheelListState.clear()
+                        wheelListState.addAll(newList)
+                    }
+                },
                 shape = RoundedCornerShape(8.dp),
                 colors = ButtonDefaults.outlinedButtonColors(
                     contentColor = MaterialTheme.colorScheme.primary
                 )
             ) {
-                Text("自动校正", fontSize = 12.sp)
+                Text("一键均分", fontSize = 12.sp)
             }
         }
 
@@ -790,7 +821,7 @@ fun AddRandomWheelContent(
 
         // 权重提示
         Text(
-            text = "提示：调整选项权重后，可点击自动校正按钮自动调整其他选项",
+            text = "提示：权重范围1-100（整数），保存时自动校正确保总和为100",
             color = MaterialTheme.colorScheme.secondary.copy(0.7f),
             fontSize = 11.sp
         )
@@ -823,19 +854,17 @@ fun AddRandomWheelContent(
 fun WheelItemInput(
     wheelState: RandomItem,
     index: Int,
-    onDelete: () -> Unit
+    onDelete: () -> Unit,
+    onWeightChange: () -> Unit = {}
 ) {
     var optionText by remember { mutableStateOf(wheelState.first) }
-    var weightText by remember {
-        mutableStateOf(
-            try {
-                wheelState.second.toFloatOrNull()?.toString() ?: "1.0"
-            } catch (e: Exception) {
-                "1.0"
-            }
-        )
-    }
+    var weightText by remember { mutableStateOf(wheelState.second) }
     var isWeightExpanded by remember { mutableStateOf(false) }
+
+    // 监听 wheelState.second 的变化，同步更新 weightText
+    LaunchedEffect(wheelState.second) {
+        weightText = wheelState.second
+    }
 
     Column(
         modifier = Modifier
@@ -921,12 +950,15 @@ fun WheelItemInput(
             Spacer(modifier = Modifier.height(4.dp))
             OutlinedTextField(
                 onValueChange = { newText ->
-                    // 只允许输入数字和小数点
-                    val filteredText = newText.filter { it.isDigit() || it == '.' }
-                    if (filteredText != newText) return@OutlinedTextField
+                    // 允许空值和数字
+                    val filteredText = newText.filter { it.isDigit() }
+                    if (filteredText != newText && newText.isNotEmpty()) return@OutlinedTextField
 
+                    // 限制输入长度（最多3位数字）
+                    if (filteredText.length > 3) return@OutlinedTextField
+                    
                     weightText = filteredText
-                    // 保存到 wheelState.second
+                    // 保存到 wheelState.second（允许空值，保存时再校验）
                     wheelState.second = filteredText
                 },
                 value = weightText,
@@ -934,7 +966,7 @@ fun WheelItemInput(
                 shape = RoundedCornerShape(8.dp),
                 supportingText = {
                     Text(
-                        text = "数值越大，选项在转盘上占比越大",
+                        text = "权重范围：1-100（整数），可使用一键均分或保存时自动校正",
                         fontSize = 12.sp,
                         color = MaterialTheme.colorScheme.secondary.copy(0.55f)
                     )

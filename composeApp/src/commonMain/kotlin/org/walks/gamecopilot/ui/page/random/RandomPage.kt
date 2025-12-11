@@ -124,6 +124,7 @@ fun RandomPage(viewmodel: MainViewmodel) {
     var editRandomDialogShow by remember { mutableStateOf(false) }
     var editConfigName by remember { mutableStateOf("") }
     var isShuffling by remember { mutableStateOf(false) }
+    var isEditing by remember { mutableStateOf(false) }
     val scope = rememberCoroutineScope()
     viewmodel.handleRandomPageIntent(RandomPageIntent.OnChangeNewRandomLabel)
     // 修改为 mutableStateList 类型
@@ -202,6 +203,7 @@ fun RandomPage(viewmodel: MainViewmodel) {
                     // 设置要编辑的配置名称
                     editConfigName = configName
                     editRandomDialogShow = true
+                    isEditing = true
                     isEditMode = false
                 }
             )
@@ -313,13 +315,18 @@ fun RandomPage(viewmodel: MainViewmodel) {
 
         EditRandomDialog(
             editRandomDialogShow,
-            onDismiss = { editRandomDialogShow = false },
+            onDismiss = {
+                editRandomDialogShow = false
+                isEditing = false
+            },
             onSave = {
                 editRandomDialogShow = false
+                isEditing = false
                 viewmodel.handleRandomPageIntent(RandomPageIntent.OnEditRandomConfig(it))
                 viewmodel.handleRandomPageIntent(RandomPageIntent.OnChangeNewRandomLabel)
             },
-            configName = editConfigName
+            configName = editConfigName,
+            onShow = { isEditing = true }
         )
     }
 }
@@ -665,8 +672,10 @@ fun RandomConfigCircleItem(
                     .size(56.dp)
                     .clip(CircleShape)
                     .background(
-                        if (isSelected) MaterialTheme.colorScheme.primary
-                        else MaterialTheme.colorScheme.background
+                        if (isSelected)
+                            MaterialTheme.colorScheme.primary
+                        else
+                            MaterialTheme.colorScheme.background
                     )
                     .border(
                         width = 2.dp,
@@ -693,8 +702,10 @@ fun RandomConfigCircleItem(
                     painter = painterResource(iconRes),
                     contentDescription = label,
                     modifier = Modifier.size(28.dp),
-                    tint = if (isSelected) Color.Unspecified
-                    else MaterialTheme.colorScheme.onBackground
+                    tint = if (isSelected)
+                        Color.Unspecified
+                    else
+                        MaterialTheme.colorScheme.onBackground
                 )
             }
 
@@ -745,8 +756,10 @@ fun RandomConfigCircleItem(
             text = label.take(4), // 限制显示长度
             modifier = Modifier.padding(top = 6.dp),
             fontSize = 11.sp,
-            color = if (isSelected) MaterialTheme.colorScheme.primary
-            else MaterialTheme.colorScheme.onBackground,
+            color = if (isSelected)
+                MaterialTheme.colorScheme.primary
+            else
+                MaterialTheme.colorScheme.onBackground,
             textAlign = TextAlign.Center,
             maxLines = 1
         )
@@ -872,9 +885,16 @@ fun EditRandomDialog(
     show: Boolean,
     onDismiss: () -> Unit,
     onSave: (RandomListEntity) -> Unit,
-    configName: String
+    configName: String,
+    onShow: () -> Unit = {}
 ) {
     if (show && configName.isNotEmpty()) {
+        // 通知父组件进入编辑状态
+        LaunchedEffect(show) {
+            if (show) {
+                onShow()
+            }
+        }
         Dialog(
             onDismissRequest = onDismiss,
             properties = DialogProperties(usePlatformDefaultWidth = false)
@@ -889,6 +909,7 @@ fun EditRandomDialog(
                 var randomName by remember { mutableStateOf("") }
                 var selectedCate by remember { mutableStateOf(RANDOM_PAGE_CONFIG_CATE_CARD) }
                 val cardListState = remember { SnapshotStateList<RandomItem>() }
+                var isEditing by remember { mutableStateOf(true) }
                 val scrollState = rememberScrollState()
 
                 // 从配置名称中提取类型和名称
@@ -982,6 +1003,7 @@ fun EditRandomDialog(
 
                     AddNewRandomCateActionBar(
                         select = selectedCate,
+                        isEditing = isEditing,
                         onClick = { cate ->
                             selectedCate = cate.key
                             // 注意：编辑时不应该清空列表，而是保留原有数据
@@ -1027,6 +1049,10 @@ fun EditRandomDialog(
                         Button(
                             onClick = {
                                 if (randomName.isNotBlank()) {
+                                    // 对于转盘类型，保存前先校正权重
+                                    if (selectedCate == RANDOM_PAGE_CONFIG_CATE_WHEEL) {
+                                        validateAndCorrectWheelWeights(cardListState)
+                                    }
                                     onSave(
                                         RandomListEntity(
                                             name = selectedCate + randomName,

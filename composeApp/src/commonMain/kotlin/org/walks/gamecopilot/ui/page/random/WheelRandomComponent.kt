@@ -206,46 +206,28 @@ private fun DrawScope.drawWheel(
 
         // 保存当前选项的角度信息，用于后续绘制文本
         val itemAngle = startAngle + sweepAngle / 2
-        
-        // 绘制分隔线 - 改为底边向外的细长等腰三角形
+
+        // 绘制分隔线 - 改为长条直线
         val startAngleRad = startAngle * PI.toFloat() / 180f
 
-        // 三角形底边宽度 - 增加到原来的两倍
-        val triangleBaseWidth = 16f  // 固定宽度为16像素
+        // 直线长度（从中心到边缘）
+        radius
 
-        // 计算垂直于径向的方向
-        val perpAngle = startAngleRad + PI.toFloat() / 2f
+        // 计算直线起点（中心点）
+        val lineStart = Offset(centerX, centerY)
 
-        // 计算顶点到中心的距离（稍微留出一些空间，避免与指针重叠）
-        val innerRadius = radius * 0.3f  // 使用固定比例，确保所有三角形一致
-        val tipPoint = Offset(
-            centerX + innerRadius * cos(startAngleRad),
-            centerY + innerRadius * sin(startAngleRad)
+        // 计算直线终点（转盘边缘）
+        val lineEnd = Offset(
+            centerX + radius * cos(startAngleRad),
+            centerY + radius * sin(startAngleRad)
         )
 
-        // 计算底边两端点（在转盘边缘）
-        val basePoint1 = Offset(
-            centerX + radius * cos(startAngleRad) - triangleBaseWidth * cos(perpAngle),
-            centerY + radius * sin(startAngleRad) - triangleBaseWidth * sin(perpAngle)
-        )
-        val basePoint2 = Offset(
-            centerX + radius * cos(startAngleRad) + triangleBaseWidth * cos(perpAngle),
-            centerY + radius * sin(startAngleRad) + triangleBaseWidth * sin(perpAngle)
-        )
-
-        // 绘制三角形 - 底边在转盘边缘，顶点朝内
-        drawPath(
-            path = Path().apply {
-                // 从底边一端开始
-                moveTo(basePoint1.x, basePoint1.y)
-                // 连接到底边另一端
-                lineTo(basePoint2.x, basePoint2.y)
-                // 连接到顶点
-                lineTo(tipPoint.x, tipPoint.y)
-                // 闭合三角形
-                close()
-            },
-            color = Color.White
+        // 绘制直线分隔线
+        drawLine(
+            color = Color.White,
+            start = lineStart,
+            end = lineEnd,
+            strokeWidth = 2f  // 固定宽度，确保所有线条粗细一致
         )
 
         // 绘制选项文本 - 使用计算出的角度和大小
@@ -375,15 +357,12 @@ private suspend fun startSpinning(
     items: List<WheelItem>,
     onComplete: (Int) -> Unit
 ) {
-    // 计算每个选项的权重和角度
+    // 计算总权重
     var totalWeight = 0.0
     items.forEach { totalWeight += it.weight.toDouble() }
-    val totalWeightFloat = totalWeight.toFloat()
 
     // 随机选择中奖选项，考虑权重
-    var tempTotalWeight = 0.0
-    items.forEach { tempTotalWeight += it.weight.toDouble() }
-    val random = kotlin.random.Random.nextFloat() * tempTotalWeight.toFloat()
+    val random = kotlin.random.Random.nextFloat() * totalWeight.toFloat()
     var accumulatedWeight = 0f
     var winnerIndex = 0
 
@@ -398,21 +377,27 @@ private suspend fun startSpinning(
     // 动画时长
     val duration = 5000
 
-    // 计算每个选项的起始角度
+    // 计算每个选项的起始角度和扇形角度
     var currentAngle = -90f // 从顶部开始
-    val itemAngles = mutableListOf<Float>()
+    val itemSweepAngles = mutableListOf<Float>()
+    val itemStartAngles = mutableListOf<Float>()
 
     for (item in items) {
-        val sweepAngle = 360f * (item.weight / totalWeightFloat)
-        val itemCenterAngle = currentAngle + sweepAngle / 2
-        itemAngles.add(itemCenterAngle)
+        val sweepAngle = 360f * (item.weight / totalWeight.toFloat())
+        itemStartAngles.add(currentAngle)
+        itemSweepAngles.add(sweepAngle)
         currentAngle += sweepAngle
     }
     
     // 计算最终停止角度
     // 指针在顶部(12点钟方向)，我们想让转盘停止时指针指向选中选项
     // 要让指针指向第N个选项，转盘需要旋转到使该选项的中心点位于顶部
-    val targetAngle = 360f * 5 + itemAngles[winnerIndex] + 90f
+    val winnerStartAngle = itemStartAngles[winnerIndex]
+    val winnerSweepAngle = itemSweepAngles[winnerIndex]
+    val winnerCenterAngle = winnerStartAngle + winnerSweepAngle / 2
+
+    // 计算目标角度：让选中选项的中心点位于顶部(270度方向)
+    val targetAngle = 360f * 5 + (270f - winnerCenterAngle)
 
     // 创建协程作用域并并行执行震动和动画
     kotlinx.coroutines.coroutineScope {
@@ -454,44 +439,6 @@ private suspend fun startSpinning(
         )
     }
 
-    // 计算最终结果
-    // 转盘停止后的角度
-    val finalAngle = (targetAngle % 360 + 360) % 360
-
-    // 转盘顺时针旋转，指针固定在顶部(270度)
-    val pointerAngle = 270f
-    var finalIndex = 0
-    var minDiff = Float.MAX_VALUE
-
-    // 计算每个选项的起始角度和中心角度
-    var currentAngleFinal = -90f // 从顶部开始
-    var totalWeightFinal = 0.0
-    items.forEach { totalWeightFinal += it.weight.toDouble() }
-    val totalWeightFloatFinal = totalWeightFinal.toFloat()
-    val itemAnglePairs = mutableListOf<Pair<Float, Float>>() // 每个选项的起始角度和中心角度
-
-    for (item in items) {
-        val sweepAngle = 360f * (item.weight / totalWeightFloatFinal)
-        val startAngle = currentAngleFinal
-        val centerAngle = currentAngleFinal + sweepAngle / 2
-        itemAnglePairs.add(Pair(startAngle, centerAngle))
-        currentAngleFinal += sweepAngle
-    }
-
-    // 找到最接近指针的选项
-    for (i in itemAnglePairs.indices) {
-        val (_, centerAngle) = itemAnglePairs[i]
-        // 计算选项i的中心角度在转盘上的绝对角度
-        val optionAngle = (centerAngle + finalAngle) % 360
-        // 计算与指针的角度差
-        val diff = kotlin.math.abs((pointerAngle - optionAngle + 360) % 360)
-
-        if (diff < minDiff) {
-            minDiff = diff
-            finalIndex = i
-        }
-    }
-
     // 完成后回调
-    onComplete(finalIndex)
+    onComplete(winnerIndex)
 }

@@ -37,7 +37,6 @@ import org.walks.gamecopilot.mmkv.MMKVUtils
 import org.walks.gamecopilot.mmkv.MMKV_RANDOM_CARDS_SETTING_KEY
 import org.walks.gamecopilot.mmkv.MMKV_RANDOM_LABEL_NAME_KEY
 import org.walks.gamecopilot.navigation.NaviRoute
-import org.walks.gamecopilot.ui.page.random.RandomCate
 import org.walks.gamecopilot.utils.DateTimeUtils
 import kotlin.time.Clock
 import kotlin.time.ExperimentalTime
@@ -215,36 +214,21 @@ class MainViewmodel : ViewModel() {
                     // 保存到 MMKV（使用相同的key，会覆盖原有配置）
                     MMKVUtils.apply {
                         put(MMKV_RANDOM_CARDS_SETTING_KEY + intent.randomListEntity.name, jsonCards)
-                        // 如果配置名称改变了，需要更新名称列表
-                        val currentNameSet = getSet(MMKV_RANDOM_LABEL_NAME_KEY) ?: setOf()
-                        // 找到旧的配置名称（通过类型前缀匹配）
-                        val oldName = currentNameSet.find { name ->
-                            val type = RandomCate.getCateByItem(name)
-                            when (type) {
-                                RandomCate.Card -> RANDOM_PAGE_CONFIG_CATE_CARD
-                                RandomCate.Dice -> RANDOM_PAGE_CONFIG_CATE_DICE
-                                RandomCate.Coin -> RANDOM_PAGE_CONFIG_CATE_COIN
-                                RandomCate.Wheel -> RANDOM_PAGE_CONFIG_CATE_WHEEL
-                                else -> ""
-                            } == when (type) {
-                                RandomCate.Card -> RANDOM_PAGE_CONFIG_CATE_CARD
-                                RandomCate.Dice -> RANDOM_PAGE_CONFIG_CATE_DICE
-                                RandomCate.Coin -> RANDOM_PAGE_CONFIG_CATE_COIN
-                                RandomCate.Wheel -> RANDOM_PAGE_CONFIG_CATE_WHEEL
-                                else -> ""
-                            } && name.contains(intent.randomListEntity.name.substringAfter(type.key))
-                        }
 
-                        // 如果找到了旧名称且与当前名称不同，则更新
-                        if (oldName != null && oldName != intent.randomListEntity.name) {
-                            // 删除旧配置
-                            remove(MMKV_RANDOM_CARDS_SETTING_KEY + oldName)
-                            // 更新名称列表
+                        // 更新名称列表（确保配置名称存在）
+                        val currentNameSet = getSet(MMKV_RANDOM_LABEL_NAME_KEY) ?: setOf()
+                        if (!currentNameSet.contains(intent.randomListEntity.name)) {
                             putSet(
                                 MMKV_RANDOM_LABEL_NAME_KEY,
-                                currentNameSet.minus(oldName).plus(intent.randomListEntity.name)
+                                currentNameSet.plus(intent.randomListEntity.name)
                             )
                         }
+                    }
+
+                    // 如果编辑的是当前选中的配置，更新当前显示的内容
+                    val currentConfigName = _currentRandomContentState.value.name
+                    if (currentConfigName == intent.randomListEntity.name) {
+                        _currentRandomContentState.value = intent.randomListEntity
                     }
                 } catch (e: Exception) {
                     e.printStackTrace()
@@ -989,6 +973,32 @@ class MainViewmodel : ViewModel() {
      */
     fun updateWheelItems(items: List<WheelItem>) {
         _wheelItemsState.value = items
+
+        // 获取当前选中的转盘配置名称
+        val currentConfig = _currentRandomContentState.value.name
+        if (currentConfig.isNotEmpty()) {
+            // 将 WheelItem 列表转换为 RandomItem 列表并保存
+            val randomItems = items.mapIndexed { index, wheelItem ->
+                RandomItem(
+                    id = index,
+                    first = wheelItem.text,
+                    second = wheelItem.weight.toString()
+                )
+            }
+
+            // 保存到持久化存储
+            val configEntity = RandomListEntity(
+                name = currentConfig,
+                list = randomItems
+            )
+
+            try {
+                val json = Json.encodeToString(RandomListEntity.serializer(), configEntity)
+                MMKVUtils.put(MMKV_RANDOM_CARDS_SETTING_KEY + currentConfig, json)
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
+        }
     }
 }
 
