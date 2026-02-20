@@ -926,6 +926,7 @@ class MainViewmodel : ViewModel() {
                 // 预置配置名称
                 val diceConfigName = RANDOM_PAGE_CONFIG_CATE_DICE + "六面骰子"
                 val coinConfigName = RANDOM_PAGE_CONFIG_CATE_COIN + "硬币"
+                val wheelConfigName = RANDOM_PAGE_CONFIG_CATE_WHEEL + "今天吃啥"
 
                 // 检查并添加预置六面骰子
                 if (!existingLabels.contains(diceConfigName)) {
@@ -955,6 +956,27 @@ class MainViewmodel : ViewModel() {
                     val coinJson = Json.encodeToString(RandomListEntity.serializer(), coinConfig)
                     MMKVUtils.put(MMKV_RANDOM_CARDS_SETTING_KEY + coinConfig.name, coinJson)
                     existingLabels.add(coinConfig.name)
+                }
+
+                // 检查并添加"今天吃啥"转盘预设
+                if (!existingLabels.contains(wheelConfigName)) {
+                    val wheelConfig = RandomListEntity(
+                        name = wheelConfigName,
+                        list = listOf(
+                            RandomItem(first = "火锅", second = "25"),
+                            RandomItem(first = "烧烤", second = "20"),
+                            RandomItem(first = "日料", second = "15"),
+                            RandomItem(first = "中餐", second = "15"),
+                            RandomItem(first = "西餐", second = "10"),
+                            RandomItem(first = "快餐", second = "10"),
+                            RandomItem(first = "外卖", second = "5")
+                        )
+                    )
+
+                    // 保存转盘配置数据
+                    val wheelJson = Json.encodeToString(RandomListEntity.serializer(), wheelConfig)
+                    MMKVUtils.put(MMKV_RANDOM_CARDS_SETTING_KEY + wheelConfig.name, wheelJson)
+                    existingLabels.add(wheelConfig.name)
                 }
 
                 // 保存更新后的配置列表

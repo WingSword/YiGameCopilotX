@@ -24,15 +24,19 @@ import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.launch
 import org.jetbrains.compose.resources.painterResource
+import org.walks.gamecopilot.PlatformHelper
 import org.walks.gamecopilot.clickableWithoutRipple
 import org.walks.gamecopilot.ui.widget.DiceFace
 import yigamecopilotx.composeapp.generated.resources.Res
 import yigamecopilotx.composeapp.generated.resources.icon_dice_roll
+import kotlin.time.Clock
+import kotlin.time.ExperimentalTime
 
 /**
  *  Created by Wing at 16:41 on 2025/3/28
  *
  */
+@OptIn(ExperimentalTime::class)
 @Composable
 fun DiceAnimation(modifier: Modifier = Modifier, range: IntRange = 1..6,isRollingDice:Boolean) {
     var isRolling by remember { mutableStateOf(false) }
@@ -49,7 +53,40 @@ fun DiceAnimation(modifier: Modifier = Modifier, range: IntRange = 1..6,isRollin
     LaunchedEffect(currentValue) {
         scope.launch {
             isRolling = true
-            rollDiceAnimation(rotationX, rotationY)
+            // 并行执行动画和震动
+            coroutineScope {
+                // 启动震动协程
+                launch {
+                    val duration = 1200 // 动画总时长
+                    var lastVibrateTime = 0L
+                    val startTime = Clock.System.now().toEpochMilliseconds()
+
+                    while (true) {
+                        val currentTime = Clock.System.now().toEpochMilliseconds()
+                        val elapsed = currentTime - startTime
+
+                        if (elapsed >= duration) break
+
+                        // 计算进度(0到1)
+                        val progress = elapsed.toFloat() / duration
+
+                        // 根据进度计算震动间隔，随时间线性增加
+                        // 开始时30ms，结束时300ms
+                        val vibrateInterval = (30 + progress * 270).toLong()
+
+                        // 检查是否应该震动
+                        if (currentTime - lastVibrateTime >= vibrateInterval) {
+                            PlatformHelper.getInstance().vibrateMethod()
+                            lastVibrateTime = currentTime
+                        }
+
+                        kotlinx.coroutines.delay(16)
+                    }
+                }
+
+                // 执行骰子动画
+                rollDiceAnimation(rotationX, rotationY)
+            }
             rotationX.snapTo(0f) // 重置旋转角度
             rotationY.snapTo(0f)
             isRolling = false
@@ -75,6 +112,7 @@ fun DiceAnimation(modifier: Modifier = Modifier, range: IntRange = 1..6,isRollin
 }
 
 
+@OptIn(ExperimentalTime::class)
 @Composable
 fun DiceAnimationImage(modifier: Modifier = Modifier, range: IntRange = 1..6) {
     var isRolling by remember { mutableStateOf(false) }
@@ -87,7 +125,40 @@ fun DiceAnimationImage(modifier: Modifier = Modifier, range: IntRange = 1..6) {
     LaunchedEffect(currentValue) {
         scope.launch {
             isRolling = true
-            rollDiceAnimation(rotationX, rotationY) // 确保调用动画方法
+            // 并行执行动画和震动
+            coroutineScope {
+                // 启动震动协程
+                launch {
+                    val duration = 1200 // 动画总时长
+                    var lastVibrateTime = 0L
+                    val startTime = Clock.System.now().toEpochMilliseconds()
+
+                    while (true) {
+                        val currentTime = Clock.System.now().toEpochMilliseconds()
+                        val elapsed = currentTime - startTime
+
+                        if (elapsed >= duration) break
+
+                        // 计算进度(0到1)
+                        val progress = elapsed.toFloat() / duration
+
+                        // 根据进度计算震动间隔，随时间线性增加
+                        // 开始时30ms，结束时300ms
+                        val vibrateInterval = (30 + progress * 270).toLong()
+
+                        // 检查是否应该震动
+                        if (currentTime - lastVibrateTime >= vibrateInterval) {
+                            PlatformHelper.getInstance().vibrateMethod()
+                            lastVibrateTime = currentTime
+                        }
+
+                        kotlinx.coroutines.delay(16)
+                    }
+                }
+
+                // 执行骰子动画
+                rollDiceAnimation(rotationX, rotationY) // 确保调用动画方法
+            }
             rotationX.snapTo(0f)
             rotationY.snapTo(0f)
             isRolling = false

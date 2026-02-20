@@ -24,7 +24,10 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import kotlinx.coroutines.launch
+import org.walks.gamecopilot.PlatformHelper
 import kotlin.random.Random
+import kotlin.time.Clock
+import kotlin.time.ExperimentalTime
 
 
 /**
@@ -34,6 +37,7 @@ import kotlin.random.Random
  * @param frontText 硬币正面文字
  * @param backText 硬币反面文字
  */
+@OptIn(ExperimentalTime::class)
 @Composable
 fun RollCoinAnimation(
     onFlipComplete: (Boolean) -> Unit,
@@ -49,7 +53,40 @@ fun RollCoinAnimation(
     LaunchedEffect(isRolling) {
         if (isRolling) {
             scope.launch {
-                flipCoinAnimation(rotationY)
+                // 并行执行动画和震动
+                kotlinx.coroutines.coroutineScope {
+                    // 启动震动协程
+                    launch {
+                        val duration = 1000 // 动画总时长
+                        var lastVibrateTime = 0L
+                        val startTime = Clock.System.now().toEpochMilliseconds()
+
+                        while (true) {
+                            val currentTime = Clock.System.now().toEpochMilliseconds()
+                            val elapsed = currentTime - startTime
+
+                            if (elapsed >= duration) break
+
+                            // 计算进度(0到1)
+                            val progress = elapsed.toFloat() / duration
+
+                            // 根据进度计算震动间隔，随时间线性增加
+                            // 开始时30ms，结束时300ms
+                            val vibrateInterval = (30 + progress * 270).toLong()
+
+                            // 检查是否应该震动
+                            if (currentTime - lastVibrateTime >= vibrateInterval) {
+                                PlatformHelper.getInstance().vibrateMethod()
+                                lastVibrateTime = currentTime
+                            }
+
+                            kotlinx.coroutines.delay(16)
+                        }
+                    }
+
+                    // 执行翻转动画
+                    flipCoinAnimation(rotationY)
+                }
                 onFlipComplete(isHeads)
             }
         }
