@@ -37,8 +37,11 @@ fun NavigationHost(viewmodel: MainViewmodel, navi: NavHostController) {
                     NaviRoute.RANDOM -> RandomPage(viewmodel)
                     NaviRoute.AWALONG -> AwalongGamePageOptimized(navi, viewmodel)
                     NaviRoute.SETTING -> SettingPage(viewmodel)
-                    // 显式列出所有路由，移除else分支
-                    // 当新增路由时编译器会提示需要补充分支
+                    NaviRoute.DRAW_GUESS -> org.walks.gamecopilot.ui.page.home.DrawGuessEntrance(
+                        navi
+                    )
+
+                    NaviRoute.DRAW_BOARD -> DrawBoardPage { navi.popBackStack() }
                 }
             }
         }

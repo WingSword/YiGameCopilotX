@@ -17,3 +17,7 @@ captures
 !*.xcworkspace/contents.xcworkspacedata
 **/xcshareddata/WorkspaceSettings.xcsettings
 /sword
+/composeApp/release/composeApp-release.apk
+/composeApp/release/baselineProfiles/0/composeApp-release.dm
+/composeApp/release/baselineProfiles/1/composeApp-release.dm
+/composeApp/release/output-metadata.json

@@ -2,7 +2,7 @@ package org.walks.gamecopilot.ui.page.game.localspy
 
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.Composable
@@ -83,20 +83,20 @@ fun LocalSpyGamePage(viewmodel: MainViewmodel, onBack: () -> Unit) {
     val currentWords = remember(selectedWordGroups) {
         getWordMapBySelectedGroups(selectedWordGroups)
     }
-    
-    Column(modifier = Modifier.fillMaxWidth().padding(top = 8.dp, end = 16.dp)) {
-        // 顶部导航栏
+
+    Column(modifier = Modifier.fillMaxSize()) {
         GameHeaderView(
             onBack = onBack,
             isWordLibraryExpanded = isWordLibraryExpanded,
             onToggleWordLibrary = { isWordLibraryExpanded = it },
             onShowWordsDialog = { showWordsDialog = true }
         )
-        
-        Spacer(modifier = Modifier.height(8.dp))
-        
-        // 游戏配置区域
-        GameConfigurationSection(
+
+        Column(modifier = Modifier.fillMaxSize().padding(horizontal = 16.dp)) {
+            Spacer(modifier = Modifier.height(8.dp))
+
+            // 游戏配置区域
+            GameConfigurationSection(
             gameTimeState = gameTimeState,
             currentGame = currentGame,
             playerNum = playerNum,
@@ -114,19 +114,20 @@ fun LocalSpyGamePage(viewmodel: MainViewmodel, onBack: () -> Unit) {
             onGameIntent = { viewmodel.handleGameIntent(it) },
             onGameTimeStateChange = { gameTimeState = it }
         )
-        
-        // 游戏数据显示区 - 只有在游戏开始后才显示
-        if (gameTimeState > 0) {
-            Spacer(Modifier.height(16.dp))
-            
-            // 游戏结果显示组件，key控制强制刷新
-            GameGreetingView(
-                key = gameTimeState,
-                gameState = currentGame,
-                showAllIdentities = showAllIdentities,
-                onShowAllIdentitiesChange = { showAllIdentities = it },
-                onAllPlayersViewed = { allPlayersViewed = it }
-            )
+
+            // 游戏数据显示区 - 只有在游戏开始后才显示
+            if (gameTimeState > 0) {
+                Spacer(Modifier.height(16.dp))
+
+                // 游戏结果显示组件，key控制强制刷新
+                GameGreetingView(
+                    key = gameTimeState,
+                    gameState = currentGame,
+                    showAllIdentities = showAllIdentities,
+                    onShowAllIdentitiesChange = { showAllIdentities = it },
+                    onAllPlayersViewed = { allPlayersViewed = it }
+                )
+            }
         }
     }
     

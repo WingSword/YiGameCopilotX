@@ -263,7 +263,10 @@ fun AppView(viewmodel: MainViewmodel) {
                 currentRoute != NaviRoute.HOME.route &&
                 currentRoute != NaviRoute.RANDOM.route &&
                 currentRoute != NaviRoute.SETTING.route &&
-                currentRoute != NaviRoute.AWALONG.route
+                currentRoute != NaviRoute.AWALONG.route &&
+                currentRoute != NaviRoute.LOCAL_SPY.route &&
+                currentRoute != NaviRoute.DRAW_GUESS.route &&
+                currentRoute != NaviRoute.DRAW_BOARD.route
             ) {
                 AppTopBar(navi, viewmodel)
             }
