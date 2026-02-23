@@ -10,17 +10,12 @@ import androidx.navigation.compose.composable
 import org.walks.gamecopilot.MainViewmodel
 import org.walks.gamecopilot.awalong.AwalongGamePageOptimized
 import org.walks.gamecopilot.event.NavigationEvent
+import org.walks.gamecopilot.ui.page.drawguess.DrawBoardPage
 import org.walks.gamecopilot.ui.page.game.localspy.LocalSpyGamePage
 import org.walks.gamecopilot.ui.page.home.HomePage
 import org.walks.gamecopilot.ui.page.random.RandomPage
 import org.walks.gamecopilot.ui.page.room.RoomPage
 import org.walks.gamecopilot.ui.page.setting.SettingPage
-
-/**
- *  Created by Wing at 10:35 on 2025/4/25
- *
- */
-
 
 @Composable
 fun NavigationHost(viewmodel: MainViewmodel, navi: NavHostController) {
