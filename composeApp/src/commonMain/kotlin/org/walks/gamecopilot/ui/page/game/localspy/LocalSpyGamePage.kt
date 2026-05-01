@@ -18,6 +18,7 @@ import androidx.compose.ui.unit.dp
 import org.walks.gamecopilot.MainViewmodel
 import org.walks.gamecopilot.PlatformHelper
 import org.walks.gamecopilot.getWordMapBySelectedGroups
+import org.walks.gamecopilot.ui.components.common.OfflinePassingGuideDialog
 import org.walks.gamecopilot.ui.page.game.localspy.components.GameConfigurationSection
 import org.walks.gamecopilot.ui.page.game.localspy.components.GameHeaderView
 import org.walks.gamecopilot.ui.page.game.localspy.components.WordsDialog
@@ -62,6 +63,8 @@ fun LocalSpyGamePage(viewmodel: MainViewmodel, onBack: () -> Unit) {
     
     // 状态控制：所有玩家是否都已查看身份
     var allPlayersViewed by remember { mutableStateOf(false) }
+
+    var showGuideDialog by remember { mutableStateOf(true) }
     
     // 游戏开始后自动折叠词库区域
     LaunchedEffect(gameTimeState) {
@@ -92,7 +95,11 @@ fun LocalSpyGamePage(viewmodel: MainViewmodel, onBack: () -> Unit) {
             onShowWordsDialog = { showWordsDialog = true }
         )
 
-        Column(modifier = Modifier.fillMaxSize().padding(horizontal = 16.dp)) {
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(horizontal = 16.dp)
+        ) {
             Spacer(modifier = Modifier.height(8.dp))
 
             // 游戏配置区域
@@ -137,5 +144,16 @@ fun LocalSpyGamePage(viewmodel: MainViewmodel, onBack: () -> Unit) {
         onDismiss = { showWordsDialog = false },
         currentWords = currentWords,
         currentGame = currentGame
+    )
+
+    OfflinePassingGuideDialog(
+        show = showGuideDialog,
+        gameTitle = "谁是卧底",
+        steps = listOf(
+            "主持人点击开始后按顺序传递手机，玩家依次查看身份词。",
+            "每位玩家看完后关闭身份卡，避免旁观泄露身份。",
+            "全部玩家查看后再开始发言和投票，最终长按公布身份复盘。"
+        ),
+        onDismiss = { showGuideDialog = false }
     )
 }

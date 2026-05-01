@@ -51,8 +51,10 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
+import org.walks.gamecopilot.PlatformHelper
 import org.walks.gamecopilot.data.DrawGuessWordLibrary
 import org.walks.gamecopilot.ui.components.CommonTopBar
+import org.walks.gamecopilot.ui.components.common.OfflinePassingGuideDialog
 
 data class PathState(
     val points: List<Offset>,
@@ -93,6 +95,7 @@ val backgroundColors = listOf(
 fun DrawBoardPage(
     onBack: () -> Unit
 ) {
+    var showGuideDialog by remember { mutableStateOf(true) }
     var showWordDialog by remember { mutableStateOf(false) }
     var currentWord by remember { mutableStateOf(DrawGuessWordLibrary.getRandomWord()) }
     val paths = remember { mutableStateListOf<PathState>() }
@@ -202,15 +205,18 @@ fun DrawBoardPage(
             onEraserToggle = { isEraser = !isEraser },
             onUndo = {
                 if (paths.isNotEmpty()) {
+                    PlatformHelper.getInstance().vibrateMethod()
                     redoStack.add(paths.removeLast())
                 }
             },
             onRedo = {
                 if (redoStack.isNotEmpty()) {
+                    PlatformHelper.getInstance().vibrateMethod()
                     paths.add(redoStack.removeLast())
                 }
             },
             onClear = {
+                PlatformHelper.getInstance().vibrateMethod()
                 redoStack.addAll(paths.toList())
                 paths.clear()
             }
@@ -222,10 +228,22 @@ fun DrawBoardPage(
             word = currentWord,
             onDismiss = { showWordDialog = false },
             onNextWord = {
+                PlatformHelper.getInstance().vibrateMethod()
                 currentWord = DrawGuessWordLibrary.getRandomWord()
             }
         )
     }
+
+    OfflinePassingGuideDialog(
+        show = showGuideDialog,
+        gameTitle = "你画我猜",
+        steps = listOf(
+            "由出题玩家先查看词语并确认后传给作画玩家。",
+            "作画过程中其余玩家只看画面进行猜测，不查看词语。",
+            "本轮结束后再切换下一位出题/作画玩家继续。"
+        ),
+        onDismiss = { showGuideDialog = false }
+    )
 }
 
 @Composable

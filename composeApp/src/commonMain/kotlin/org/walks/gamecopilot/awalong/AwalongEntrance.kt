@@ -4,12 +4,12 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.selection.SelectionContainer
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
@@ -30,6 +30,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -52,7 +53,7 @@ fun AwalongEntrance(viewmodel: MainViewmodel,navi: NavHostController) {
     var showRulesDialog by remember { mutableStateOf(false) }
     
     Column(
-        modifier = Modifier.fillMaxWidth()
+        modifier = Modifier.fillMaxSize()
     ) {
         // 顶部标题和规则按钮区域
         TopHeaderSection(
@@ -62,7 +63,8 @@ fun AwalongEntrance(viewmodel: MainViewmodel,navi: NavHostController) {
         // 自定义配置界面
         AwalongCustomConfigScreen(
             viewmodel = viewmodel,
-            navi = navi
+            navi = navi,
+            modifier = Modifier.weight(1f)
         )
     }
     
@@ -97,7 +99,7 @@ fun TopHeaderSection(onShowRules: () -> Unit) {
         OutlinedButton(
             onClick = onShowRules,
             modifier = Modifier.padding(start = 16.dp),
-            shape = RoundedCornerShape(12.dp)
+            shape = RectangleShape
         ) {
             Icon(
                 painter = painterResource(Res.drawable.icon_info),
@@ -128,7 +130,7 @@ fun GameRulesDialog(onDismiss: () -> Unit) {
             modifier = Modifier
                 .fillMaxWidth(0.95f)
                 .padding(16.dp),
-            shape = RoundedCornerShape(20.dp),
+            shape = RectangleShape,
             color = MaterialTheme.colorScheme.surface,
             shadowElevation = 8.dp
         ) {
@@ -202,7 +204,7 @@ fun GameRulesDialog(onDismiss: () -> Unit) {
                 Button(
                     onClick = onDismiss,
                     modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(12.dp),
+                    shape = RectangleShape,
                     colors = ButtonDefaults.buttonColors(
                         containerColor = MaterialTheme.colorScheme.primary
                     )

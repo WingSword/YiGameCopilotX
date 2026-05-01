@@ -14,10 +14,13 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.launch
 import org.walks.gamecopilot.MainViewmodel
 import org.walks.gamecopilot.awalong.AwalongConfig
 import org.walks.gamecopilot.awalong.AwalongIntent
 import org.walks.gamecopilot.awalong.AwalongRole
+import org.walks.gamecopilot.awalong.SpecialAbilityDialog
+import org.walks.gamecopilot.awalong.SpecialAbilityType
 import org.walks.gamecopilot.awalong.data.AwalongGameDayEntity
 import org.walks.gamecopilot.awalong.data.AwalongGameState
 
@@ -38,7 +41,9 @@ fun PageDayTaskOptimized(
     viewmodel: MainViewmodel,
     onCheck: (Map<Int, Int>, Int, Int) -> Unit,
     pageState: PagerState? = null,
-    scope: CoroutineScope? = null
+    scope: CoroutineScope? = null,
+    totalTaskDays: Int = 5,
+    isGameLocked: Boolean = false
 ) {
     // 从 gameState 获取当前天的状态，确保状态持久化
     val currentDayState = gameState.dayList.getOrNull(taskIndex)
@@ -69,15 +74,17 @@ fun PageDayTaskOptimized(
     var taskPlayer by remember { mutableStateOf(currentDayState?.selectedTeam?.toMutableList() ?: mutableListOf<Int>()) }
     var teamVotes by remember { mutableStateOf(currentDayState?.teamVotes?.toMutableMap() ?: mutableMapOf<Int, Boolean>()) }
     var taskVotes by remember { mutableStateOf(currentDayState?.taskVotes?.toMutableMap() ?: mutableMapOf<Int, Boolean>()) }
-    
-    val currentCaptain = remember(taskIndex) {
-        if (currentDayState?.currentCaptain != -1) {
-            currentDayState?.currentCaptain ?: -1
-        } else if (taskIndex == 0) {
-            roleList.indices.random()
-        } else {
-            ((currentDayState?.captain ?: 0 - 1 + roleList.size) % roleList.size)
+
+    var currentCaptain by remember(taskIndex, gameState.dayList) {
+        val initial = when {
+            currentDayState?.currentCaptain != -1 -> currentDayState!!.currentCaptain
+            taskIndex == 0 -> roleList.indices.random()
+            else -> {
+                val prevCaptain = gameState.dayList.getOrNull(taskIndex - 1)?.captain ?: -1
+                if (prevCaptain >= 0) (prevCaptain + 1) % roleList.size else 0
+            }
         }
+        mutableStateOf(initial)
     }
 
     remember {
@@ -94,10 +101,8 @@ fun PageDayTaskOptimized(
             captain = dayEntity?.captain ?: -1,
             requiresTwoFailures = dayEntity?.requiresTwoFailures ?: false,
             morguseUsed = dayEntity?.morguseUsed ?: false,
-            sirGalahadUsed = dayEntity?.sirGalahadUsed ?: false,
             plotCard = dayEntity?.plotCard,
             
-            // 保存当前状态
             gamePhase = when (gamePhase) {
                 TaskPhase.TEAM_FORMATION -> "TEAM_FORMATION"
                 TaskPhase.TASK_EXECUTION -> "TASK_EXECUTION"
@@ -109,7 +114,6 @@ fun PageDayTaskOptimized(
             currentCaptain = currentCaptain
         )
         
-        // 通过 ViewModel 更新状态
         viewmodel.handleAwalongGameIntent(AwalongIntent.UpdateDayState(updatedDayEntity))
     }
     
@@ -120,7 +124,15 @@ fun PageDayTaskOptimized(
     
     Column {
         // 当前阶段指示器
-        PhaseIndicator(currentPhase = gamePhase, taskResult = if (gamePhase == TaskPhase.TASK_RESULT) result else null)
+        PhaseIndicator(
+            currentPhase = gamePhase,
+            taskResult = if (gamePhase == TaskPhase.TASK_RESULT) result else null,
+            onPrevDay = { scope?.launch { pageState?.scrollToPage(taskIndex) } },
+            onNextDay = { proceedToNextRound(viewmodel, taskIndex, pageState, scope) },
+            canGoPrev = true, // 第一天也可上一日，返回到第零日
+            canGoNext = taskIndex + 1 < totalTaskDays,
+            isGameLocked = isGameLocked
+        )
         
         Spacer(modifier = Modifier.height(16.dp))
         
@@ -132,6 +144,7 @@ fun PageDayTaskOptimized(
                     taskNum = taskNum,
                     taskPlayer = taskPlayer,
                     currentCaptain = currentCaptain,
+                    onCaptainChange = { newCaptain -> currentCaptain = newCaptain },
                     onTeamComplete = { team ->
                         // 通过 ViewModel 更新状态
                         val updatedDayEntity = currentDayState?.copy(
@@ -200,7 +213,7 @@ fun PageDayTaskOptimized(
                         )
 
                         // 立即调用onCheck回调，通知主页面任务完成
-                        onCheck(finalTaskMap, result, currentCaptain)
+                        onCheck(finalTaskMap, if (success) 1 else -1, currentCaptain)
                     },
                     onBackToTeamFormation = {
                         // 撤回到组队阶段
@@ -216,18 +229,31 @@ fun PageDayTaskOptimized(
             }
             
             TaskPhase.TASK_RESULT -> {
+                var showLadyOfLakeDialog by remember { mutableStateOf(false) }
+                val canShowLadyOfLake = gameState.useLadyOfLake &&
+                        taskIndex >= 2 &&
+                        gameState.ladyOfLakeHolder != null &&
+                        gameState.ladyOfLakeUsedForTaskIndex != taskIndex
                 TaskResultPhase(
                     result = result,
                     gameState = gameState,
                     viewmodel = viewmodel,
                     taskIndex = taskIndex,
                     taskNum = taskNum,
-                    taskPlayer = taskPlayer, // 传递参与任务的玩家列表
-                    onNextRound = {
-                        // 实现进入下一轮的逻辑
-                        proceedToNextRound(viewmodel, taskIndex, pageState, scope)
-                    }
+                    taskPlayer = taskPlayer,
+                    onNextRound = { proceedToNextRound(viewmodel, taskIndex, pageState, scope) },
+                    canShowLadyOfLake = canShowLadyOfLake,
+                    onShowLadyOfLake = { showLadyOfLakeDialog = true }
                 )
+                if (showLadyOfLakeDialog) {
+                    SpecialAbilityDialog(
+                        onDismiss = { showLadyOfLakeDialog = false },
+                        abilityType = SpecialAbilityType.LADY_OF_LAKE,
+                        currentPlayerIndex = gameState.ladyOfLakeHolder ?: 0,
+                        viewmodel = viewmodel,
+                        taskIndex = taskIndex
+                    )
+                }
             }
         }
     }

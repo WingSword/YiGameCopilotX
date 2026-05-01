@@ -1,5 +1,6 @@
 package org.walks.gamecopilot.data.entity
 
+import kotlinx.serialization.Serializable
 import org.walks.gamecopilot.getWordMapBySelectedGroups
 
 data class GameEntity(
@@ -9,7 +10,7 @@ data class GameEntity(
     val globalSelectedWordGroups: Set<String> = WordGroupManager.getDefaultSelectedGroups() // 全局词库选择
 )
 
-
+@Serializable
 data class LocalSpyEntity(
     var gameWord: String = "",
     var spyNum: Int = 1,

@@ -1,4 +1,3 @@
-
 import org.jetbrains.kotlin.gradle.ExperimentalKotlinGradlePluginApi
 import org.jetbrains.kotlin.gradle.ExperimentalWasmDsl
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
@@ -7,16 +6,19 @@ plugins {
     alias(libs.plugins.kotlinMultiplatform)
     alias(libs.plugins.androidApplication)
     alias(libs.plugins.jetbrainsCompose)
-    alias(libs.plugins.compose.compiler)
+    alias(libs.plugins.composeCompiler)
+    alias(libs.plugins.composeHotReload)
+    alias(libs.plugins.kotlinSerialization)
 }
-val appName = "桌游助手"
-// 修改版本声明为：
-val composeHtmlVersion = "1.6.11" // 保持与compose.compiler版本一致
 
 repositories {
     mavenCentral()
     google()
     maven("https://maven.pkg.jetbrains.space/public/p/compose/dev")
+}
+
+configurations.configureEach {
+    exclude(group = "androidx.vectordrawable", module = "vectordrawable-animated")
 }
 
 kotlin {
@@ -36,7 +38,7 @@ kotlin {
     androidTarget {
         @OptIn(ExperimentalKotlinGradlePluginApi::class)
         compilerOptions {
-            jvmTarget.set(JvmTarget.JVM_11)
+            jvmTarget.set(JvmTarget.JVM_17)
         }
     }
 
@@ -60,26 +62,26 @@ kotlin {
             binaryOptions["memoryModel"] = "experimental"
         }
     }
+
     sourceSets {
         androidMain.dependencies {
             implementation(compose.preview)
             implementation(libs.androidx.activity.compose)
+            implementation(compose.uiTooling)
+            implementation(libs.places)
         }
         commonMain.dependencies {
             implementation(compose.runtime)
             implementation(compose.foundation)
-            //implementation(compose.material)
             implementation(compose.material3)
             implementation(compose.ui)
-//            implementation(libs.fluent)
-//            implementation(libs.fluent.icons.extended) // If you want to use full fluent icons.
             implementation(compose.components.resources)
             implementation(compose.components.uiToolingPreview)
             implementation(libs.jetbrains.navigation.compose)
             implementation(libs.androidx.lifecycle.viewmodel)
             implementation(libs.androidx.lifecycle.runtime.compose)
             api(projects.shared)
-
+            implementation("org.jetbrains.compose.material:material-icons-extended:1.7.3")
         }
 
         wasmJsMain.dependencies {
@@ -90,21 +92,14 @@ kotlin {
         }
 
         iosMain.dependencies {
-            // 基础运行时
             implementation(compose.runtime)
             implementation(compose.foundation)
             implementation(compose.material3)
             api("org.jetbrains.kotlinx:atomicfu:0.23.2")
-            // 常用多平台库
-            implementation(libs.ktor.client.darwin)  // 网络请求
-            implementation(libs.kotlinx.coroutines.core) // 协程
-
-
-            // 共享模块必须显式导出
+            implementation(libs.ktor.client.darwin)
+            implementation(libs.kotlinx.coroutines.core)
             api(projects.shared)
         }
-
-
     }
 }
 
@@ -114,34 +109,34 @@ android {
 
     defaultConfig {
         applicationId = "org.walks.gamecopilot"
-        resValue("string", "app_name", appName)
         minSdk = libs.versions.android.minSdk.get().toInt()
         targetSdk = libs.versions.android.targetSdk.get().toInt()
         versionCode = 5
         versionName = "1.4"
     }
+
     packaging {
         resources {
             excludes += "/META-INF/{AL2.0,LGPL2.1}"
+            excludes += "/META-INF/INDEX.LIST"
+            excludes += "/META-INF/io.netty.versions.properties"
         }
     }
+
     buildTypes {
         getByName("release") {
             isMinifyEnabled = false
         }
     }
+
     compileOptions {
-        sourceCompatibility = JavaVersion.VERSION_11
-        targetCompatibility = JavaVersion.VERSION_11
+        sourceCompatibility = JavaVersion.VERSION_17
+        targetCompatibility = JavaVersion.VERSION_17
     }
+
     buildFeatures {
         compose = true
     }
-    dependencies {
-        debugImplementation(compose.uiTooling)
-    }
 }
-dependencies {
-    implementation(libs.places)
-}
+
 

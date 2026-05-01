@@ -15,6 +15,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -33,8 +34,17 @@ fun DiceFace(value: Int, background: Color = MaterialTheme.colorScheme.primary) 
         modifier = Modifier
             .height(100.dp)
             .aspectRatio(1f)
-            .background(Color.White, RoundedCornerShape(16.dp))
-            .border(2.dp, Color.Black, RoundedCornerShape(16.dp)),
+            .background(
+                brush = Brush.linearGradient(
+                    colors = listOf(
+                        Color.White,
+                        Color(0xFFF4F4F4),
+                        Color(0xFFEAEAEA)
+                    )
+                ),
+                shape = RoundedCornerShape(16.dp)
+            )
+            .border(2.dp, Color(0xFF2A2A2A), RoundedCornerShape(16.dp)),
         contentAlignment = Alignment.Center
     ) {
         when (value) {

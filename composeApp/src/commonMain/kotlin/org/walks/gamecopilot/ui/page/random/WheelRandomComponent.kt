@@ -4,6 +4,7 @@ import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -12,6 +13,7 @@ import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -24,13 +26,16 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.drawscope.DrawScope
+import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.drawscope.rotate
 import androidx.compose.ui.graphics.drawscope.translate
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.drawText
+import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.rememberTextMeasurer
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -73,15 +78,24 @@ fun WheelRandomComponent(
     // 协程作用域
     val coroutineScope = rememberCoroutineScope()
 
+    val themedWheelPalette = listOf(
+        MaterialTheme.colorScheme.primaryContainer,
+        MaterialTheme.colorScheme.secondaryContainer,
+        MaterialTheme.colorScheme.tertiaryContainer,
+        MaterialTheme.colorScheme.surfaceVariant,
+        MaterialTheme.colorScheme.primary.copy(alpha = 0.26f),
+        MaterialTheme.colorScheme.secondary.copy(alpha = 0.24f)
+    )
+    val displayItems = items.mapIndexed { index, item ->
+        item.copy(color = themedWheelPalette[index % themedWheelPalette.size])
+    }
+
 
     Column(
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        // 选项说明
-        Text(
-            text = items.getOrNull(winnerIndex)?.text ?: "点击开始",
-            style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant
+        IndustrialResultBar(
+            text = displayItems.getOrNull(winnerIndex)?.text ?: "READY / WAIT FOR SPIN"
         )
 
         Spacer(modifier = Modifier.height(16.dp))
@@ -89,15 +103,23 @@ fun WheelRandomComponent(
         // 转盘容器
         Box(
             modifier = Modifier
-                .fillMaxWidth()
-                .aspectRatio(1f)
+                .size(320.dp)
+                .background(
+                    color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.55f),
+                    shape = CircleShape
+                )
+                .border(
+                    width = 3.dp,
+                    color = MaterialTheme.colorScheme.primary.copy(alpha = 0.7f),
+                    shape = CircleShape
+                )
         ) {
             // 转盘（旋转）
             WheelCanvas(
                 modifier = Modifier
                     .fillMaxWidth()
                     .aspectRatio(1f),
-                items = items,
+                items = displayItems,
                 rotationAngle = rotationAngle.value
             )
 
@@ -114,8 +136,18 @@ fun WheelRandomComponent(
                     .size(60.dp)
                     .align(Alignment.Center)
                     .background(
-                        color = MaterialTheme.colorScheme.primary,
-                        shape = androidx.compose.foundation.shape.CircleShape
+                        brush = Brush.radialGradient(
+                            colors = listOf(
+                                MaterialTheme.colorScheme.primary,
+                                MaterialTheme.colorScheme.primaryContainer
+                            )
+                        ),
+                        shape = CircleShape
+                    )
+                    .border(
+                        2.dp,
+                        MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.7f),
+                        CircleShape
                     )
                     .clickable(enabled = !isSpinning && items.isNotEmpty()) {
                         if (!isSpinning) {
@@ -143,6 +175,12 @@ fun WheelRandomComponent(
                 )
             }
         }
+        Spacer(modifier = Modifier.height(8.dp))
+        Text(
+            text = if (isSpinning) "转盘减速中..." else "点击中心按钮开始",
+            style = MaterialTheme.typography.labelLarge,
+            color = MaterialTheme.colorScheme.primary
+        )
     }
 
 }
@@ -224,10 +262,10 @@ private fun DrawScope.drawWheel(
 
         // 绘制直线分隔线
         drawLine(
-            color = Color.White,
+            color = Color.White.copy(alpha = 0.65f),
             start = lineStart,
             end = lineEnd,
-            strokeWidth = 2f  // 固定宽度，确保所有线条粗细一致
+            strokeWidth = 1.6f
         )
 
         // 绘制选项文本 - 使用计算出的角度和大小
@@ -244,6 +282,27 @@ private fun DrawScope.drawWheel(
         // 更新当前角度为下一个选项的起始角度
         currentAngle += sweepAngle
     }
+
+    // 外圈描边和高光，提升主题化质感
+    drawCircle(
+        brush = Brush.sweepGradient(
+            listOf(
+                Color.White.copy(alpha = 0.3f),
+                Color.Transparent,
+                Color.White.copy(alpha = 0.14f),
+                Color.Transparent
+            )
+        ),
+        radius = radius * 0.98f,
+        center = Offset(centerX, centerY),
+        style = Stroke(width = 6f)
+    )
+    drawCircle(
+        color = Color.Black.copy(alpha = 0.26f),
+        radius = radius * 0.98f,
+        center = Offset(centerX, centerY),
+        style = Stroke(width = 1.5f)
+    )
 }
 
 
@@ -271,10 +330,11 @@ private fun DrawScope.drawWheelItemText(
     val textLayoutResult = textMeasurer.measure(
         text = "  " + item.text + "  ",
         style = TextStyle(
-            color = Color.White,
+            color = Color(0xFF121212),
             fontSize = fontSize,
             textAlign = TextAlign.Center,
-            fontWeight = androidx.compose.ui.text.font.FontWeight.Bold
+            fontWeight = androidx.compose.ui.text.font.FontWeight.SemiBold,
+            fontFamily = FontFamily.Monospace
         )
     )
 
@@ -285,22 +345,31 @@ private fun DrawScope.drawWheelItemText(
 
     // 平移到文本位置，绘制文本
     translate(left = textX, top = textY) {
-        // 绘制半透明圆角背景
+        // 绘制工业风标签框
         val backgroundPadding = 8f
         val backgroundSize = Size(
             width = textLayoutResult.size.width + backgroundPadding * 2,
             height = textLayoutResult.size.height + backgroundPadding * 2
         )
 
-        // 绘制圆角矩形背景
         drawRoundRect(
-            color = Color.White.copy(alpha = 0.4f),
+            color = Color.White.copy(alpha = 0.22f),
             topLeft = Offset(
                 -backgroundSize.width / 2f,
                 -backgroundSize.height / 2f
             ),
             size = backgroundSize,
-            cornerRadius = androidx.compose.ui.geometry.CornerRadius(16.dp.toPx())
+            cornerRadius = androidx.compose.ui.geometry.CornerRadius(4.dp.toPx())
+        )
+        drawRoundRect(
+            color = Color(0xFF1E1E1E).copy(alpha = 0.65f),
+            topLeft = Offset(
+                -backgroundSize.width / 2f,
+                -backgroundSize.height / 2f
+            ),
+            size = backgroundSize,
+            cornerRadius = androidx.compose.ui.geometry.CornerRadius(4.dp.toPx()),
+            style = Stroke(width = 1.2f)
         )
 
         // 绘制文本
@@ -325,6 +394,29 @@ fun PointerCanvas(modifier: Modifier = Modifier) {
     }
 }
 
+@Composable
+private fun IndustrialResultBar(text: String) {
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(44.dp)
+            .border(
+                width = 1.dp,
+                color = MaterialTheme.colorScheme.outline.copy(alpha = 0.72f)
+            )
+            .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.35f)),
+        contentAlignment = Alignment.Center
+    ) {
+        Text(
+            text = text,
+            style = MaterialTheme.typography.labelLarge.copy(
+                fontFamily = FontFamily.Monospace
+            ),
+            color = MaterialTheme.colorScheme.onSurface
+        )
+    }
+}
+
 /**
  * 绘制指针
  */
@@ -332,9 +424,10 @@ private fun DrawScope.drawPointer(size: Size, primaryColor: Color) {
     val centerX = size.width / 2
     val centerY = size.height / 2
 
-    // 绘制等腰三角形指针 - 恢复合适大小
-    val pointerLength = 200f  // 增加指针长度
-    val pointerBaseWidth = 80f  // 增加三角形底边宽度，使指针更粗更明显
+    // 使用相对尺寸，避免不同容器尺寸下比例失衡
+    val radius = min(size.width, size.height) / 2f
+    val pointerLength = radius * 0.7f
+    val pointerBaseWidth = radius * 0.15f
 
     // 绘制三角形指针
     drawPath(
@@ -344,7 +437,7 @@ private fun DrawScope.drawPointer(size: Size, primaryColor: Color) {
             lineTo(centerX + pointerBaseWidth / 2, centerY)  // 右下角
             close()
         },
-        color = primaryColor  // 使用传入的主题色
+        color = primaryColor.copy(alpha = 0.88f)
     )
 }
 

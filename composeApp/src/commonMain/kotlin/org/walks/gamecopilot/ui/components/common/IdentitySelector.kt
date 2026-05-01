@@ -1,11 +1,12 @@
 package org.walks.gamecopilot.ui.components.common
 
 import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.core.Spring
-import androidx.compose.animation.core.VisibilityThreshold
-import androidx.compose.animation.core.spring
+import androidx.compose.animation.core.MutableTransitionState
+import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
+import androidx.compose.animation.scaleIn
+import androidx.compose.animation.scaleOut
 import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.ExperimentalFoundationApi
@@ -35,6 +36,7 @@ import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateListOf
@@ -45,10 +47,10 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.rotate
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
@@ -85,7 +87,7 @@ fun IdentitySelector(
     nicknames: List<String>,
     onNicknameChange: (Int, String) -> Unit,
     onRefreshIdentities: (() -> Unit)? = null,
-    customIdentityCard: @Composable ((playerNumber: Int, identity: String, nickname: String) -> Unit)? = null,
+    customIdentityCard: @Composable ((playerNumber: Int, identity: String, nickname: String, onClose: () -> Unit) -> Unit)? = null,
 ) {
     var currentSelectPlayer by remember(refreshKey) { mutableIntStateOf(0) }
     val identityDisplayState = remember(refreshKey) { mutableStateOf(IDENTITY_DISMISS) }
@@ -133,34 +135,81 @@ fun IdentitySelector(
     }
 
     // 身份卡片动画显示逻辑
-    AnimatedVisibility(
-        modifier = Modifier.fillMaxSize(),
-        visible = identityDisplayState.value == IDENTITY_SHOW,
-        enter = slideInVertically(
-            animationSpec = spring(
-                stiffness = Spring.StiffnessMediumLow,
-                visibilityThreshold = IntOffset.VisibilityThreshold
-            ),
-            initialOffsetY = { it }
-        ) + fadeIn(spring(dampingRatio = Spring.DampingRatioMediumBouncy)),
-        exit = slideOutVertically() + fadeOut()
-    ) {
+    var dialogVisible by remember(refreshKey) { mutableStateOf(false) }
+    LaunchedEffect(identityDisplayState.value) {
+        if (identityDisplayState.value == IDENTITY_SHOW) {
+            dialogVisible = true
+        }
+    }
+
+    if (identityDisplayState.value == IDENTITY_SHOW || dialogVisible) {
         Dialog(
-            onDismissRequest = { identityDisplayState.value = IDENTITY_DISMISS },
+            onDismissRequest = { dialogVisible = false },
             properties = DialogProperties(usePlatformDefaultWidth = false)
         ) {
-            if (customIdentityCard != null) {
-                customIdentityCard(
-                    currentSelectPlayer + 1,
-                    identities[currentSelectPlayer],
-                    nicknames[currentSelectPlayer]
-                )
-            } else {
-                IdentityCard(
-                    playerNumber = currentSelectPlayer + 1,
-                    identity = identities[currentSelectPlayer],
-                    nickname = nicknames[currentSelectPlayer]
-                )
+            val cardTransitionState = remember { MutableTransitionState(false) }
+            LaunchedEffect(dialogVisible) {
+                cardTransitionState.targetState = dialogVisible
+            }
+            LaunchedEffect(cardTransitionState.currentState, cardTransitionState.targetState) {
+                if (!cardTransitionState.currentState && !cardTransitionState.targetState) {
+                    identityDisplayState.value = IDENTITY_DISMISS
+                    dialogVisible = false
+                }
+            }
+            AnimatedVisibility(
+                modifier = Modifier.fillMaxSize(),
+                visibleState = cardTransitionState,
+                enter = fadeIn(tween(120)) +
+                        scaleIn(
+                            initialScale = 0.82f,
+                            animationSpec = tween(220)
+                        ) +
+                        slideInVertically(
+                            initialOffsetY = { it / 3 },
+                            animationSpec = tween(220)
+                        ),
+                exit = fadeOut(tween(100)) +
+                        scaleOut(
+                            targetScale = 0.8f,
+                            animationSpec = tween(180)
+                        ) +
+                        slideOutVertically(
+                            targetOffsetY = { it / 2 },
+                            animationSpec = tween(180)
+                        )
+            ) {
+                Box(modifier = Modifier.fillMaxSize()) {
+                    if (customIdentityCard != null) {
+                        Box(modifier = Modifier.align(Alignment.Center)) {
+                            customIdentityCard(
+                                currentSelectPlayer + 1,
+                                identities[currentSelectPlayer],
+                                nicknames[currentSelectPlayer],
+                                { dialogVisible = false }
+                            )
+                        }
+                    } else {
+                        Box(modifier = Modifier.align(Alignment.Center)) {
+                            IdentityCard(
+                                playerNumber = currentSelectPlayer + 1,
+                                identity = identities[currentSelectPlayer],
+                                nickname = nicknames[currentSelectPlayer]
+                            )
+                        }
+                    }
+                    Text(
+                        text = "左右滑动切换查看身份",
+                        color = Color(0xFFF2C72B),
+                        fontSize = 20.sp,
+                        fontWeight = FontWeight.Bold,
+                        textAlign = TextAlign.Center,
+                        modifier = Modifier
+                            .align(Alignment.BottomCenter)
+                            .fillMaxWidth()
+                            .padding(vertical = 24.dp)
+                    )
+                }
             }
         }
     }

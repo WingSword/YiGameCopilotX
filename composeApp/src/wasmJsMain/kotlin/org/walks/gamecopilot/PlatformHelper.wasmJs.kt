@@ -6,11 +6,11 @@ actual class PlatformHelper {
     actual companion object {
         private var instance: PlatformHelper? = null
         actual fun init(context: Any) {
+            instance = PlatformHelper()
         }
 
         actual fun getInstance(): PlatformHelper {
-            return instance ?: throw IllegalStateException("PlatformHelper not initialized")
-
+            return instance ?: PlatformHelper().also { instance = it }
         }
     }
 
@@ -18,6 +18,12 @@ actual class PlatformHelper {
     }
 
     actual fun vibrateLongMethod() {
+    }
+
+    actual fun startPersistentAlert() {
+    }
+
+    actual fun stopPersistentAlert() {
     }
 
     actual fun getAppVersionName(): String = "1.3"

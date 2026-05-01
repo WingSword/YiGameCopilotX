@@ -6,16 +6,16 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.sharp.Check
-import androidx.compose.material.icons.sharp.Close
+import androidx.compose.material.icons.rounded.Check
+import androidx.compose.material.icons.rounded.Close
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
@@ -24,17 +24,18 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import org.walks.gamecopilot.awalong.AwalongConfig
 import org.walks.gamecopilot.awalong.data.AwalongGameDayEntity
+import org.walks.gamecopilot.theme.LocalAppDesign
 
-/**
- * 任务进度条组件
- * 显示当前游戏任务的完成状态和进度
- */
 @Composable
 fun TaskProgressBar(
     currentDay: Int,
@@ -42,27 +43,82 @@ fun TaskProgressBar(
     gameConfig: AwalongConfig,
     actualProcess: List<Int>
 ) {
+    val design = LocalAppDesign.current
+    val completedCount = dayList.count { it.taskResult != 0 }
+    val successCount = dayList.count { it.taskResult == 1 }
+    val failCount = dayList.count { it.taskResult == -1 }
+
     Column(
-        modifier = Modifier
-            .fillMaxWidth()
-
+        modifier = Modifier.fillMaxWidth()
     ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = design.spacing.sm),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Text(
+                text = "任务进度",
+                fontSize = 14.sp,
+                fontWeight = FontWeight.Medium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
 
-        // 进度条背景
+            Row(
+                horizontalArrangement = Arrangement.spacedBy(design.spacing.md)
+            ) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Box(
+                        modifier = Modifier
+                            .size(8.dp)
+                            .clip(RectangleShape)
+                            .background(MaterialTheme.colorScheme.primary)
+                    )
+                    Spacer(modifier = Modifier.size(6.dp))
+                    Text(
+                        text = "成功 $successCount",
+                        fontSize = 12.sp,
+                        color = MaterialTheme.colorScheme.primary
+                    )
+                }
+
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Box(
+                        modifier = Modifier
+                            .size(8.dp)
+                            .clip(RectangleShape)
+                            .background(MaterialTheme.colorScheme.error)
+                    )
+                    Spacer(modifier = Modifier.size(6.dp))
+                    Text(
+                        text = "失败 $failCount",
+                        fontSize = 12.sp,
+                        color = MaterialTheme.colorScheme.error
+                    )
+                }
+            }
+        }
+
+        Spacer(modifier = Modifier.height(design.spacing.sm))
+
         Card(
             modifier = Modifier
                 .fillMaxWidth()
-                .height(40.dp),
-            shape = RoundedCornerShape(20.dp),
+                .height(48.dp),
+            shape = RectangleShape,
             colors = CardDefaults.cardColors(
                 containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f)
+            ),
+            elevation = CardDefaults.cardElevation(
+                defaultElevation = design.elevation.xs
             )
         ) {
             Row(
                 modifier = Modifier
                     .fillMaxSize()
-                    .padding(horizontal = 4.dp, vertical = 4.dp),
-                horizontalArrangement = Arrangement.spacedBy(4.dp)
+                    .padding(horizontal = design.spacing.sm, vertical = design.spacing.sm),
+                horizontalArrangement = Arrangement.spacedBy(design.spacing.sm)
             ) {
                 dayList.forEachIndexed { index, day ->
                     TaskProgressItem(
@@ -81,9 +137,6 @@ fun TaskProgressBar(
     }
 }
 
-/**
- * 单个任务进度项组件
- */
 @Composable
 private fun TaskProgressItem(
     modifier: Modifier = Modifier,
@@ -95,70 +148,117 @@ private fun TaskProgressItem(
     totalItems: Int,
     requiresTwoFailures: Boolean
 ) {
+    val design = LocalAppDesign.current
     val isCompleted = day.gamePhase == "TASK_RESULT"
     val isSuccess = day.taskResult == 1
-    
-    // 计算圆角：连续完成的任务之间没有圆角
-    val shape = if (isCompleted) {
-        val prevCompleted = index > 0 && dayList.getOrNull(index - 1)?.taskResult != 0
-        val nextCompleted = index < totalItems - 1 && dayList.getOrNull(index + 1)?.taskResult != 0
-        when {
-            prevCompleted && nextCompleted -> RoundedCornerShape(0.dp) // 两边都完成，无圆角
-            prevCompleted -> RoundedCornerShape(topEnd = 16.dp, bottomEnd = 16.dp) // 只有右边
-            nextCompleted -> RoundedCornerShape(topStart = 16.dp, bottomStart = 16.dp) // 只有左边
-            else -> RoundedCornerShape(16.dp) // 都不连续，全圆角
-        }
-    } else {
-        RoundedCornerShape(16.dp)
-    }
-    
-    val boxModifier = if (isCompleted) {
-        modifier
-            .fillMaxHeight()
-            .background(
-                color = if (isSuccess) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.error,
-                shape = shape
-            )
-    } else if (isCurrent) {
-        modifier
-            .fillMaxHeight()
-            .background(
-                color = MaterialTheme.colorScheme.primary.copy(alpha = 0.3f),
-                shape = RoundedCornerShape(16.dp)
-            )
-            .border(
-                width = 2.dp,
-                color = MaterialTheme.colorScheme.primary,
-                shape = RoundedCornerShape(16.dp)
-            )
-    } else {
-        modifier
-            .fillMaxHeight() // 未执行的任务无背景
-    }
-    
-    Box(
-        modifier = boxModifier,
-        contentAlignment = Alignment.Center
-    ) {
-        Row(
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.Center
-        ) {
-            if (isCompleted) {
-                Icon(
-                    imageVector = if (isSuccess) Icons.Sharp.Check else Icons.Sharp.Close,
-                    contentDescription = null,
-                    tint = Color.White,
-                    modifier = Modifier.size(16.dp)
+
+    val shape = RectangleShape
+
+    val backgroundModifier = when {
+        isCompleted -> {
+            val gradientColors = if (isSuccess) {
+                listOf(
+                    MaterialTheme.colorScheme.primary,
+                    MaterialTheme.colorScheme.primaryContainer
+                )
+            } else {
+                listOf(
+                    MaterialTheme.colorScheme.error,
+                    MaterialTheme.colorScheme.errorContainer
                 )
             }
-            
+            modifier
+                .fillMaxHeight()
+                .shadow(
+                    elevation = design.elevation.sm,
+                    shape = shape
+                )
+                .clip(shape)
+                .background(
+                    brush = Brush.linearGradient(gradientColors),
+                    shape = shape
+                )
+        }
+
+        isCurrent -> {
+            modifier
+                .fillMaxHeight()
+                .clip(shape)
+                .background(
+                    color = MaterialTheme.colorScheme.primary.copy(alpha = 0.15f),
+                    shape = shape
+                )
+                .border(
+                    width = 2.dp,
+                    brush = Brush.linearGradient(
+                        colors = listOf(
+                            MaterialTheme.colorScheme.primary,
+                            MaterialTheme.colorScheme.primaryContainer
+                        )
+                    ),
+                    shape = shape
+                )
+        }
+
+        else -> {
+            modifier
+                .fillMaxHeight()
+                .clip(shape)
+                .background(
+                    color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
+                    shape = shape
+                )
+        }
+    }
+
+    Box(
+        modifier = backgroundModifier,
+        contentAlignment = Alignment.Center
+    ) {
+        Column(
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.Center
+        ) {
+            if (isCompleted) {
+                Box(
+                    modifier = Modifier
+                        .size(20.dp)
+                        .clip(RectangleShape)
+                        .background(Color.White.copy(alpha = 0.2f)),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(
+                        imageVector = if (isSuccess) Icons.Rounded.Check else Icons.Rounded.Close,
+                        contentDescription = null,
+                        tint = Color.White,
+                        modifier = Modifier.size(14.dp)
+                    )
+                }
+            }
+
             Text(
-                text = "${taskNum}人${if (requiresTwoFailures) "*" else ""}",
-                color = if (isCompleted) Color.White else MaterialTheme.colorScheme.onSurfaceVariant,
-                fontSize = 10.sp,
-                fontWeight = if (isCurrent) FontWeight.Bold else FontWeight.Medium
+                text = "${taskNum}人",
+                color = when {
+                    isCompleted -> Color.White
+                    isCurrent -> MaterialTheme.colorScheme.primary
+                    else -> MaterialTheme.colorScheme.onSurfaceVariant
+                },
+                fontSize = 11.sp,
+                fontWeight = if (isCurrent || isCompleted) FontWeight.Bold else FontWeight.Medium
             )
+
+            if (requiresTwoFailures) {
+                Text(
+                    text = "需2票",
+                    color = when {
+                        isCompleted -> Color.White.copy(alpha = 0.8f)
+                        isCurrent -> MaterialTheme.colorScheme.primary.copy(alpha = 0.7f)
+                        else -> MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f)
+                    },
+                    fontSize = 9.sp,
+                    fontWeight = FontWeight.Medium
+                )
+            }
         }
     }
 }

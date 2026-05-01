@@ -53,6 +53,13 @@ object WordGroupManager {
     fun getDefaultSelectedGroups(): Set<String> {
         return BUILTIN_GROUPS.keys
     }
+
+    /**
+     * 获取所有自定义词组（非内置）
+     */
+    fun getCustomGroups(): Map<String, WordGroup> {
+        return _availableGroups.filter { !it.value.isBuiltIn }
+    }
 }
 
 /**

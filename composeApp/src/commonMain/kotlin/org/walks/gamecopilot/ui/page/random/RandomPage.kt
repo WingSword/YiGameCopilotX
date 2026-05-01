@@ -15,6 +15,7 @@ import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.aspectRatio
@@ -28,9 +29,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyRow
-import androidx.compose.foundation.lazy.grid.GridCells
-import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
-import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
@@ -76,8 +74,6 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
-import com.yi.yigamecopilot.android.theme.MorandiBlue
-import com.yi.yigamecopilot.android.theme.MorandiGreen
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
@@ -89,11 +85,14 @@ import org.walks.gamecopilot.PlatformHelper
 import org.walks.gamecopilot.RANDOM_PAGE_CONFIG_CATE_CARD
 import org.walks.gamecopilot.RANDOM_PAGE_CONFIG_CATE_COIN
 import org.walks.gamecopilot.RANDOM_PAGE_CONFIG_CATE_DICE
+import org.walks.gamecopilot.RANDOM_PAGE_CONFIG_CATE_FINGER
 import org.walks.gamecopilot.RANDOM_PAGE_CONFIG_CATE_WHEEL
+import org.walks.gamecopilot.RANDOM_PAGE_SYSTEM_FINGER_SPINNER_NAME
 import org.walks.gamecopilot.data.RandomItem
 import org.walks.gamecopilot.data.RandomListEntity
 import org.walks.gamecopilot.data.WheelItem
 import org.walks.gamecopilot.intent.RandomPageIntent
+import org.walks.gamecopilot.theme.LocalAppDesign
 import org.walks.gamecopilot.ui.animation.DiceAnimation
 import org.walks.gamecopilot.ui.animation.RollCoinAnimation
 import yigamecopilotx.composeapp.generated.resources.Res
@@ -101,18 +100,11 @@ import yigamecopilotx.composeapp.generated.resources.icon_edit
 import kotlin.math.ceil
 import kotlin.random.Random
 
-/**
- *  Created by Wing at 09:47 on 2025/4/25
- *  随机组件页
- */
-// 洗牌动画配置
-private const val SHUFFLE_CYCLE_DURATION = 800  // 单次循环时长
-private const val MAX_SHUFFLE_CYCLES = 5       // 循环次数
-private val CARD_OFFSET = 64.dp               // 最大位移量
-private const val MAX_ROTATION = 30f          // 最大旋转角度
-private const val SCALE_FACTOR = 1.2f         // 缩放比例
-
-// 新增动画配置参数
+private const val SHUFFLE_CYCLE_DURATION = 800
+private const val MAX_SHUFFLE_CYCLES = 5
+private val CARD_OFFSET = 64.dp
+private const val MAX_ROTATION = 30f
+private const val SCALE_FACTOR = 1.2f
 private const val SHUFFLE_DURATION = 1200
 private val CONTRACT_OFFSET = 96.dp
 private const val MIN_SCALE = 0.8f
@@ -120,6 +112,7 @@ private const val MIN_SCALE = 0.8f
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun RandomPage(viewmodel: MainViewmodel) {
+    val design = LocalAppDesign.current
     var addRandomDialogShow by remember { mutableStateOf(false) }
     var editRandomDialogShow by remember { mutableStateOf(false) }
     var editConfigName by remember { mutableStateOf("") }
@@ -127,8 +120,13 @@ fun RandomPage(viewmodel: MainViewmodel) {
     var isEditing by remember { mutableStateOf(false) }
     val scope = rememberCoroutineScope()
     viewmodel.handleRandomPageIntent(RandomPageIntent.OnChangeNewRandomLabel)
-    // 修改为 mutableStateList 类型
-    var randomLabelsList = viewmodel.randomLabelsState.value.asReversed()
+    val rawLabels = viewmodel.randomLabelsState.value.asReversed()
+    val randomLabelsList = buildList {
+        if (rawLabels.contains(RANDOM_PAGE_SYSTEM_FINGER_SPINNER_NAME)) {
+            add(RANDOM_PAGE_SYSTEM_FINGER_SPINNER_NAME)
+        }
+        addAll(rawLabels.filter { it != RANDOM_PAGE_SYSTEM_FINGER_SPINNER_NAME })
+    }
     var itemList = viewmodel.currentRandomContentState.collectAsState().value.list
     var currentSelectLabel = viewmodel.currentRandomContentState.collectAsState().value.name
 
@@ -153,22 +151,22 @@ fun RandomPage(viewmodel: MainViewmodel) {
     }
 
     Column(
-        modifier = Modifier.fillMaxSize().clickable(
-            indication = null,
-            interactionSource = MutableInteractionSource()
-        ) {
-            isEditMode = false
-        }
+        modifier = Modifier
+            .fillMaxSize()
+            .background(MaterialTheme.colorScheme.background)
+            .clickable(
+                indication = null,
+                interactionSource = MutableInteractionSource()
+            ) {
+                isEditMode = false
+            }
     ) {
         val currentType = RandomCate.getCateByItem(currentSelectLabel)
 
-        // 配置列表 - 圆形布局
         Box(
             modifier = Modifier
                 .fillMaxWidth()
-                .background(MaterialTheme.colorScheme.background)
-
-                .padding(top = 10.dp)
+                .padding(top = design.spacing.lg)
         ) {
             RandomConfigList(
                 randomLabelsList = randomLabelsList,
@@ -200,110 +198,140 @@ fun RandomPage(viewmodel: MainViewmodel) {
                     isEditMode = !isEditMode
                 },
                 onEdit = { configName ->
-                    // 设置要编辑的配置名称
                     editConfigName = configName
                     editRandomDialogShow = true
                     isEditing = true
                     isEditMode = false
+                },
+                isSystemDefault = { label ->
+                    label.startsWith(RANDOM_PAGE_CONFIG_CATE_FINGER)
                 }
             )
         }
 
-        // 内容区域 - 上面带圆角的白色区域
-        Column(
+        Surface(
             modifier = Modifier
-                .background(
-                    shape = RoundedCornerShape(32.dp, 32.dp, 0.dp, 0.dp),
-                    color = MaterialTheme.colorScheme.surface
-                )
                 .weight(1f)
-                .fillMaxWidth()
-                .padding(top = 10.dp, start = 10.dp, end = 10.dp, bottom = 10.dp)
+                .fillMaxWidth(),
+            shape = RoundedCornerShape(
+                topStart = design.cornerRadius.xxxl,
+                topEnd = design.cornerRadius.xxxl
+            ),
+            color = MaterialTheme.colorScheme.surface,
+            shadowElevation = design.elevation.lg
         ) {
-            // 转盘类型单独显示完整的转盘组件
-            if (currentType == RandomCate.Wheel) {
-                Box(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .padding(16.dp),
-                    contentAlignment = Alignment.TopCenter
-                ) {
-                    // 获取转盘选项列表 - 使用当前配置的选项
-                    val wheelItems = itemList.mapIndexed { index, randomItem ->
-                        // 尝试从second字段解析权重，如果无法解析则使用默认权重1.0
-                        val weight = try {
-                            randomItem.second.toFloatOrNull() ?: 1.0f
-                        } catch (e: Exception) {
-                            1.0f
-                        }
-                        
-                        WheelItem(
-                            id = randomItem.id.toString(),
-                            text = randomItem.first,
-                            color = WheelItem.DEFAULT_COLORS.getOrElse(index) { Color.Gray },
-                            weight = weight
-                        )
-                    }
-
-                    WheelRandomComponent(
-                        items = wheelItems,
-                        onItemsChange = { newItems ->
-                            // 这里需要实现更新转盘选项的逻辑
-                            viewmodel.updateWheelItems(newItems)
-                        },
-                        onTriggerRandom = {
-                            viewmodel.handleRandomPageIntent(RandomPageIntent.TriggerRandom)
-                        }
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(
+                        top = design.spacing.lg,
+                        start = design.spacing.lg,
+                        end = design.spacing.lg,
+                        bottom = design.spacing.xxxl
                     )
-                }
-            } else {
-                // 其他类型（卡片、骰子、硬币）保持原来的网格布局
-                LazyVerticalGrid(
-                    columns = GridCells.Fixed(3),
-                    modifier = Modifier.fillMaxSize()
-                ) {
-                    items(itemList) { randomItem ->
-                        AnimatedShuffleContent(
-                            card = randomItem,
-                            isShuffling = isShuffling,
-                            index = itemList.indexOf(randomItem),
-                            total = itemList.size,
-                            contentCate = currentType,
-                            randomState = randomContentDisplayState,
+            ) {
+                if (currentType == RandomCate.Finger) {
+                    FingerSpinnerComponent(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .padding(design.spacing.md)
+                    )
+                } else if (currentType == RandomCate.Wheel) {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .padding(design.spacing.lg),
+                        contentAlignment = Alignment.TopCenter
+                    ) {
+                        val wheelItems = itemList.mapIndexed { index, randomItem ->
+                            val weight = try {
+                                randomItem.second.toFloatOrNull() ?: 1.0f
+                            } catch (e: Exception) {
+                                1.0f
+                            }
+
+                            WheelItem(
+                                id = randomItem.id.toString(),
+                                text = randomItem.first,
+                                color = WheelItem.DEFAULT_COLORS.getOrElse(index) { Color.Gray },
+                                weight = weight
+                            )
+                        }
+
+                        WheelRandomComponent(
+                            items = wheelItems,
+                            onItemsChange = { newItems ->
+                                viewmodel.updateWheelItems(newItems)
+                            },
                             onTriggerRandom = {
                                 viewmodel.handleRandomPageIntent(RandomPageIntent.TriggerRandom)
-                            },
-                            viewmodel = viewmodel
+                            }
                         )
+                    }
+                } else {
+                    Column(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .verticalScroll(rememberScrollState()),
+                        horizontalAlignment = Alignment.CenterHorizontally
+                    ) {
+                        FlowRow(
+                            modifier = Modifier.fillMaxWidth(),
+                            maxItemsInEachRow = 3,
+                            horizontalArrangement = Arrangement.Center,
+                            verticalArrangement = Arrangement.spacedBy(design.spacing.md)
+                        ) {
+                            itemList.forEach { randomItem ->
+                                AnimatedShuffleContent(
+                                    card = randomItem,
+                                    isShuffling = isShuffling,
+                                    index = itemList.indexOf(randomItem),
+                                    total = itemList.size,
+                                    contentCate = currentType,
+                                    randomState = randomContentDisplayState,
+                                    onTriggerRandom = {
+                                        viewmodel.handleRandomPageIntent(RandomPageIntent.TriggerRandom)
+                                    },
+                                    viewmodel = viewmodel
+                                )
+                            }
+                        }
                     }
                 }
             }
         }
 
-        // 底部一键翻转按钮（仅当选择卡片类型时显示）
         if (currentType == RandomCate.Card) {
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(16.dp)
+                    .padding(design.spacing.lg)
                     .background(MaterialTheme.colorScheme.surface),
                 contentAlignment = Alignment.Center
             ) {
-                if (currentType == RandomCate.Card) {
-                    TextButton(
-                        colors = ButtonDefaults.textButtonColors(
-                            containerColor = if (randomContentDisplayState.intValue == 0) MorandiBlue else MorandiGreen,
-                        ),
-                        onClick = {
-                            randomContentDisplayState.intValue =
-                                if (randomContentDisplayState.intValue == 0) 1 else 0
-                        }
-                    ) {
-                        Text("一键翻转")
+                TextButton(
+                    colors = ButtonDefaults.textButtonColors(
+                        containerColor = if (randomContentDisplayState.intValue == 0)
+                            MaterialTheme.colorScheme.primaryContainer
+                        else
+                            MaterialTheme.colorScheme.primary,
+                        contentColor = Color.White
+                    ),
+                    shape = RoundedCornerShape(design.cornerRadius.button),
+                    onClick = {
+                        randomContentDisplayState.intValue =
+                            if (randomContentDisplayState.intValue == 0) 1 else 0
                     }
+                ) {
+                    Text(
+                        "一键翻转",
+                        fontWeight = FontWeight.Medium,
+                        modifier = Modifier.padding(horizontal = design.spacing.lg)
+                    )
                 }
             }
         }
+
         AddNewRandomDialog(
             addRandomDialogShow,
             onDismiss = { addRandomDialogShow = false },
@@ -369,7 +397,7 @@ fun FlippableCard(
     back: @Composable () -> Unit,
     front: @Composable () -> Unit,
     cardColor: Color = Color.White,
-    cornerRadius: Dp = 8.dp,
+    cornerRadius: Dp = 0.dp,
     animationDuration: Int = 500,
     flippedState: MutableIntState = mutableIntStateOf(0)
 ) {
@@ -391,15 +419,13 @@ fun FlippableCard(
                 rotationX = rotation.value  // 改回X轴旋转
                 this.cameraDistance = cameraDistance
             }
-            .fillMaxWidth(0.33f)
-            .aspectRatio(1.25f)
             .shadow(
                 4.dp,
-                shape = RoundedCornerShape(cornerRadius, cornerRadius, 0.dp, cornerRadius)
+                shape = RoundedCornerShape(cornerRadius)
             )
             .background(
                 cardColor,
-                shape = RoundedCornerShape(cornerRadius, cornerRadius, 0.dp, cornerRadius)
+                shape = RoundedCornerShape(cornerRadius)
             )
             .clickable { flipped = !flipped }
     ) {
@@ -533,8 +559,13 @@ fun AnimatedShuffleContent(
 
     Box(
         modifier = Modifier
-            .fillMaxWidth()
-            .padding(4.dp)
+            .width(
+                when (contentCate) {
+                    RandomCate.Card -> 138.dp
+                    else -> 116.dp
+                }
+            )
+            .padding(6.dp)
             .clickable(interactionSource = MutableInteractionSource(), indication = null) {
                 // 点击触发随机事件
                 onTriggerRandom()
@@ -553,22 +584,26 @@ fun AnimatedShuffleContent(
                 // 为骰子类型提供默认数值，避免字符串转换错误
                 val start = card.first.toIntOrNull() ?: 1
                 val end = card.second.toIntOrNull() ?: 6
-                AnimatedShuffleDice(start, end, isShuffling)
+                Box(modifier = Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
+                    AnimatedShuffleDice(start, end, isShuffling)
+                }
             }
 
             RANDOM_PAGE_CONFIG_CATE_COIN -> {
-                RollCoinAnimation(
-                    onFlipComplete = { result ->
-                        // 处理硬币翻转结果
-                        PlatformHelper.getInstance().vibrateMethod()
-                    },
-                    isRolling = isShuffling,
-                    frontText = card.first,
-                    backText = card.second,
-                    modifier = Modifier
-                        .aspectRatio(1f)
-                        .padding(4.dp),
-                )
+                Box(modifier = Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
+                    RollCoinAnimation(
+                        onFlipComplete = { _ ->
+                            // 处理硬币翻转结果
+                            PlatformHelper.getInstance().vibrateMethod()
+                        },
+                        isRolling = isShuffling,
+                        frontText = card.first,
+                        backText = card.second,
+                        modifier = Modifier
+                            .width(108.dp)
+                            .aspectRatio(1f),
+                    )
+                }
             }
 
             // 转盘类型现在单独显示，不再显示在网格中
@@ -576,16 +611,19 @@ fun AnimatedShuffleContent(
             else -> {
                 FlippableCard(
                     modifier = Modifier
-                        .aspectRatio(1f)
-                        .padding(4.dp),
+                        .width(138.dp)
+                        .aspectRatio(0.72f),
+                    cardColor = MaterialTheme.colorScheme.primaryContainer,
                     back = {
                         Box(
-                            modifier = Modifier.fillMaxSize(),
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .background(MaterialTheme.colorScheme.primaryContainer),
                             contentAlignment = Alignment.BottomCenter
                         ) {
                             Text(
                                 "" + card.id + "",
-                                color = MaterialTheme.colorScheme.primary.copy(0.3f),
+                                color = MaterialTheme.colorScheme.primary.copy(0.28f),
                                 fontWeight = FontWeight.W900,
                                 fontSize = 50.sp,
                                 textAlign = TextAlign.End,
@@ -593,12 +631,27 @@ fun AnimatedShuffleContent(
                             )
                             Text(
                                 card.first,
-                                color = MaterialTheme.colorScheme.onPrimary.copy(0.9F),
-                                modifier = Modifier.fillMaxHeight()
+                                color = MaterialTheme.colorScheme.onPrimaryContainer,
+                                modifier = Modifier.fillMaxHeight(),
+                                fontWeight = FontWeight.SemiBold
                             )
                         }
                     },
-                    front = { Text(card.second, color = MorandiBlue) },
+                    front = {
+                        Box(
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .background(MaterialTheme.colorScheme.secondaryContainer),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Text(
+                                card.second,
+                                color = MaterialTheme.colorScheme.onSecondaryContainer,
+                                fontWeight = FontWeight.Medium,
+                                textAlign = TextAlign.Center
+                            )
+                        }
+                    },
                     flippedState = randomState
                 )
             }
@@ -615,7 +668,8 @@ fun RandomConfigList(
     onItemClick: (String) -> Unit,
     onDelete: (String) -> Unit,
     onLongClick: (String) -> Unit,
-    onEdit: (String) -> Unit = {}
+    onEdit: (String) -> Unit = {},
+    isSystemDefault: (String) -> Boolean = { false }
 ) {
     // 过滤掉空的配置项（没有类别的配置）
     val filteredLabels = randomLabelsList.filter { item ->
@@ -631,6 +685,7 @@ fun RandomConfigList(
     ) {
         items(filteredLabels) { item ->
             val currentSelectLabelType = RandomCate.getCateByItem(item)
+            val isProtected = isSystemDefault(item)
             // 确保有有效的图标资源
             val iconRes = currentSelectLabelType.iconRes ?: return@items
 
@@ -640,9 +695,18 @@ fun RandomConfigList(
                 label = item.replaceFirst(currentSelectLabelType.key, ""),
                 iconRes = iconRes,
                 onClick = { onItemClick(item) },
-                onDelete = { onDelete(item) },
+                onDelete = {
+                    if (!isProtected) {
+                        onDelete(item)
+                    }
+                },
                 onLongClick = { onLongClick(item) },
-                onEdit = { onEdit(item) }
+                onEdit = {
+                    if (!isProtected) {
+                        onEdit(item)
+                    }
+                },
+                showEditActions = !isProtected
             )
         }
     }
@@ -659,8 +723,10 @@ fun RandomConfigCircleItem(
     onClick: () -> Unit,
     onDelete: () -> Unit,
     onLongClick: () -> Unit,
-    onEdit: () -> Unit = {}
+    onEdit: () -> Unit = {},
+    showEditActions: Boolean = true
 ) {
+    val design = LocalAppDesign.current
     Column(
         modifier = Modifier
             .padding(4.dp),
@@ -670,20 +736,20 @@ fun RandomConfigCircleItem(
             Box(
                 modifier = Modifier
                     .size(56.dp)
-                    .clip(CircleShape)
+                    .clip(RoundedCornerShape(design.cornerRadius.lg))
                     .background(
                         if (isSelected)
-                            MaterialTheme.colorScheme.primary
+                            MaterialTheme.colorScheme.primaryContainer
                         else
-                            MaterialTheme.colorScheme.background
+                            MaterialTheme.colorScheme.surface
                     )
                     .border(
                         width = 2.dp,
                         color = if (isSelected)
-                            MaterialTheme.colorScheme.primaryContainer
+                            MaterialTheme.colorScheme.primary
                         else
                             MaterialTheme.colorScheme.outline,
-                        shape = CircleShape
+                        shape = RoundedCornerShape(design.cornerRadius.lg)
                     )
                     .combinedClickable(
                         onLongClick = {
@@ -710,7 +776,7 @@ fun RandomConfigCircleItem(
             }
 
             // 删除按钮（编辑模式下显示在右上角）
-            if (isEdit) {
+            if (isEdit && showEditActions) {
                 Icon(
                     imageVector = Icons.Default.Close,
                     contentDescription = "删除",
@@ -723,7 +789,7 @@ fun RandomConfigCircleItem(
                             indication = null
                         ) { onDelete() }
                         .background(
-                            Color.White,
+                            MaterialTheme.colorScheme.surface,
                             CircleShape
                         )
                         .padding(2.dp),
@@ -742,7 +808,7 @@ fun RandomConfigCircleItem(
                             indication = null
                         ) { onEdit() }
                         .background(
-                            Color.White.copy(0.75F),
+                            MaterialTheme.colorScheme.surface.copy(alpha = 0.82f),
                             CircleShape
                         )
                         .padding(4.dp),
@@ -859,17 +925,25 @@ fun TextDiceFace(
     text: String,
     modifier: Modifier = Modifier
 ) {
+    val design = LocalAppDesign.current
     Box(
         modifier = modifier
-            .background(Color.White, RoundedCornerShape(16.dp))
-            .border(2.dp, Color.Black, RoundedCornerShape(16.dp)),
+            .background(
+                MaterialTheme.colorScheme.surface,
+                RoundedCornerShape(design.cornerRadius.lg)
+            )
+            .border(
+                2.dp,
+                MaterialTheme.colorScheme.outline,
+                RoundedCornerShape(design.cornerRadius.lg)
+            ),
         contentAlignment = Alignment.Center
     ) {
         Text(
             text = text,
             fontSize = 16.sp,
             fontWeight = FontWeight.Bold,
-            color = Color.Black,
+            color = MaterialTheme.colorScheme.onSurface,
             textAlign = TextAlign.Center,
             maxLines = 2
         )
@@ -888,6 +962,7 @@ fun EditRandomDialog(
     configName: String,
     onShow: () -> Unit = {}
 ) {
+    val design = LocalAppDesign.current
     if (show && configName.isNotEmpty()) {
         // 通知父组件进入编辑状态
         LaunchedEffect(show) {
@@ -903,7 +978,7 @@ fun EditRandomDialog(
                 modifier = Modifier
                     .fillMaxWidth()
                     .heightIn(max = 600.dp),
-                shape = RoundedCornerShape(16.dp),
+                shape = RoundedCornerShape(design.cornerRadius.dialog),
                 color = MaterialTheme.colorScheme.surface
             ) {
                 var randomName by remember { mutableStateOf("") }
@@ -957,7 +1032,7 @@ fun EditRandomDialog(
                     modifier = Modifier
                         .fillMaxSize()
                         .verticalScroll(scrollState)
-                        .padding(16.dp)
+                        .padding(design.spacing.xl)
                 ) {
                     // 顶部标题栏
                     Row(
@@ -988,7 +1063,7 @@ fun EditRandomDialog(
                         label = { Text("配置名称") },
                         modifier = Modifier.fillMaxWidth(),
                         singleLine = true,
-                        shape = RoundedCornerShape(8.dp)
+                        shape = RoundedCornerShape(design.cornerRadius.input)
                     )
 
                     Spacer(modifier = Modifier.height(16.dp))

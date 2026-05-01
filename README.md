@@ -1,26 +1,52 @@
-这是一个面向 Android、iOS、Web、桌面、服务器的 Kotlin 多平台项目。
+# YiGameCopilotX
 
-* “/composeApp”适用于将在 Compose Multiplatform 应用程序之间共享的代码。
-  它包含几个子文件夹：
-  - “commonMain”适用于所有目标的通用代码。
-  - 其他文件夹用于 Kotlin 代码，这些代码将仅针对文件夹名称中指示的平台进行编译。
-    例如，如果您想将 Apple 的 CoreCrypto 用于 Kotlin 应用的 iOS 部分，
-    “iosMain” 将是此类调用的正确文件夹。
+基于 Kotlin Multiplatform + Compose Multiplatform 的多端项目，覆盖 Android / iOS / Web(Wasm)。
 
-* '/iosApp' 包含 iOS 应用程序。即使您与 Compose Multiplatform 共享 UI，
-  您的 iOS 应用程序需要此入口点。这也是您应该为项目添加 SwiftUI 代码的地方。
+## 项目结构
 
-* '/server' 用于 Ktor 服务器应用程序。
+- `composeApp`：跨平台 UI 与主要业务（`commonMain` + `wasmJsMain` + `iosMain` + `androidMain`，并直接作为
+  Android 应用模块）。
+- `shared`：跨平台共享能力（网络、数据、工具等）。
+- `iosApp`：iOS 工程入口。
 
-* '/shared' 用于将在项目中的所有目标之间共享的代码。
-  最重要的子文件夹是 'commonMain'。如果愿意，您也可以在此处将代码添加到特定于平台的文件夹中。
+## 环境要求
 
+- JDK 17+（建议 17 或 21）
+- Android Studio（支持 AGP 9）
+- Android SDK（compileSdk / targetSdk 35）
 
-进一步了解[Kotlin Multiplatform](https://www.jetbrains.com/help/kotlin-multiplatform-dev/get-started.html),
-[Compose Multiplatform](https://github.com/JetBrains/compose-multiplatform/#compose-multiplatform),
-[Kotlin/Wasm](https://kotl.in/wasm/)…
+## 快速开始（优先 Web）
 
-感谢您在公共 Slack 频道中对 Compose/Web 和 Kotlin/Wasm 提供反馈 [#compose-web](https://slack-chats.kotlinlang.org/c/compose-web).
-如果您遇到任何问题，请在[GitHub](https://github.com/JetBrains/compose-multiplatform/issues).
+1. 启动 Web 开发端（推荐）  
+   `./gradlew runWeb`  
+   或  
+   `./gradlew :composeApp:wasmJsBrowserDevelopmentRun`
 
-您可以通过运行`:composeApp:wasmJsBrowserDevelopmentRun` Gradle 任务.
+2. 构建 Android Debug 包  
+   `./gradlew :composeApp:assembleDebug`
+
+3. 检查任务列表  
+   `./gradlew tasks`
+
+## Gradle/构建优化
+
+- 升级 AGP 到 `9.0.1`。
+- 升级 Gradle Wrapper 到 `9.3.0-rc-1`（高于 AGP 9 的最低要求 `9.1.0`）。
+- Android 与 Kotlin 编译目标统一到 JVM 17。
+- 启用 `parallel` / `caching` / `configuration-cache`。
+- 新增根任务 `runWeb`，降低 Web 端调试启动成本。
+
+## 常见问题
+
+- 若下载 Gradle 发行包时报 SSL Handshake 错误，通常是网络或代理证书链问题。可先检查：
+    - 系统代理/VPN 配置
+    - 企业证书注入
+    - 是否可直连 `https://services.gradle.org`
+- 当前仓库默认已切换到华为镜像：
+    - `https://mirrors.huaweicloud.com/gradle/gradle-9.3.0-rc-1-bin.zip`
+
+## 参考文档
+
+- [Kotlin Multiplatform 文档](https://www.jetbrains.com/help/kotlin-multiplatform-dev/get-started.html)
+- [Compose Multiplatform](https://github.com/JetBrains/compose-multiplatform)
+- [Kotlin/Wasm](https://kotl.in/wasm/)

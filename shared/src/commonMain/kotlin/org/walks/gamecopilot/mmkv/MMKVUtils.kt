@@ -1,24 +1,21 @@
 package org.walks.gamecopilot.mmkv
 
 import com.russhwolf.settings.Settings
+import com.russhwolf.settings.set
 
-/**
- *  Created by Wing at 15:27 on 2025/4/27
- *
- */
 object MMKVUtils {
 
-    private val settings: Settings = Settings()
+    private val settings: Settings by lazy { Settings() }
 
     fun put(key: String, value: Any?) {
         when (value) {
-            is String -> settings.putString(key, value)
-            is Int -> settings.putInt(key, value)
-            is Float -> settings.putFloat(key, value)
-            is Long -> settings.putLong(key, value)
-            is Boolean -> settings.putBoolean(key, value)
-            is Double -> settings.putDouble(key, value)
-            is ByteArray -> settings.putString(key, value.toString()) // 字节数组存储为字符串
+            is String -> settings[key] = value
+            is Int -> settings[key] = value
+            is Float -> settings[key] = value
+            is Long -> settings[key] = value
+            is Boolean -> settings[key] = value
+            is Double -> settings[key] = value
+            is ByteArray -> settings[key] = value.toString()
         }
     }
 
@@ -59,13 +56,12 @@ object MMKVUtils {
     }
 
     fun putSet(key: String, value: Set<String>) {
-        // 将Set转换为逗号分隔的字符串存储
-        settings.putString(key, value.joinToString(","))
+        settings[key] = value.joinToString(",")
     }
 
     fun getSet(key: String, default: Set<String>? = null): Set<String>? {
         val stringValue = settings.getString(key, "")
-        return if (stringValue != null) {
+        return if (stringValue.isNotEmpty()) {
             stringValue.split(",").toSet()
         } else {
             default
@@ -73,8 +69,7 @@ object MMKVUtils {
     }
 
     fun clear() {
-        // 获取所有键并删除
-        val keys = settings.keys
+        val keys = settings.keys.toList()
         keys.forEach { settings.remove(it) }
     }
 

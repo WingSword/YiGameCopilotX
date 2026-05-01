@@ -31,9 +31,6 @@ import org.walks.gamecopilot.awalong.AwalongRole.MODELEDE
 import org.walks.gamecopilot.awalong.AwalongRole.SHAPESHIFTER
 import org.walks.gamecopilot.awalong.data.AwalongGameState
 
-/**
- * 角色能力显示组件
- */
 @Composable
 fun RoleAbilityDisplay(
     playerIndex: Int,
@@ -61,7 +58,6 @@ fun RoleAbilityDisplay(
         Column(
             modifier = Modifier.padding(12.dp)
         ) {
-            // 玩家信息
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
@@ -81,7 +77,6 @@ fun RoleAbilityDisplay(
                     )
                 }
                 
-                // 显示能力按钮
                 if (availableAbilities.isNotEmpty()) {
                     Button(
                         onClick = { showAbilities = !showAbilities },
@@ -99,7 +94,6 @@ fun RoleAbilityDisplay(
                 }
             }
 
-            // 可见角色信息
             if (visibleRoles.isNotEmpty()) {
                 Spacer(modifier = Modifier.padding(4.dp))
                 Text(
@@ -118,7 +112,6 @@ fun RoleAbilityDisplay(
                 }
             }
 
-            // 可用能力
             AnimatedVisibility(showAbilities) {
                 Column {
                     Spacer(modifier = Modifier.padding(8.dp))
@@ -152,92 +145,9 @@ private fun AbilityButton(
     viewmodel: MainViewmodel
 ) {
     when (ability) {
-        "查看2名玩家阵营" -> {
-            // 预言者能力
-            var selectedPlayers by remember { mutableStateOf(listOf<Int>()) }
-            
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(vertical = 4.dp),
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                Text(
-                    text = ability,
-                    fontSize = 10.sp,
-                    color = Color.White,
-                    modifier = Modifier.weight(1f)
-                )
-                
-                // 简化的玩家选择按钮
-                Button(
-                    onClick = {
-                        // 简化处理：随机选择2名玩家
-                        val availablePlayers = gameState.roleList.indices.filter { it != playerIndex }
-                        if (availablePlayers.size >= 2) {
-                            val shuffled = availablePlayers.shuffled()
-                            viewmodel.handleAwalongGameIntent(
-                                AwalongIntent.ProphetCheck(shuffled[0], shuffled[1])
-                            )
-                        }
-                    },
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = Color(0xFF4CAF50),
-                        contentColor = Color.White
-                    ),
-                    modifier = Modifier.height(24.dp)
-                ) {
-                    Text("使用", fontSize = 8.sp)
-                }
-            }
-        }
-        
-        "查看1名玩家阵营" -> {
-            // 湖中仙女能力
-            Button(
-                onClick = {
-                    val availablePlayers = gameState.roleList.indices.filter { it != playerIndex }
-                    if (availablePlayers.isNotEmpty()) {
-                        viewmodel.handleAwalongGameIntent(
-                            AwalongIntent.LadyOfLakeCheck(availablePlayers.random())
-                        )
-                    }
-                },
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = Color(0xFF2196F3),
-                    contentColor = Color.White
-                ),
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(vertical = 2.dp)
-                    .height(24.dp)
-            ) {
-                Text(ability, fontSize = 10.sp)
-            }
-        }
-        
-        "双倍投票权" -> {
-            Button(
-                onClick = {
-                    viewmodel.handleAwalongGameIntent(AwalongIntent.SirGalahadUseDoubleVote)
-                },
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = Color(0xFFFF9800),
-                    contentColor = Color.White
-                ),
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(vertical = 2.dp)
-                    .height(24.dp)
-            ) {
-                Text(ability, fontSize = 10.sp)
-            }
-        }
-        
         "转换成功卡为失败卡" -> {
             Button(
                 onClick = {
-                    // 选择当前任务
                     val currentTaskIndex = gameState.dayList.indexOfLast { it.taskResult == 0 }
                     if (currentTaskIndex >= 0) {
                         viewmodel.handleAwalongGameIntent(
@@ -261,7 +171,6 @@ private fun AbilityButton(
         "复制角色能力" -> {
             Button(
                 onClick = {
-                    // 随机选择一个目标角色（除了莫德雷德和奥伯伦）
                     val availableTargets = gameState.roleList.filter { 
                         it != MODELEDE && it != AOBOLUN && it != SHAPESHIFTER 
                     }

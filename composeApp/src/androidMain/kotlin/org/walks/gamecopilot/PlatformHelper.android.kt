@@ -2,11 +2,15 @@ package org.walks.gamecopilot
 
 import android.content.Context
 import android.content.pm.PackageManager
+import android.media.MediaPlayer
+import android.media.RingtoneManager
 
 // commonMain
 // commonMain/PlatformHelper.kt
 // androidMain/PlatformHelper.android.kt
 actual class PlatformHelper private constructor(private val context: Context) {
+    private var alertPlayer: MediaPlayer? = null
+
     actual companion object {
         private var instance: PlatformHelper? = null
 
@@ -25,6 +29,26 @@ actual class PlatformHelper private constructor(private val context: Context) {
 
     actual fun vibrateLongMethod() {
         context.vibrateLong()
+    }
+
+    actual fun startPersistentAlert() {
+        if (alertPlayer?.isPlaying == true) return
+
+        val alertUri = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_ALARM)
+            ?: RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION)
+
+        val player = MediaPlayer.create(context, alertUri) ?: return
+        player.isLooping = true
+        player.start()
+        alertPlayer = player
+    }
+
+    actual fun stopPersistentAlert() {
+        alertPlayer?.run {
+            if (isPlaying) stop()
+            release()
+        }
+        alertPlayer = null
     }
 
     actual fun getAppVersionName(): String {

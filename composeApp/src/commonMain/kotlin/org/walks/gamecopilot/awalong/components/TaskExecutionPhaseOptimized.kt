@@ -16,7 +16,6 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.GridItemSpan
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
@@ -32,6 +31,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -182,8 +182,7 @@ private fun PlayerTaskCardOptimized(
             .aspectRatio(1f),
         colors = CardDefaults.cardColors(
             containerColor = when {
-                hasVoted -> if (voteResult == true) MaterialTheme.colorScheme.primaryContainer 
-                          else MaterialTheme.colorScheme.errorContainer
+                hasVoted -> MaterialTheme.colorScheme.surfaceVariant
                 else -> MaterialTheme.colorScheme.surface
             }
         ),
@@ -199,16 +198,14 @@ private fun PlayerTaskCardOptimized(
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Center
         ) {
-            // 号码显示区域
+            // 号码显示区域（投票后仅显示已投票，不显示成功/失败颜色）
             Box(
                 modifier = Modifier
-                    .size(36.dp) // 略小于48dp以适应正方形布局
+                    .size(36.dp)
                     .background(
-                        color = if (hasVoted) {
-                            if (voteResult == true) MaterialTheme.colorScheme.primary 
-                            else MaterialTheme.colorScheme.error
-                        } else MaterialTheme.colorScheme.primary,
-                        shape = RoundedCornerShape(6.dp)
+                        color = if (hasVoted) MaterialTheme.colorScheme.surfaceVariant
+                        else MaterialTheme.colorScheme.primary,
+                        shape = RectangleShape
                     ),
                 contentAlignment = Alignment.Center
             ) {
@@ -286,7 +283,7 @@ private fun TaskVoteDialogOptimized(
             modifier = Modifier
                 .fillMaxWidth(0.9f)
                 .padding(16.dp),
-            shape = RoundedCornerShape(16.dp),
+            shape = RectangleShape,
             color = MaterialTheme.colorScheme.surface,
             shadowElevation = 8.dp
         ) {

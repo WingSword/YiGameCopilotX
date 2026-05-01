@@ -14,16 +14,16 @@ data class AwalongGameState(
     val dayList: MutableList<AwalongGameDayEntity> = mutableListOf(),
     val isPublic: Boolean = false,
     val nickNameList: MutableList<String> = mutableListOf(),
-    val currentPage: Int = 0, // 当前页面索引
-    // 扩展包新增字段
-    val ladyOfLakeUsed: Boolean = false, // 湖中仙女是否已使用
-    val sirGalahadUsed: Boolean = false, // 圆桌骑士是否已使用
-    val morguseUsed: Boolean = false, // 莫高斯是否已使用
-    val prophetChecked: Pair<Int, Int>? = null, // 预言者检查的玩家索引 (player1, player2)
-    val ladyOfLakeChecked: Int? = null, // 湖中仙女检查的玩家索引
-    val lancolotConverted: Boolean = false, // 兰斯洛特是否已转换阵营
-    val shapeshifterTarget: AwalongRole? = null, // 变形者复制的目标角色
-    val assassinationResult: Boolean? = null // 刺客刺杀结果（true=成功，false=失败，null=未刺杀）
+    val currentPage: Int = 0,
+    val useLadyOfLake: Boolean = false,
+    val morguseUsed: Boolean = false,
+    val ladyOfLakeHolder: Int? = null,
+    val ladyOfLakeHoldersHistory: Set<Int> = emptySet(),
+    val ladyOfLakeUsedForTaskIndex: Int? = null,
+    val ladyOfLakeChecked: Int? = null,
+    val lancolotConverted: Boolean = false,
+    val shapeshifterTarget: AwalongRole? = null,
+    val assassinationResult: Boolean? = null
 )
 
 data class AwalongGameDayEntity(
@@ -33,22 +33,21 @@ data class AwalongGameDayEntity(
     val murderTask: Int = -1,
     var captain: Int = -1,
     // 扩展包新增字段
-    val requiresTwoFailures: Boolean = false, // 该任务是否需要2张失败卡才判定失败
-    val morguseUsed: Boolean = false, // 莫高斯是否在该任务使用了能力
-    val sirGalahadUsed: Boolean = false, // 圆桌骑士是否在该轮使用了双倍投票
-    val plotCard: String? = null, // 该轮触发的情节卡
+    val requiresTwoFailures: Boolean = false,
+    val morguseUsed: Boolean = false,
+    val plotCard: String? = null,
     
     // 新增状态保存字段
-    val gamePhase: String = "TEAM_FORMATION", // 当前游戏阶段
-    val teamVotes: Map<Int, Boolean> = emptyMap(), // 组队投票结果
-    val taskVotes: Map<Int, Boolean> = emptyMap(), // 任务投票结果
-    val selectedTeam: List<Int> = emptyList(), // 当前选中的队伍
-    val currentCaptain: Int = -1, // 当前队长索引
+    val gamePhase: String = "TEAM_FORMATION",
+    val teamVotes: Map<Int, Boolean> = emptyMap(),
+    val taskVotes: Map<Int, Boolean> = emptyMap(),
+    val selectedTeam: List<Int> = emptyList(),
+    val currentCaptain: Int = -1,
     
     // 新增详细记录字段
-    val skillUsageRecords: List<SkillUsageRecord> = emptyList(), // 技能使用记录
-    val taskExecutionRecords: List<TaskExecutionRecord> = emptyList(), // 任务执行记录
-    val lockedPlayers: Set<Int> = emptySet() // 被锁定的玩家
+    val skillUsageRecords: List<SkillUsageRecord> = emptyList(),
+    val taskExecutionRecords: List<TaskExecutionRecord> = emptyList(),
+    val lockedPlayers: Set<Int> = emptySet()
 )
 
 /**

@@ -15,7 +15,10 @@ data class AwalongCustomConfig(
 
     // 中立方角色配置
     val neutralRoles: List<AwalongRole> = emptyList(),
-    val neutralCount: Int = 0
+    val neutralCount: Int = 0,
+
+    // 扩展包参数（不占角色位）
+    val useLadyOfLake: Boolean = false
 ) {
     // 总玩家数
     val totalPlayers: Int get() = blueCount + redCount + neutralCount
@@ -41,7 +44,7 @@ data class AwalongCustomConfig(
         val redRolesToAdd = if (redRoles.size > redCount) {
             redRoles.take(redCount)
         } else {
-            redRoles + List(redCount - redRoles.size) { AwalongRole.ZHONGCHEN }
+            redRoles + List(redCount - redRoles.size) { AwalongRole.ZHAOYA }
         }
         roles.addAll(redRolesToAdd)
 
@@ -56,9 +59,7 @@ data class AwalongCustomConfig(
         // 如果角色数量不足总玩家数，补充忠臣
         val remainingPlayers = totalPlayers - roles.size
         if (remainingPlayers > 0) {
-            repeat(remainingPlayers) {
-                roles.add(AwalongRole.ZHONGCHEN)
-            }
+            repeat(remainingPlayers) { roles.add(AwalongRole.ZHONGCHEN) }
         }
 
         return roles.take(totalPlayers)
@@ -143,12 +144,12 @@ val PredefinedConfigs = listOf(
         redCount = 2
     ),
 
-    // 6人配置（带圆桌骑士）
+    // 6人配置
     AwalongCustomConfig(
         blueRoles = listOf(
             AwalongRole.MEILING,
             AwalongRole.PAIXIWEIWEIER,
-            AwalongRole.SIR_GALAHAD,
+            AwalongRole.ZHONGCHEN,
             AwalongRole.ZHONGCHEN
         ),
         blueCount = 4,
@@ -156,12 +157,12 @@ val PredefinedConfigs = listOf(
         redCount = 2
     ),
 
-    // 7人配置（带预言者）
+    // 7人配置
     AwalongCustomConfig(
         blueRoles = listOf(
             AwalongRole.MEILING,
             AwalongRole.PAIXIWEIWEIER,
-            AwalongRole.PROPHET,
+            AwalongRole.ZHONGCHEN,
             AwalongRole.ZHONGCHEN,
             AwalongRole.ZHONGCHEN
         ),
@@ -175,7 +176,7 @@ val PredefinedConfigs = listOf(
         blueRoles = listOf(
             AwalongRole.MEILING,
             AwalongRole.PAIXIWEIWEIER,
-            AwalongRole.PROPHET,
+            AwalongRole.ZHONGCHEN,
             AwalongRole.ZHONGCHEN,
             AwalongRole.ZHONGCHEN,
             AwalongRole.ZHONGCHEN
@@ -190,8 +191,8 @@ val PredefinedConfigs = listOf(
         blueRoles = listOf(
             AwalongRole.MEILING,
             AwalongRole.PAIXIWEIWEIER,
-            AwalongRole.PROPHET,
-            AwalongRole.SIR_GALAHAD,
+            AwalongRole.ZHONGCHEN,
+            AwalongRole.ZHONGCHEN,
             AwalongRole.ZHONGCHEN,
             AwalongRole.ZHONGCHEN
         ),

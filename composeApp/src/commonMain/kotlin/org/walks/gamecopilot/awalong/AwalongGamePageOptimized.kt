@@ -21,12 +21,8 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.PagerState
 import androidx.compose.foundation.pager.rememberPagerState
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.sharp.ArrowBack
 import androidx.compose.material.icons.filled.Refresh
-import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.IconButtonDefaults
@@ -46,6 +42,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -62,6 +59,9 @@ import org.walks.gamecopilot.awalong.components.PageDayTaskOptimized
 import org.walks.gamecopilot.awalong.components.TaskProgressBar
 import org.walks.gamecopilot.awalong.data.AwalongGameDayEntity
 import org.walks.gamecopilot.awalong.data.AwalongGameState
+import org.walks.gamecopilot.ui.components.BackIcon
+import org.walks.gamecopilot.ui.components.CommonTopBar
+import org.walks.gamecopilot.ui.components.common.OfflinePassingGuideDialog
 import yigamecopilotx.composeapp.generated.resources.Res
 import yigamecopilotx.composeapp.generated.resources.icon_close
 import yigamecopilotx.composeapp.generated.resources.icon_info
@@ -77,8 +77,10 @@ fun AwalongGamePageOptimized(navi: NavController, viewmodel: MainViewmodel) {
     val customConfig = viewmodel.awalongCustomConfigState.value
     val gameState = viewmodel.awalongGameState.value
     var showRulesDialog by remember { mutableStateOf(false) }
+    var showGuideDialog by remember { mutableStateOf(true) }
 
     val scope = rememberCoroutineScope()
+    val rotation = remember { Animatable(0f) }
 
     val nameChange = { newName: String, no: Int ->
         viewmodel.handleAwalongGameIntent(AwalongIntent.ChangeNickName(newName, no))
@@ -99,16 +101,22 @@ fun AwalongGamePageOptimized(navi: NavController, viewmodel: MainViewmodel) {
 
     val pageState = rememberPagerState(initialPage = 0, pageCount = { totalPages })
 
+    // 游戏结束状态（需在 buildPages 之前声明，以便传入）
+    var gameEndResult by remember { mutableStateOf<GameEndResult?>(null) }
+    var showAssassinationDialog by remember { mutableStateOf(false) }
+    var isGameLocked by remember { mutableStateOf(false) }
+
     // 构建页面列表，传递 pageState 和 scope
     // 使用 remember 来避免不必要的重新构建，但监听游戏状态变化
-    val pages = remember(gameState.playTime, actualProcess) {
+    val pages = remember(gameState.playTime, actualProcess, isGameLocked) {
         buildPages(
             viewmodel,
             gameConfig,
             actualProcess,
             nameChange,
             pageState,
-            scope
+            scope,
+            isGameLocked
         ) { showRulesDialog = true }
     }
 
@@ -124,12 +132,6 @@ fun AwalongGamePageOptimized(navi: NavController, viewmodel: MainViewmodel) {
             pageState.scrollToPage(maxAccessiblePage) // 使用scrollToPage而不是animateScrollToPage
         }
     }
-    // 游戏结束状态
-    var gameEndResult by remember { mutableStateOf<GameEndResult?>(null) }
-    var showAssassinationDialog by remember { mutableStateOf(false) }
-    var isGameLocked by remember { mutableStateOf(false) }
-
-
     // 监听游戏状态变化，自动翻页和检测游戏结束
     LaunchedEffect(gameState.dayList, pageState.currentPage) {
         val newMaxPage = calculateMaxAccessiblePage(gameState, actualProcess)
@@ -197,36 +199,69 @@ fun AwalongGamePageOptimized(navi: NavController, viewmodel: MainViewmodel) {
     }
     
     Column {
-        // 统一的顶部导航栏
-        TopNavigationBar(
+        CommonTopBar(
             title = when (pageState.currentPage) {
-                0 -> "第零日"
-                else -> "第${pageState.currentPage}日"
+                0 -> "阿瓦隆 · 第零日"
+                else -> "阿瓦隆 · 第${pageState.currentPage}日"
             },
-            currentPage = pageState.currentPage + 1,
-            totalPages = totalPages,
-            onClose = {
-                // 退出当前游戏，返回到游戏选择界面
-                // 重置游戏状态后再退出
+            subtitle = "进度 ${pageState.currentPage + 1}/$totalPages",
+            onBack = {
                 viewmodel.handleAwalongGameIntent(AwalongIntent.RestartGame)
                 navi.popBackStack()
             },
-            onShowRules = { showRulesDialog = true },
-            onRestartGame = if (pageState.currentPage == 0) {
-                {
-                    // 重置游戏时保留昵称，只重置任务进度
-                    gameState.nickNameList
-                    viewmodel.handleAwalongGameIntent(AwalongIntent.RestartGame)
-                    // 重置页面到第零日
-                    scope.launch {
-                        pageState.scrollToPage(0)
+            customAction = {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Icon(
+                        painter = painterResource(Res.drawable.icon_info),
+                        contentDescription = "游戏规则",
+                        tint = Color.Unspecified,
+                        modifier = Modifier
+                            .size(40.dp)
+                            .clickable { showRulesDialog = true }
+                    )
+                    if (pageState.currentPage == 0) {
+                        IconButton(
+                            modifier = Modifier
+                                .padding(start = 8.dp)
+                                .clip(RectangleShape)
+                                .border(
+                                    width = 1.dp,
+                                    color = MaterialTheme.colorScheme.outline,
+                                    shape = RectangleShape
+                                ).rotate(rotation.value),
+                            onClick = {
+                                scope.launch {
+                                    rotation.animateTo(
+                                        targetValue = 360f,
+                                        animationSpec = tween(
+                                            durationMillis = 500,
+                                            easing = LinearEasing
+                                        )
+                                    )
+                                    rotation.snapTo(0f)
+                                }
+                                PlatformHelper.getInstance().vibrateLongMethod()
+                                viewmodel.handleAwalongGameIntent(AwalongIntent.RestartGame)
+                                scope.launch { pageState.scrollToPage(0) }
+                                gameEndResult = null
+                                showAssassinationDialog = false
+                                isGameLocked = false
+                            },
+                            colors = IconButtonDefaults.iconButtonColors(
+                                containerColor = MaterialTheme.colorScheme.surface,
+                                contentColor = MaterialTheme.colorScheme.primary,
+                            )
+                        ) {
+                            Icon(
+                                modifier = Modifier.fillMaxSize(),
+                                imageVector = Icons.Filled.Refresh,
+                                contentDescription = "重新开始",
+                                tint = MaterialTheme.colorScheme.onSecondary.copy(alpha = 0.33f)
+                            )
+                        }
                     }
-                    // 重置游戏状态
-                    gameEndResult = null
-                    showAssassinationDialog = false
-                    isGameLocked = false
                 }
-            } else null
+            }
         )
 
         HorizontalPager(
@@ -265,6 +300,17 @@ fun AwalongGamePageOptimized(navi: NavController, viewmodel: MainViewmodel) {
                 gameConfig = gameConfig
             )
         }
+
+        OfflinePassingGuideDialog(
+            show = showGuideDialog,
+            gameTitle = "阿瓦隆",
+            steps = listOf(
+                "第零日阶段按顺序传递手机，每位玩家仅查看自己的身份与视野。",
+                "看完身份后立即关闭卡片并交给下一位，避免身份泄露。",
+                "随后进入任务流程：组队、投票、执行任务，直至触发胜负结算。"
+            ),
+            onDismiss = { showGuideDialog = false }
+        )
 
         // 刺杀弹窗
         if (showAssassinationDialog) {
@@ -320,6 +366,7 @@ private fun buildPages(
     nameChange: (String, Int) -> Unit,
     pageState: PagerState,
     scope: CoroutineScope,
+    isGameLocked: Boolean,
     onShowRulesDialog: () -> Unit
 ): List<@Composable () -> Unit> {
     val pages = mutableListOf<@Composable () -> Unit>()
@@ -363,7 +410,9 @@ private fun buildPages(
                     viewmodel.handleAwalongGameIntent(AwalongIntent.CheckTask(completedTask))
                 },
                 pageState = pageState,
-                scope = scope
+                scope = scope,
+                totalTaskDays = actualProcess.size,
+                isGameLocked = isGameLocked
             )
         }
     }
@@ -430,45 +479,12 @@ private fun BottomNavigationWithProgress(
             .fillMaxWidth()
             .padding(16.dp)
     ) {
-        // 导航按钮和进度条在同一行
-        AnimatedVisibility(currentPage > 0) {
-            Text(
-                text = "任务进度${if (gameState.roleList.size >= 7) "（*代表需要至少两位人员阻止任务才会失败）" else ""}：",
-                color = MaterialTheme.colorScheme.secondary,
-                fontSize = 12.sp,
-                fontWeight = FontWeight.Medium,
-                modifier = Modifier.padding(bottom = 8.dp)
-            )
-        }
-
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
-            // 返回按钮
-            AnimatedVisibility(currentPage > 0 && !isGameLocked) {
-                Button(
-                    onClick = {
-                        if (currentPage > 0) {
-                            scope.launch {
-                                pageState.scrollToPage(currentPage - 1)
-                            }
-                        }
-                    },
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = MaterialTheme.colorScheme.primary
-                    )
-                ) {
-                    Icon(
-                        imageVector = Icons.AutoMirrored.Sharp.ArrowBack,
-                        contentDescription = "返回",
-                        tint = Color.White
-                    )
-                }
-            }
-
-            // 任务进度条（放在返回按钮旁边）
+            // 任务进度条（返回按钮已移至当前阶段栏）
             if (currentPage > 0) {
                 val currentDay = currentPage - 1
                 if (currentDay < gameState.dayList.size) {
@@ -490,21 +506,23 @@ private fun BottomNavigationWithProgress(
             // 前进按钮（只在第零日显示）
             val isNextEnabled = currentPage == 0 || currentPage < maxAccessiblePage
             AnimatedVisibility(isNextEnabled && currentPage == 0 && !isGameLocked) {
-                Button(
-                    onClick = {
-                        scope.launch {
-                            pageState.scrollToPage(currentPage + 1)
-                        }
-                    },
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = MaterialTheme.colorScheme.primary
-                    )
+                Box(
+                    modifier = Modifier
+                        .size(42.dp)
+                        .border(1.dp, MaterialTheme.colorScheme.outline, RectangleShape)
+                        .background(MaterialTheme.colorScheme.surface, RectangleShape)
+                        .clickable {
+                            scope.launch {
+                                pageState.scrollToPage(currentPage + 1)
+                            }
+                        },
+                    contentAlignment = Alignment.Center
                 ) {
-                    Icon(
-                        imageVector = Icons.AutoMirrored.Sharp.ArrowBack,
-                        contentDescription = "前进",
-                        tint = Color.White,
-                        modifier = Modifier.rotate(180f)
+                    BackIcon(
+                        color = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier
+                            .size(20.dp)
+                            .rotate(180f)
                     )
                 }
             }
@@ -539,6 +557,11 @@ private fun AssassinationDialog(
 
     androidx.compose.material3.AlertDialog(
         onDismissRequest = { onAssassinationComplete(false) },
+        shape = RectangleShape,
+        containerColor = MaterialTheme.colorScheme.surface,
+        tonalElevation = 0.dp,
+        titleContentColor = MaterialTheme.colorScheme.primary,
+        textContentColor = MaterialTheme.colorScheme.onSurface,
         title = { Text("刺客刺杀阶段") },
         text = {
             Column {
@@ -559,7 +582,7 @@ private fun AssassinationDialog(
                             .clickable { selectedTarget = index }
                             .background(
                                 if (isSelected) MaterialTheme.colorScheme.primaryContainer
-                                else Color.Transparent
+                                else MaterialTheme.colorScheme.surface
                             )
                             .padding(8.dp),
                         verticalAlignment = Alignment.CenterVertically
@@ -636,11 +659,11 @@ private fun TopNavigationBar(
         ) {
             IconButton(
                 modifier = Modifier
-                    .clip(CircleShape)
+                    .clip(RectangleShape)
                     .border(
                         width = 2.dp,
                         color = MaterialTheme.colorScheme.secondaryContainer,
-                        shape = CircleShape
+                        shape = RectangleShape
                     ),
                 onClick = {
                     onClose()
@@ -690,11 +713,11 @@ private fun TopNavigationBar(
                         IconButton(
                             modifier = Modifier
                                 .padding(start = 16.dp)
-                                .clip(CircleShape)
+                                .clip(RectangleShape)
                                 .border(
                                     width = 2.dp,
                                     color = MaterialTheme.colorScheme.tertiaryContainer,
-                                    shape = CircleShape
+                                    shape = RectangleShape
                                 ).rotate(rotation.value),
                             onClick = {
                                 scope.launch {

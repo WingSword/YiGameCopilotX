@@ -77,7 +77,7 @@ fun RoomEntranceCard(viewmodel: MainViewmodel, navi: NavHostController? = null) 
                         fontWeight = FontWeight.Bold
                     )
                     Text(
-                        "单人或多人在同一设备上游玩",
+                        "同屏传机查看身份并进行发言投票",
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.8f)
                     )

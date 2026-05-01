@@ -3,16 +3,12 @@ package org.walks.gamecopilot.http
 
 import io.ktor.client.HttpClient
 import io.ktor.client.call.body
-import io.ktor.client.engine.cio.CIO
 import io.ktor.client.plugins.ClientRequestException
 import io.ktor.client.plugins.ServerResponseException
-import io.ktor.client.plugins.contentnegotiation.ContentNegotiation
 import io.ktor.client.plugins.websocket.WebSockets
 import io.ktor.client.plugins.websocket.pingInterval
 import io.ktor.client.request.get
 import io.ktor.http.HttpStatusCode
-import io.ktor.serialization.kotlinx.json.json
-
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
 import kotlin.time.Duration.Companion.seconds
@@ -37,18 +33,10 @@ data class PostData(
 )
 
 val client by lazy {
-    HttpClient() {
+    HttpClient {
         install(WebSockets) {
-            // 可选配置心跳检测
-            pingInterval = 20.seconds // 20秒心跳间隔
-
+            pingInterval = 20.seconds
         }
-    }
-}
-val wsClient = HttpClient(CIO) {
-    // 专用于WebSocket的配置（不安装ContentNegotiation）
-    install(WebSockets) {
-        pingInterval = 20.seconds
     }
 }
 
@@ -59,7 +47,6 @@ fun getUrl(url: String?): String {
 
 const val DATA_SUCCESS=1000
 
-// 修改为扩展函数，提升灵活性
 suspend inline fun <reified T> HttpClient.safeGetRequest(
     url: String,
     params: Map<String, String> = mapOf()
@@ -99,6 +86,4 @@ sealed class Response<out T> {
     data class Success<out T>(val data: T) : Response<T>()
     data class Error(val message: String) : Response<Nothing>()
 }
-
-
 

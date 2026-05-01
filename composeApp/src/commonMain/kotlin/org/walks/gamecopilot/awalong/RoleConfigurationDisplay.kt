@@ -14,7 +14,6 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -22,6 +21,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -35,14 +35,14 @@ fun RoleConfigurationDisplay(config: AwalongConfig) {
     Column(
         modifier = Modifier
             .fillMaxWidth()
-            .clip(RoundedCornerShape(16.dp))
+            .clip(RectangleShape)
             .background(
                 color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f)
             )
             .border(
                 width = 1.dp,
                 color = MaterialTheme.colorScheme.outline.copy(alpha = 0.2f),
-                shape = RoundedCornerShape(16.dp)
+                shape = RectangleShape
             )
             .padding(16.dp)
     ) {
@@ -64,7 +64,7 @@ fun RoleConfigurationDisplay(config: AwalongConfig) {
                 fontSize = 12.sp,
                 color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
                 modifier = Modifier
-                    .clip(RoundedCornerShape(8.dp))
+                    .clip(RectangleShape)
                     .background(MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.3f))
                     .padding(horizontal = 8.dp, vertical = 2.dp)
             )
@@ -97,7 +97,7 @@ fun RoleConfigurationDisplay(config: AwalongConfig) {
         Box(
             modifier = Modifier
                 .fillMaxWidth()
-                .clip(RoundedCornerShape(12.dp))
+                .clip(RectangleShape)
                 .background(MaterialTheme.colorScheme.surface.copy(alpha = 0.5f))
                 .padding(12.dp)
         ) {
@@ -148,7 +148,7 @@ private fun RoleGroupDisplay(title: String, roles: List<AwalongRole>, color: Col
             Box(
                 modifier = Modifier
                     .size(4.dp)
-                    .clip(RoundedCornerShape(2.dp))
+                    .clip(RectangleShape)
                     .background(color)
             )
             Spacer(modifier = Modifier.width(8.dp))
@@ -175,12 +175,12 @@ private fun RoleGroupDisplay(title: String, roles: List<AwalongRole>, color: Col
 private fun RoleChip(role: AwalongRole, color: Color) {
     Box(
         modifier = Modifier
-            .clip(RoundedCornerShape(12.dp))
+            .clip(RectangleShape)
             .background(color.copy(alpha = 0.15f))
             .border(
                 width = 1.dp,
                 color = color.copy(alpha = 0.3f),
-                shape = RoundedCornerShape(12.dp)
+                shape = RectangleShape
             )
             .padding(horizontal = 10.dp, vertical = 6.dp)
     ) {
@@ -197,7 +197,7 @@ private fun RoleChip(role: AwalongRole, color: Color) {
 private fun TaskRoundDisplay(round: Int, playerCount: Int, isSpecial: Boolean) {
     Box(
         modifier = Modifier
-            .clip(RoundedCornerShape(8.dp))
+            .clip(RectangleShape)
             .background(
                 if (isSpecial) {
                     MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.5f)
@@ -212,7 +212,7 @@ private fun TaskRoundDisplay(round: Int, playerCount: Int, isSpecial: Boolean) {
                 } else {
                     MaterialTheme.colorScheme.outline.copy(alpha = 0.3f)
                 },
-                shape = RoundedCornerShape(8.dp)
+                shape = RectangleShape
             )
             .padding(horizontal = 8.dp, vertical = 4.dp)
     ) {

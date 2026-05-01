@@ -1,5 +1,7 @@
 package org.walks.gamecopilot.data
 
+import org.walks.gamecopilot.customDrawWordLists
+
 object DrawGuessWordLibrary {
     val animals = listOf(
         "猫", "狗", "兔子", "老虎", "狮子", "大象", "长颈鹿", "熊猫", "企鹅", "海豚",
@@ -52,7 +54,10 @@ object DrawGuessWordLibrary {
     )
 
     val allWords: List<String> by lazy {
-        animals + fruits + objects + food + sports + vehicles + buildings + weather + actions + professions
+        val builtin =
+            animals + fruits + objects + food + sports + vehicles + buildings + weather + actions + professions
+        val custom = customDrawWordLists.values.flatten()
+        (builtin + custom).distinct()
     }
 
     val categories = mapOf(

@@ -1,81 +1,93 @@
 package org.walks.gamecopilot.theme
 
-
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.navigationBarsPadding
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.LocalTextStyle
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Shapes
 import androidx.compose.material3.darkColorScheme
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.compositionLocalOf
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-
 import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.unit.dp
 
-import com.yi.yigamecopilot.android.theme.BackgroundColorDark
-import com.yi.yigamecopilot.android.theme.BackgroundColorLight
-import com.yi.yigamecopilot.android.theme.BorderColorDark
-import com.yi.yigamecopilot.android.theme.BorderColorLight
-import com.yi.yigamecopilot.android.theme.CardColorDark
-import com.yi.yigamecopilot.android.theme.CardColorLight
-import com.yi.yigamecopilot.android.theme.DangerColorDark
-import com.yi.yigamecopilot.android.theme.DangerColorLight
-import com.yi.yigamecopilot.android.theme.FontColorDark
-import com.yi.yigamecopilot.android.theme.FontColorLight
-import com.yi.yigamecopilot.android.theme.FontSecondaryColorDark
-import com.yi.yigamecopilot.android.theme.FontSecondaryColorLight
-import com.yi.yigamecopilot.android.theme.MorandiBrown
-import com.yi.yigamecopilot.android.theme.OnBackgroundColorDark
-import com.yi.yigamecopilot.android.theme.OnBackgroundColorLight
-import com.yi.yigamecopilot.android.theme.PrimaryColor
+/**
+ * 主题模式：跟随系统 / 浅色 / 深色
+ */
+enum class ThemeMode {
+    SYSTEM, LIGHT, DARK
+}
+
+/** 全局主题模式提供者，由 App 层注入 */
+val LocalThemeMode = compositionLocalOf { ThemeMode.SYSTEM }
 
 private val DarkColorScheme = darkColorScheme(
-    primary = PrimaryColor,
-    onPrimary = Color.Black, // 确保主色上的文字清晰可见
-    secondary = MorandiBrown,
-    onSecondary = Color.Black, // 次要颜色上的文字使用黑色确保对比度
-    background = BackgroundColorDark,
-    onBackground = FontColorDark, // 背景上的文字使用深色主题文字色
-    surface = Color(0xFF1E1E1E), // 使用稍微亮一点的表面色而不是纯黑
-    onSurface = FontColorDark, // 表面上的文字使用深色主题文字色
-    error = DangerColorDark,
-    errorContainer = Color(0xFF3D1A1A), // 错误容器使用深红色调
-    onError = Color.White, // 错误色上的文字使用白色
-    onErrorContainer = Color(0xFFFFB4B4), // 错误容器上的文字使用浅红色
-    outline = BorderColorDark,
-    primaryContainer = CardColorDark,
-    onPrimaryContainer = Color.Black, // 主容器上的文字使用黑色
-    secondaryContainer = MorandiBrown,
-    onSecondaryContainer = Color.Black, // 次容器上的文字使用黑色
-    surfaceVariant = Color(0xFF2A2A2A), // 表面变体色
-    onSurfaceVariant = FontSecondaryColorDark, // 表面变体上的文字
-    scrim = Color.Black.copy(alpha = 0.5f) // 遮罩色
+    primary = Color(0xFFFFB347),
+    onPrimary = Color(0xFF1A1206),
+    secondary = Color(0xFFA9B6CC),
+    onSecondary = Color(0xFF101722),
+    background = Color(0xFF0B1220),
+    onBackground = Color(0xFFEAF0FA),
+    surface = Color(0xFF131C2C),
+    onSurface = Color(0xFFEAF0FA),
+    error = Color(0xFFFF6A6A),
+    errorContainer = Color(0xFF5A2525),
+    onError = Color(0xFF2D0000),
+    onErrorContainer = Color(0xFFFFD8D8),
+    outline = Color(0xFF33415A),
+    primaryContainer = Color(0xFF3E2A0F),
+    onPrimaryContainer = Color(0xFFFFE2B8),
+    secondaryContainer = Color(0xFF1C273A),
+    onSecondaryContainer = Color(0xFFD5DEED),
+    tertiary = Color(0xFF79C4FF),
+    onTertiary = Color(0xFF0B1A2B),
+    tertiaryContainer = Color(0xFF123554),
+    onTertiaryContainer = Color(0xFFD6EDFF),
+    surfaceVariant = Color(0xFF1A2434),
+    onSurfaceVariant = Color(0xFFB7C4D8),
+    scrim = Color.Black.copy(alpha = 0.55f)
 )
 
 private val LightColorScheme = lightColorScheme(
-    primary = PrimaryColor,
-    onPrimary = Color.White, // 主色上的文字使用白色确保对比度
-    secondary = Color(0xFF6B7280), // 使用更合适的灰色作为次要色
-    onSecondary = Color.White, // 次要颜色上的文字使用白色
-    background = BackgroundColorLight,
-    onBackground = Color(0xFF1C1C1C), // 背景上的文字使用深色确保可读性
-    surface = Color.White,
-    onSurface = Color(0xFF1C1C1C), // 表面上的文字使用深色
-    error = DangerColorLight,
-    errorContainer = Color(0xFFFFF3F3), // 错误容器使用浅红色调
-    onError = Color.White, // 错误色上的文字使用白色
-    onErrorContainer = Color(0xFF7F1D1D), // 错误容器上的文字使用深红色
-    outline = BorderColorLight,
-    primaryContainer = CardColorLight,
-    onPrimaryContainer = Color.White, // 主容器上的文字使用白色
-    secondaryContainer = Color(0xFFF6B550),
-    onSecondaryContainer = Color(0xFF1C1C1C), // 次容器上的文字使用深色
-    surfaceVariant = Color(0xFFF5F5F5), // 表面变体色
-    onSurfaceVariant = Color(0xFF6B7280), // 表面变体上的文字
-    scrim = Color.Black.copy(alpha = 0.5f) // 遮罩色
+    primary = Color(0xFFE89B2D),
+    onPrimary = Color(0xFFFFFFFF),
+    secondary = Color(0xFF5B6678),
+    onSecondary = Color(0xFFFFFFFF),
+    background = Color(0xFFF5F7FA),
+    onBackground = Color(0xFF1A1D26),
+    surface = Color(0xFFFFFFFF),
+    onSurface = Color(0xFF1A1D26),
+    error = Color(0xFFD32F2F),
+    errorContainer = Color(0xFFFFECEC),
+    onError = Color(0xFFFFFFFF),
+    onErrorContainer = Color(0xFF7A1A1A),
+    outline = Color(0xFFD0D5DD),
+    primaryContainer = Color(0xFFFFE8C8),
+    onPrimaryContainer = Color(0xFF3A2400),
+    secondaryContainer = Color(0xFFE8ECF2),
+    onSecondaryContainer = Color(0xFF1C273A),
+    tertiary = Color(0xFF2196F3),
+    onTertiary = Color(0xFFFFFFFF),
+    tertiaryContainer = Color(0xFFD6EDFF),
+    onTertiaryContainer = Color(0xFF0B1A2B),
+    surfaceVariant = Color(0xFFF0F2F5),
+    onSurfaceVariant = Color(0xFF5A6275),
+    scrim = Color.Black.copy(alpha = 0.32f)
+)
+
+private val NoRoundShapes = Shapes(
+    extraSmall = RoundedCornerShape(0.dp),
+    small = RoundedCornerShape(0.dp),
+    medium = RoundedCornerShape(0.dp),
+    large = RoundedCornerShape(0.dp),
+    extraLarge = RoundedCornerShape(0.dp)
 )
 
 
@@ -85,31 +97,30 @@ fun WeUITheme(
     darkStatusBar: Boolean = !darkTheme,
     content: @Composable () -> Unit
 ) {
+    val themeMode = LocalThemeMode.current
+    val useDarkTheme = when (themeMode) {
+        ThemeMode.SYSTEM -> darkTheme
+        ThemeMode.LIGHT -> false
+        ThemeMode.DARK -> true
+    }
+
     val colorScheme = when {
-        darkTheme -> DarkColorScheme
+        useDarkTheme -> DarkColorScheme
         else -> LightColorScheme
     }
-//    val view = LocalView.current
-//    if (!view.isInEditMode) {
-//        SideEffect {
-//            val window = (view.context as Activity).window
-//            window.statusBarColor = Color.Transparent.toArgb()
-//            WindowCompat.setDecorFitsSystemWindows(window, false)
-//            WindowCompat.getInsetsController(window, view).isAppearanceLightStatusBars =
-//                darkStatusBar
-//        }
-//    }
 
+    val designSystem = remember(useDarkTheme) {
+        AppDesignSystem()
+    }
 
     MaterialTheme(
         colorScheme = colorScheme,
         typography = Typography,
-
+        shapes = NoRoundShapes
     ) {
         CompositionLocalProvider(
-            LocalTextStyle provides TextStyle(
-
-            )
+            LocalTextStyle provides TextStyle(),
+            LocalAppDesign provides designSystem
         ) {
             Box(modifier = Modifier.navigationBarsPadding()) {
                 content()

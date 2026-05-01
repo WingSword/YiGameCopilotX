@@ -15,9 +15,7 @@ sealed class AwalongIntent {
     data class CheckTask(val task:AwalongGameDayEntity) : AwalongIntent()
     
     // 扩展包新增Intent
-    data class ProphetCheck(val player1Index: Int, val player2Index: Int) : AwalongIntent()
-    data class LadyOfLakeCheck(val playerIndex: Int) : AwalongIntent()
-    data object SirGalahadUseDoubleVote : AwalongIntent()
+    data class LadyOfLakeCheck(val playerIndex: Int, val taskIndex: Int) : AwalongIntent()
     data class MorguseConvertSuccessToFailure(val taskIndex: Int) : AwalongIntent()
     data class ShapeshifterCopy(val targetRole: AwalongRole) : AwalongIntent()
     data object LancelotConvert : AwalongIntent()

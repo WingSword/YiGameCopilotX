@@ -27,6 +27,10 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -35,16 +39,21 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import org.jetbrains.compose.resources.painterResource
+import org.walks.gamecopilot.PlatformHelper
+import org.walks.gamecopilot.data.WordImportEngine
 import org.walks.gamecopilot.data.entity.LocalSpyEntity
+import org.walks.gamecopilot.data.entity.WordGroup
 import org.walks.gamecopilot.data.entity.WordGroupManager
 import org.walks.gamecopilot.intent.GameIntent
+import org.walks.gamecopilot.registerCustomSpyWords
+import org.walks.gamecopilot.ui.components.common.WordImportDialog
 import yigamecopilotx.composeapp.generated.resources.Res
 import yigamecopilotx.composeapp.generated.resources.icon_info
 
 /**
  * 词库选择区域组件
- * 可折叠的词库选择界面，包含词组选择和词汇查看功能
- * 
+ * 可折叠的词库选择界面，包含词组选择、词汇查看和自定义词库导入功能
+ *
  * @param selectedWordGroups 选中的词组ID集合
  * @param currentWords 当前词汇映射
  * @param currentGame 当前游戏实体
@@ -63,33 +72,19 @@ fun WordLibrarySection(
     onWordLibraryToggle: (Boolean) -> Unit,
     onGameIntent: (GameIntent) -> Unit
 ) {
+    var showImportDialog by remember { mutableStateOf(false) }
+
     // 词库选择区域 - 可折叠
     AnimatedVisibility(
         visible = isExpanded,
         enter = slideInVertically(
-            initialOffsetY = { -it / 2 }, // 从上方1/2位置滑入
-            animationSpec = tween(
-                durationMillis = 400,
-                easing = EaseOutQuart
-            )
-        ) + fadeIn(
-            animationSpec = tween(
-                durationMillis = 400,
-                easing = EaseOutQuart
-            )
-        ),
+            initialOffsetY = { -it / 2 },
+            animationSpec = tween(durationMillis = 400, easing = EaseOutQuart)
+        ) + fadeIn(animationSpec = tween(durationMillis = 400, easing = EaseOutQuart)),
         exit = slideOutVertically(
-            targetOffsetY = { -it / 2 }, // 向上方1/2位置滑出
-            animationSpec = tween(
-                durationMillis = 300,
-                easing = EaseInQuart
-            )
-        ) + fadeOut(
-            animationSpec = tween(
-                durationMillis = 300,
-                easing = EaseInQuart
-            )
-        )
+            targetOffsetY = { -it / 2 },
+            animationSpec = tween(durationMillis = 300, easing = EaseInQuart)
+        ) + fadeOut(animationSpec = tween(durationMillis = 300, easing = EaseInQuart))
     ) {
         Column(
             modifier = Modifier.padding(bottom = 20.dp)
@@ -106,15 +101,34 @@ fun WordLibrarySection(
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
 
-                // 词汇查看按钮 - 使用原色
-                Icon(
-                    painter = painterResource(Res.drawable.icon_info),
-                    contentDescription = "查看词汇",
-                    tint = Color.Unspecified, // 使用原色
-                    modifier = Modifier.size(24.dp).clickable {
-                        onWordsDialogChange(true)
-                    }
-                )
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    // 导入自定义词库按钮
+                    Text(
+                        text = "导入",
+                        color = MaterialTheme.colorScheme.primary,
+                        fontSize = 13.sp,
+                        fontWeight = FontWeight.Medium,
+                        modifier = Modifier
+                            .clip(RoundedCornerShape(4.dp))
+                            .clickable {
+                                PlatformHelper.getInstance().vibrateMethod()
+                                showImportDialog = true
+                            }
+                            .padding(horizontal = 8.dp, vertical = 4.dp)
+                    )
+
+                    Spacer(modifier = Modifier.width(8.dp))
+
+                    // 词汇查看按钮
+                    Icon(
+                        painter = painterResource(Res.drawable.icon_info),
+                        contentDescription = "查看词汇",
+                        tint = Color.Unspecified,
+                        modifier = Modifier.size(24.dp).clickable {
+                            onWordsDialogChange(true)
+                        }
+                    )
+                }
             }
 
             Spacer(modifier = Modifier.height(12.dp))
@@ -128,12 +142,34 @@ fun WordLibrarySection(
             )
         }
     }
+
+    // 自定义词库导入弹窗
+    if (showImportDialog) {
+        WordImportDialog(
+            title = "导入卧底词库",
+            isSpyMode = true,
+            onDismiss = { showImportDialog = false },
+            onImportSuccess = { text ->
+                val result = WordImportEngine.parseSpyPairs(text)
+                if (result is WordImportEngine.ImportResult.SpyPairs) {
+                    val groupId = "custom_spy_${System.currentTimeMillis()}"
+                    val groupName = "自定义${WordGroupManager.getCustomGroups().size + 1}"
+                    // 注册词组
+                    WordGroupManager.addGroup(WordGroup(groupId, groupName, isBuiltIn = false))
+                    // 注册词汇
+                    registerCustomSpyWords(groupId, result.pairs)
+                    // 自动选中新增词组
+                    onGameIntent(GameIntent.RefreshWordGroups(selectedWordGroups + groupId))
+                }
+            }
+        )
+    }
 }
 
 /**
  * 词库选择内容组件（不包含外层容器和标题）
  * 用于整合到其他组件中
- * 
+ *
  * @param selectedGroupIds 选中的词组ID集合
  * @param onGroupsChanged 词组选择变化回调
  */
@@ -169,14 +205,14 @@ fun WordGroupSelectorContent(
 /**
  * 词组项组件
  * 显示单个词组的选择状态和基本信息
- * 
+ *
  * @param group 词组实体
  * @param isSelected 是否选中状态
  * @param onToggle 切换选中状态回调
  */
 @Composable
 private fun WordGroupItem(
-    group: org.walks.gamecopilot.data.entity.WordGroup,
+    group: WordGroup,
     isSelected: Boolean,
     onToggle: (String) -> Unit
 ) {
@@ -221,9 +257,16 @@ private fun WordGroupItem(
         if (group.isBuiltIn) {
             Spacer(modifier = Modifier.width(4.dp))
             Text(
-                text = "•",
+                text = "内置",
                 color = textColor.copy(alpha = 0.6f),
-                fontSize = 12.sp
+                fontSize = 11.sp
+            )
+        } else {
+            Spacer(modifier = Modifier.width(4.dp))
+            Text(
+                text = "自定",
+                color = MaterialTheme.colorScheme.primary.copy(alpha = 0.7f),
+                fontSize = 11.sp
             )
         }
     }

@@ -3,7 +3,7 @@ package org.walks.gamecopilot.awalong.components
 import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.layout.Arrangement
@@ -11,12 +11,12 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.aspectRatio
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.sharp.CheckCircle
@@ -30,8 +30,9 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -41,6 +42,12 @@ import org.walks.gamecopilot.awalong.AwalongRole
  * 玩家卡片组件
  * 用于显示玩家信息，支持选中、队长、锁定等状态
  */
+/** 铁灰色，用于非队长玩家 */
+private val IronGray = Color(0xFF4A5568)
+
+/** 队长强调色：黄色 */
+private val CaptainAccent = Color(0xFFF2C72B)
+
 @Composable
 fun PlayerCard(
     playerIndex: Int,
@@ -49,7 +56,8 @@ fun PlayerCard(
     isSelected: Boolean,
     isCaptain: Boolean,
     isLocked: Boolean = false,
-    onClick: () -> Unit
+    onClick: () -> Unit,
+    onLongClick: (() -> Unit)? = null
 ) {
     val interactionSource = remember { MutableInteractionSource() }
     val isPressed by interactionSource.collectIsPressedAsState()
@@ -59,53 +67,100 @@ fun PlayerCard(
         animationSpec = tween(durationMillis = 150),
         label = "elevation"
     )
-    
-    Card(
-        onClick = {
-            if (!isLocked) onClick()
-        },
-        modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(12.dp),
-        elevation = CardDefaults.cardElevation(defaultElevation = animatedElevation),
-        colors = CardDefaults.cardColors(
-            containerColor = when {
-                isLocked -> MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
-                isSelected -> MaterialTheme.colorScheme.primaryContainer
-                isCaptain -> MaterialTheme.colorScheme.secondaryContainer
-                else -> MaterialTheme.colorScheme.surface
-            }
-        )
-    ) {
-        Box(
-            contentAlignment = Alignment.TopEnd
+
+    val baseModifier = Modifier
+        .fillMaxWidth()
+        .aspectRatio(3f / 4f)
+    val cardColors = CardDefaults.cardColors(
+        containerColor = when {
+            isLocked -> MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
+            isSelected -> MaterialTheme.colorScheme.primaryContainer
+            isCaptain -> CaptainAccent.copy(alpha = 0.3f)
+            else -> MaterialTheme.colorScheme.surface
+        }
+    )
+
+    @Composable
+    fun CardContent() {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(12.dp)
         ) {
+            // 昵称在数字号牌上方
             Row(
-                modifier = Modifier.padding(12.dp),
-                verticalAlignment = Alignment.CenterVertically
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween
             ) {
-                // 号码显示区域
-                PlayerNumberDisplay(
-                    playerIndex = playerIndex,
-                    isLocked = isLocked,
-                    isCaptain = isCaptain
-                )
-                
-                Spacer(modifier = Modifier.width(12.dp))
-                
-                // 玩家信息区域
-                PlayerInfoArea(
-                    nickname = nickname,
-                    isCaptain = isCaptain,
-                    isLocked = isLocked,
+                Text(
+                    text = nickname,
+                    fontSize = 14.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.onSurface,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
                     modifier = Modifier.weight(1f)
                 )
+                PlayerStatusIcon(
+                    isLocked = isLocked,
+                    isSelected = isSelected
+                )
             }
-            
-            // 状态图标
-            PlayerStatusIcon(
+            if (isCaptain) {
+                Text(
+                    text = if (onLongClick != null) "队长（长按罢免）" else "队长",
+                    fontSize = 10.sp,
+                    color = CaptainAccent,
+                    fontWeight = FontWeight.Bold
+                )
+            }
+            if (isLocked) {
+                Text(
+                    text = "已锁定",
+                    fontSize = 10.sp,
+                    color = MaterialTheme.colorScheme.error,
+                    fontWeight = FontWeight.Bold
+                )
+            }
+            Spacer(modifier = Modifier.weight(1f))
+            // 数字号牌在下方
+            PlayerNumberDisplay(
+                playerIndex = playerIndex,
                 isLocked = isLocked,
-                isSelected = isSelected
+                isCaptain = isCaptain
             )
+        }
+    }
+
+    if (onLongClick != null) {
+        // 队长卡：使用无 onClick 的 Card，在内部 Box 上处理点击与长按，避免被 Card 抢占
+        Card(
+            modifier = baseModifier,
+            shape = RectangleShape,
+            elevation = CardDefaults.cardElevation(defaultElevation = animatedElevation),
+            colors = cardColors
+        ) {
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .combinedClickable(
+                        onClick = { if (!isLocked) onClick() },
+                        onLongClick = onLongClick
+                    )
+            ) {
+                CardContent()
+            }
+        }
+    } else {
+        Card(
+            onClick = { if (!isLocked) onClick() },
+            modifier = baseModifier,
+            shape = RectangleShape,
+            elevation = CardDefaults.cardElevation(defaultElevation = animatedElevation),
+            colors = cardColors
+        ) {
+            CardContent()
         }
     }
 }
@@ -125,10 +180,10 @@ private fun PlayerNumberDisplay(
             .background(
                 color = when {
                     isLocked -> MaterialTheme.colorScheme.surfaceVariant
-                    isCaptain -> MaterialTheme.colorScheme.secondary 
-                    else -> MaterialTheme.colorScheme.primary
+                    isCaptain -> CaptainAccent
+                    else -> IronGray
                 },
-                shape = RoundedCornerShape(8.dp)
+                shape = RectangleShape
             ),
         contentAlignment = Alignment.Center
     ) {
@@ -137,6 +192,7 @@ private fun PlayerNumberDisplay(
             fontWeight = FontWeight.Bold,
             color = when {
                 isLocked -> MaterialTheme.colorScheme.onSurfaceVariant
+                isCaptain -> Color.Black
                 else -> MaterialTheme.colorScheme.onPrimary
             },
             fontSize = 14.sp
@@ -152,6 +208,7 @@ private fun PlayerInfoArea(
     nickname: String,
     isCaptain: Boolean,
     isLocked: Boolean,
+    showDismissHint: Boolean = false,
     modifier: Modifier = Modifier
 ) {
     Column(
@@ -171,7 +228,7 @@ private fun PlayerInfoArea(
             Text(
                 text = "队长",
                 fontSize = 10.sp,
-                color = MaterialTheme.colorScheme.secondary,
+                color = CaptainAccent,
                 fontWeight = FontWeight.Bold
             )
         }

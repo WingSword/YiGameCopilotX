@@ -12,6 +12,10 @@ expect class PlatformHelper {
 
     fun vibrateLongMethod()
 
+    fun startPersistentAlert()
+
+    fun stopPersistentAlert()
+
     fun getAppVersionName(): String
     fun getAppVersionCode(): Int
 }

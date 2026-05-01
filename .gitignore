@@ -1,23 +1,107 @@
-*.iml
-.kotlin
-.gradle
+# Gradle
+.gradle/
 **/build/
-xcuserdata
 !src/**/build/
-local.properties
-.idea
+gradle-app.setting
+!gradle-wrapper.jar
+.gradletasknamecache
+
+# Kotlin
+.kotlin/
+*.kotlin_module
+
+# IDE
+*.iml
+.idea/
+*.ipr
+*.iws
+.project
+.classpath
+.settings/
+.vscode/
+*.swp
+*.swo
+
+# OS
 .DS_Store
-captures
-.externalNativeBuild
-.cxx
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+*~
+
+# Android
+local.properties
+captures/
+*.apk
+*.ap_
+*.aab
+*.dex
+.externalNativeBuild/
+.cxx/
+*.hprof
+lint/reports/
+lint/results/
+*.log
+
+# iOS/macOS
+xcuserdata/
+*.xcworkspace/*
+!*.xcworkspace/contents.xcworkspacaceta
+*.xcworkspace/xcshareddata/
 *.xcodeproj/*
 !*.xcodeproj/project.pbxproj
 !*.xcodeproj/xcshareddata/
 !*.xcodeproj/project.xcworkspace/
-!*.xcworkspace/contents.xcworkspacedata
 **/xcshareddata/WorkspaceSettings.xcsettings
-/sword
-/composeApp/release/composeApp-release.apk
-/composeApp/release/baselineProfiles/0/composeApp-release.dm
-/composeApp/release/baselineProfiles/1/composeApp-release.dm
-/composeApp/release/output-metadata.json
+*.moved-aside
+*.pbxuser
+!default.pbxuser
+*.mode1v3
+!default.mode1v3
+*.mode2v3
+!default.mode2v3
+*.perspectivev3
+!default.perspectivev3
+Pods/
+*.podspec
+Podfile.lock
+
+# Web/WASM
+node_modules/
+*.js.map
+npm-debug.log
+yarn-error.log
+.yarn-integrity
+kotlin-js-store/
+
+# Build outputs
+/composeApp/release/
+/sword/
+out/
+dist/
+
+# Secrets
+*.jks
+*.keystore
+secrets.properties
+api_keys.properties
+google-services.json
+*.pem
+*.p12
+
+# Test
+test-results/
+test-reports/
+coverage/
+*.lcov
+
+# Temporary files
+tmp/
+temp/
+*.tmp
+*.temp
+*.bak
+*.orig

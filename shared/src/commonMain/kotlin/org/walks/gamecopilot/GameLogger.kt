@@ -16,6 +16,14 @@ object GameLogger {
         println("INFO/$TAG: $msg")
     }
 
+    fun warn(msg: String) {
+        println("WARN/$TAG: $msg")
+    }
+
+    fun warning(msg: String) {
+        warn(msg)
+    }
+
     fun error(msg: String, e: Throwable? = null) {
         println("ERROR/$TAG: $msg ${e?.stackTraceToString() ?: ""}")
     }

@@ -14,7 +14,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Lock
@@ -36,6 +35,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -67,8 +67,8 @@ fun AllResultsDialog(
                 .fillMaxWidth(0.95f)
                 .fillMaxHeight(0.9f)
                 .padding(16.dp),
-            shape = RoundedCornerShape(20.dp),
-            color = MaterialTheme.colorScheme.surface,
+            shape = RectangleShape,
+            color = Color(0xFF171B22),
             shadowElevation = 8.dp
         ) {
             Column(
@@ -281,7 +281,7 @@ fun AllResultsDialog(
                 Button(
                     onClick = onDismiss,
                     modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(12.dp),
+                    shape = RectangleShape,
                     colors = ButtonDefaults.buttonColors(
                         containerColor = MaterialTheme.colorScheme.primary
                     )
@@ -438,9 +438,9 @@ private fun ResultSection(
 ) {
     Card(
         modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(12.dp),
+        shape = RectangleShape,
         colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f)
+            containerColor = Color(0xFF1F242D)
         )
     ) {
         Column(
@@ -532,7 +532,7 @@ private fun PlayerResultItem(
                     modifier = Modifier
                         .background(
                             color = if (role.roleType==GOOD_PERSON) Color.Green.copy(alpha = 0.2f) else Color.Red.copy(alpha = 0.2f),
-                            shape = RoundedCornerShape(8.dp)
+                            shape = RectangleShape
                         )
                         .padding(horizontal = 12.dp, vertical = 4.dp)
                 ) {

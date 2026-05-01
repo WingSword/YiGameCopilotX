@@ -21,6 +21,7 @@ import org.walks.gamecopilot.awalong.AwalongRole
 import org.walks.gamecopilot.awalong.DefaultCustomConfig
 import org.walks.gamecopilot.awalong.data.AwalongGameDayEntity
 import org.walks.gamecopilot.awalong.data.AwalongGameState
+import org.walks.gamecopilot.data.LANState
 import org.walks.gamecopilot.data.RandomItem
 import org.walks.gamecopilot.data.RandomListEntity
 import org.walks.gamecopilot.data.WheelItem
@@ -32,7 +33,10 @@ import org.walks.gamecopilot.http.RoomModule
 import org.walks.gamecopilot.http.roomModule
 import org.walks.gamecopilot.intent.GameIntent
 import org.walks.gamecopilot.intent.GameRoomIntent
+import org.walks.gamecopilot.intent.LANIntent
 import org.walks.gamecopilot.intent.RandomPageIntent
+import org.walks.gamecopilot.lan.data.LANGameState
+import org.walks.gamecopilot.lan.lanRoomManager
 import org.walks.gamecopilot.mmkv.MMKVUtils
 import org.walks.gamecopilot.mmkv.MMKV_RANDOM_CARDS_SETTING_KEY
 import org.walks.gamecopilot.mmkv.MMKV_RANDOM_LABEL_NAME_KEY
@@ -41,57 +45,134 @@ import org.walks.gamecopilot.utils.DateTimeUtils
 import kotlin.time.Clock
 import kotlin.time.ExperimentalTime
 
-
+/**
+ * 应用主视图模型
+ * 
+ * 职责：
+ * - 管理应用全局状态
+ * - 处理游戏模式切换
+ * - 管理房间状态和WebSocket通信
+ * - 处理随机工具相关逻辑
+ * - 管理阿瓦隆游戏状态
+ * - 管理局域网联机状态
+ * 
+ * 架构说明：
+ * - 使用StateFlow管理可观察状态
+ * - 使用SharedFlow处理一次性事件（如导航）
+ * - 采用MVI架构模式处理用户意图
+ */
 class MainViewmodel : ViewModel() {
 
+    /**
+     * 当前选择的游戏模式索引
+     * 0: 谁是卧底, 1: 阿瓦隆, 2: 你画我猜, 3: 随机工具, 4: 大富翁
+     */
     private val _startedGameMode = MutableStateFlow<Int>(0)
     val startedGameMode: StateFlow<Int> = _startedGameMode
+    private val _operationMode = MutableStateFlow<Int>(0)
+    val operationMode: StateFlow<Int> = _operationMode
 
+    /** 主题模式：SYSTEM / LIGHT / DARK */
+    private val _themeMode = MutableStateFlow(org.walks.gamecopilot.theme.ThemeMode.SYSTEM)
+    val themeMode: StateFlow<org.walks.gamecopilot.theme.ThemeMode> = _themeMode
+
+    fun setThemeMode(mode: org.walks.gamecopilot.theme.ThemeMode) {
+        _themeMode.value = mode
+    }
+
+    /**
+     * 游戏实体数据
+     * 包含游戏相关的通用数据
+     */
     private val _gameEntity = MutableStateFlow(GameEntity())
     val gameEntity: StateFlow<GameEntity> = _gameEntity
 
+    /**
+     * 房间实体状态
+     * 包含房间ID、用户列表、游戏状态等信息
+     */
     private val _roomEntityState = MutableStateFlow(WsRoomDataEntity())
     val roomEntityState: StateFlow<WsRoomDataEntity> = _roomEntityState
 
-    // 修改事件流类型
+    /**
+     * 导航事件流
+     * 用于发送一次性导航指令
+     */
     private val _navigationEvents = MutableSharedFlow<NavigationEvent>(replay = 0)
     val navigationEvents = _navigationEvents.asSharedFlow()
 
+    /**
+     * 顶部提示状态
+     * 用于显示临时提示信息
+     */
     private val _topTipState: MutableSharedFlow<String?> = MutableSharedFlow()
     var topTipState = _topTipState.asSharedFlow()
 
+    /**
+     * 当前随机工具内容状态
+     * 包含当前选择的随机配置列表
+     */
     private val _currentRandomContentState = MutableStateFlow(RandomListEntity())
     val currentRandomContentState: StateFlow<RandomListEntity> = _currentRandomContentState
 
-    // 转盘选项状态
+    /**
+     * 转盘选项状态
+     * 用于转盘随机工具
+     */
     private val _wheelItemsState = MutableStateFlow(getDefaultWheelItems())
     val wheelItemsState: StateFlow<List<WheelItem>> = _wheelItemsState
+
+    /**
+     * 随机配置标签列表
+     * 保存所有已创建的随机配置名称
+     */
     private val _randomLabelsState = MutableStateFlow(listOf<String>())
     val randomLabelsState: StateFlow<List<String>> = _randomLabelsState
 
+    /**
+     * 添加随机配置对话框状态
+     */
     private val _addRandomConfigDialogState = MutableSharedFlow<Boolean>()
     val addRandomConfigDialogState = _addRandomConfigDialogState.asSharedFlow()
 
+    /**
+     * 阿瓦隆游戏配置状态
+     * 当前选择的游戏配置（如5人局、7人局等）
+     */
     private val _awalongConfigState = MutableStateFlow<AwalongConfig>(
         AwalongConfig.Standard_5
     )
     val awalongConfigState: StateFlow<AwalongConfig> = _awalongConfigState
 
+    /**
+     * 阿瓦隆自定义配置状态
+     * 用于自定义角色配置
+     */
     private val _awalongCustomConfigState = MutableStateFlow<AwalongCustomConfig>(
         DefaultCustomConfig
     )
     val awalongCustomConfigState: StateFlow<AwalongCustomConfig> = _awalongCustomConfigState
 
+    /**
+     * 阿瓦隆游戏状态
+     * 包含游戏进行中的所有状态信息
+     */
     private val _awalongGameState = MutableStateFlow<AwalongGameState>(AwalongGameState())
     val awalongGameState: StateFlow<AwalongGameState> = _awalongGameState
+
+    /**
+     * 局域网联机状态
+     * 包含房间发现、连接、游戏同步等状态
+     */
+    private val _lanState = MutableStateFlow(LANState())
+    val lanState: StateFlow<LANState> = _lanState
 
     private var userId = ""
 
     init {
-        // 初始化预置随机配置
+        initLANObservers()
         initDefaultRandomConfigs()
         
-        // 监听连接状态
         roomModule.connectionState
             .onEach { state ->
                 when (state) {
@@ -102,13 +183,11 @@ class MainViewmodel : ViewModel() {
             }
             .launchIn(viewModelScope)
 
-        // 监听消息流
         roomModule.messages
             .onEach { rawMessage ->
                 try {
                     when (val message = Json.decodeFromString<WsRoomDataEntity>(rawMessage)) {
                         is WsRoomDataEntity -> handleWsData(message)
-
                         else -> GameLogger.debug("未知消息类型")
                     }
                 } catch (e: Exception) {
@@ -118,19 +197,20 @@ class MainViewmodel : ViewModel() {
             .launchIn(viewModelScope)
     }
 
+    /**
+     * 处理房间相关意图
+     * @param intent 房间意图（创建、加入、离开、开始游戏等）
+     */
     fun handleRoomIntent(intent: GameRoomIntent) {
         when (intent) {
             is GameRoomIntent.RefreshRoomInfo -> {
-                //
             }
 
             is GameRoomIntent.CreateAGameRoom -> {
-
                 enterGameRoom(intent.roomId, intent.roomKey, true)
             }
 
             is GameRoomIntent.JoinToAGameRoom -> {
-
                 enterGameRoom(intent.roomId, intent.roomKey, false)
             }
 
@@ -141,7 +221,6 @@ class MainViewmodel : ViewModel() {
                         roomEntityState.value.roomKey
                     )
                 }
-
             }
 
             GameRoomIntent.StartGame -> {
@@ -164,6 +243,10 @@ class MainViewmodel : ViewModel() {
         }
     }
 
+    /**
+     * 处理随机工具页面意图
+     * @param intent 随机工具意图（刷新、添加、删除配置等）
+     */
     @OptIn(ExperimentalTime::class)
     fun handleRandomPageIntent(intent: RandomPageIntent) {
         when (intent) {
@@ -187,9 +270,13 @@ class MainViewmodel : ViewModel() {
             }
 
             is RandomPageIntent.OnAddNewRandom -> {
+                if (intent.randomListEntity.name.startsWith(RANDOM_PAGE_CONFIG_CATE_FINGER)) {
+                    return
+                }
                 try {
                     // 序列化卡片列表
-                    val jsonCards = Json.encodeToString(intent.randomListEntity)
+                    val jsonCards =
+                        Json.encodeToString(RandomListEntity.serializer(), intent.randomListEntity)
                     // 保存到 MMKV
                     MMKVUtils.apply {
                         put(MMKV_RANDOM_CARDS_SETTING_KEY + intent.randomListEntity.name, jsonCards)
@@ -208,9 +295,13 @@ class MainViewmodel : ViewModel() {
             }
 
             is RandomPageIntent.OnEditRandomConfig -> {
+                if (intent.randomListEntity.name.startsWith(RANDOM_PAGE_CONFIG_CATE_FINGER)) {
+                    return
+                }
                 try {
                     // 序列化卡片列表
-                    val jsonCards = Json.encodeToString(intent.randomListEntity)
+                    val jsonCards =
+                        Json.encodeToString(RandomListEntity.serializer(), intent.randomListEntity)
                     // 保存到 MMKV（使用相同的key，会覆盖原有配置）
                     MMKVUtils.apply {
                         put(MMKV_RANDOM_CARDS_SETTING_KEY + intent.randomListEntity.name, jsonCards)
@@ -249,6 +340,9 @@ class MainViewmodel : ViewModel() {
             }
 
             is RandomPageIntent.DeleteRandomConfig -> {
+                if (intent.name.startsWith(RANDOM_PAGE_CONFIG_CATE_FINGER)) {
+                    return
+                }
                 randomLabelChange("")
                 val list=randomLabelsState.value.minus(intent.name)
                 _randomLabelsState.update {
@@ -293,12 +387,17 @@ class MainViewmodel : ViewModel() {
                 }
             }
 
-            RandomPageIntent.OnAddNewRandomDialogSave -> TODO()
+            RandomPageIntent.OnAddNewRandomDialogSave -> {
+                // 保存当前配置（空实现保留，实际保存由 OnAddNewRandom 处理）
+            }
         }
     }
 
     fun handleGameIntent(intent: GameIntent) {
         when (intent) {
+            is GameIntent.SwitchOperationMode -> {
+                _operationMode.value = intent.mode
+            }
             is GameIntent.SwitchGameMode -> {
                 _startedGameMode.value = intent.mode
             }
@@ -429,7 +528,7 @@ class MainViewmodel : ViewModel() {
     private fun saveCurrentGameToHistory(game: LocalSpyEntity, currentCount: Int) {
         try {
             val historyKey = "local_spy_game_history_${currentCount}"
-            val gameJson = Json.encodeToString(game)
+            val gameJson = Json.encodeToString(LocalSpyEntity.serializer(), game)
             MMKVUtils.put(historyKey, gameJson)
         } catch (e: Exception) {
             GameLogger.error("保存游戏历史失败", e)
@@ -472,54 +571,48 @@ class MainViewmodel : ViewModel() {
             is AwalongIntent.CheckTask -> {
                 viewModelScope.launch {
                     _awalongGameState.update {
+                        val newDayList = it.dayList.toMutableList().apply {
+                            if (find { dayEntity -> dayEntity.day == intent.task.day } == null) {
+                                add(intent.task)
+                            } else {
+                                set(
+                                    indexOfFirst { dayEntity -> dayEntity.day == intent.task.day },
+                                    intent.task
+                                )
+                            }
+                        }
+                        val completedCount =
+                            newDayList.count { dayEntity -> dayEntity.taskResult != 0 }
+                        val firstCaptain = newDayList.getOrNull(0)?.captain ?: -1
+                        val assignLady =
+                            it.useLadyOfLake && completedCount >= 2 && it.ladyOfLakeHolder == null && firstCaptain >= 0 && it.roleList.isNotEmpty()
+                        val initialHolder =
+                            if (assignLady) (firstCaptain + 1) % it.roleList.size else null
                         it.copy(
                             playTime = Clock.System.now().toEpochMilliseconds(),
-                            dayList = it.dayList.apply {
-                                if (this.find { it.day == intent.task.day } == null) {
-                                    add(intent.task)
-                                } else {
-                                    set(
-                                        this.indexOfFirst { it.day == intent.task.day },
-                                        intent.task
-                                    )
-                                }
-                            }
+                            dayList = newDayList,
+                            ladyOfLakeHolder = if (assignLady) initialHolder else it.ladyOfLakeHolder,
+                            ladyOfLakeHoldersHistory = if (assignLady) setOf(initialHolder!!) else it.ladyOfLakeHoldersHistory
                         )
                     }
                 }
             }
 
-            is AwalongIntent.ProphetCheck -> {
-                // 预言者检查2名玩家阵营
-                _awalongGameState.update {
-                    it.copy(
-                        playTime = Clock.System.now().toEpochMilliseconds(),
-                        prophetChecked = Pair(intent.player1Index, intent.player2Index)
-                    )
-                }
-            }
-            
             is AwalongIntent.LadyOfLakeCheck -> {
-                // 湖中仙女检查玩家阵营
+                // 湖中仙女头衔：使用后传给被查验的玩家
                 _awalongGameState.update {
+                    val holder = it.ladyOfLakeHolder ?: return@update it
+                    val newHolder = intent.playerIndex
                     it.copy(
                         playTime = Clock.System.now().toEpochMilliseconds(),
-                        ladyOfLakeUsed = true,
-                        ladyOfLakeChecked = intent.playerIndex
+                        ladyOfLakeHolder = newHolder,
+                        ladyOfLakeHoldersHistory = it.ladyOfLakeHoldersHistory + newHolder,
+                        ladyOfLakeUsedForTaskIndex = intent.taskIndex,
+                        ladyOfLakeChecked = newHolder
                     )
                 }
             }
-            
-            is AwalongIntent.SirGalahadUseDoubleVote -> {
-                // 圆桌骑士使用双倍投票权
-                _awalongGameState.update {
-                    it.copy(
-                        playTime = Clock.System.now().toEpochMilliseconds(),
-                        sirGalahadUsed = true
-                    )
-                }
-            }
-            
+
             is AwalongIntent.MorguseConvertSuccessToFailure -> {
                 // 莫高斯将成功卡转为失败卡
                 _awalongGameState.update {
@@ -718,26 +811,24 @@ class MainViewmodel : ViewModel() {
                     },
                     // 保留当前的昵称列表，而不是重置为默认值
                     nickNameList = currentState.nickNameList,
-                    // 初始化扩展包字段
-                    ladyOfLakeUsed = false,
-                    sirGalahadUsed = false,
-                    morguseUsed = false,
-                    prophetChecked = null,
+                    useLadyOfLake = customConfig.useLadyOfLake,
+                    ladyOfLakeHolder = null,
+                    ladyOfLakeHoldersHistory = emptySet(),
+                    ladyOfLakeUsedForTaskIndex = null,
                     ladyOfLakeChecked = null,
+                    morguseUsed = false,
                     lancolotConverted = false,
                     shapeshifterTarget = null,
                     assassinationResult = null
                 )
             }
         } else {
-            // 使用标准配置重置
             _awalongGameState.update {
                 AwalongGameState(
                     playTime = Clock.System.now().toEpochMilliseconds(),
                     roleList = standardConfig.role.optimizedShuffle().toMutableList(),
                     dayList = mutableListOf<AwalongGameDayEntity>().apply {
                         standardConfig.process.forEachIndexed { index, taskSize ->
-                            // 根据阿瓦隆规则判断是否需要2张失败卡
                             val requiresTwoFailures = AwalongGameLogic.requiresTwoFailures(
                                 index,
                                 standardConfig.playerNum
@@ -751,14 +842,13 @@ class MainViewmodel : ViewModel() {
                             )
                         }
                     },
-                    // 保留当前的昵称列表，而不是重置为默认值
                     nickNameList = currentState.nickNameList,
-                    // 初始化扩展包字段
-                    ladyOfLakeUsed = false,
-                    sirGalahadUsed = false,
-                    morguseUsed = false,
-                    prophetChecked = null,
+                    useLadyOfLake = false,
+                    ladyOfLakeHolder = null,
+                    ladyOfLakeHoldersHistory = emptySet(),
+                    ladyOfLakeUsedForTaskIndex = null,
                     ladyOfLakeChecked = null,
+                    morguseUsed = false,
                     lancolotConverted = false,
                     shapeshifterTarget = null,
                     assassinationResult = null
@@ -791,12 +881,12 @@ class MainViewmodel : ViewModel() {
                 },
                 nickNameList = (1..customConfig.totalPlayers).map { it.toString() }
                     .toMutableList(),
-                // 初始化扩展包字段
-                ladyOfLakeUsed = false,
-                sirGalahadUsed = false,
-                morguseUsed = false,
-                prophetChecked = null,
+                useLadyOfLake = customConfig.useLadyOfLake,
+                ladyOfLakeHolder = null,
+                ladyOfLakeHoldersHistory = emptySet(),
+                ladyOfLakeUsedForTaskIndex = null,
                 ladyOfLakeChecked = null,
+                morguseUsed = false,
                 lancolotConverted = false,
                 shapeshifterTarget = null,
                 assassinationResult = null
@@ -924,9 +1014,21 @@ class MainViewmodel : ViewModel() {
                     MMKVUtils.getSet(MMKV_RANDOM_LABEL_NAME_KEY)?.toMutableSet() ?: mutableSetOf()
 
                 // 预置配置名称
+                val fingerConfigName = RANDOM_PAGE_SYSTEM_FINGER_SPINNER_NAME
                 val diceConfigName = RANDOM_PAGE_CONFIG_CATE_DICE + "六面骰子"
                 val coinConfigName = RANDOM_PAGE_CONFIG_CATE_COIN + "硬币"
                 val wheelConfigName = RANDOM_PAGE_CONFIG_CATE_WHEEL + "今天吃啥"
+
+                if (!existingLabels.contains(fingerConfigName)) {
+                    val fingerConfig = RandomListEntity(
+                        name = fingerConfigName,
+                        list = emptyList()
+                    )
+                    val fingerJson =
+                        Json.encodeToString(RandomListEntity.serializer(), fingerConfig)
+                    MMKVUtils.put(MMKV_RANDOM_CARDS_SETTING_KEY + fingerConfig.name, fingerJson)
+                    existingLabels.add(fingerConfig.name)
+                }
 
                 // 检查并添加预置六面骰子
                 if (!existingLabels.contains(diceConfigName)) {
@@ -1021,6 +1123,166 @@ class MainViewmodel : ViewModel() {
                 e.printStackTrace()
             }
         }
+    }
+
+    private fun initLANObservers() {
+        lanRoomManager.discoveredRooms
+            .onEach { rooms ->
+                _lanState.update { it.copy(discoveredRooms = rooms) }
+            }
+            .launchIn(viewModelScope)
+
+        lanRoomManager.currentRoom
+            .onEach { room ->
+                _lanState.update { it.copy(currentRoom = room) }
+            }
+            .launchIn(viewModelScope)
+
+        lanRoomManager.connectionState
+            .onEach { state ->
+                _lanState.update { it.copy(connectionState = state) }
+            }
+            .launchIn(viewModelScope)
+
+        lanRoomManager.players
+            .onEach { players ->
+                _lanState.update { it.copy(players = players) }
+            }
+            .launchIn(viewModelScope)
+
+        lanRoomManager.isHost
+            .onEach { isHost ->
+                _lanState.update { it.copy(isHost = isHost) }
+            }
+            .launchIn(viewModelScope)
+
+        lanRoomManager.errors
+            .onEach { error ->
+                _lanState.update { it.copy(error = error.message) }
+                _topTipState.emit("错误: ${error.message}")
+            }
+            .launchIn(viewModelScope)
+
+        lanRoomManager.gameStateUpdates
+            .onEach { gameState ->
+                handleLANGameStateUpdate(gameState)
+            }
+            .launchIn(viewModelScope)
+    }
+
+    fun handleLANIntent(intent: LANIntent) {
+        when (intent) {
+            is LANIntent.SetPreferredGameType -> {
+                _lanState.update { it.copy(preferredGameType = intent.gameType) }
+            }
+
+            is LANIntent.StartDiscovery -> {
+                lanRoomManager.startDiscovery(intent.gameType)
+                _lanState.update { it.copy(isDiscovering = true) }
+            }
+
+            is LANIntent.StopDiscovery -> {
+                lanRoomManager.stopDiscovery()
+                _lanState.update { it.copy(isDiscovering = false) }
+            }
+
+            is LANIntent.ClearDiscoveredRooms -> {
+                lanRoomManager.clearDiscoveredRooms()
+            }
+
+            is LANIntent.CreateRoom -> {
+                lanRoomManager.createRoom(
+                    roomName = intent.roomName,
+                    hostName = intent.hostName,
+                    gameType = intent.gameType,
+                    maxPlayers = intent.maxPlayers,
+                    password = intent.password
+                )
+            }
+
+            is LANIntent.JoinRoom -> {
+                lanRoomManager.joinRoom(
+                    roomInfo = intent.roomInfo,
+                    playerName = intent.playerName,
+                    password = intent.password
+                )
+            }
+
+            is LANIntent.Disconnect -> {
+                lanRoomManager.disconnect()
+            }
+
+            is LANIntent.StartGame -> {
+                lanRoomManager.startGame()
+            }
+
+            is LANIntent.EndGame -> {
+                lanRoomManager.endGame()
+            }
+
+            is LANIntent.SyncGameState -> {
+                lanRoomManager.syncGameState(intent.gameState)
+            }
+
+            is LANIntent.SendGameAction -> {
+                lanRoomManager.sendGameAction(intent.action, intent.data)
+            }
+
+            is LANIntent.KickPlayer -> {
+                lanRoomManager.kickPlayer(intent.playerId, intent.reason)
+            }
+        }
+    }
+
+    private fun handleLANGameStateUpdate(gameState: LANGameState) {
+        viewModelScope.launch {
+            try {
+                when (gameState.gameType) {
+                    org.walks.gamecopilot.lan.data.GameType.LOCAL_SPY -> {
+                        val localSpyEntity =
+                            Json.decodeFromString<LocalSpyEntity>(gameState.rawData)
+                        _gameEntity.update { it.copy(currentGame = localSpyEntity) }
+                    }
+
+                    org.walks.gamecopilot.lan.data.GameType.AWALONG -> {
+                        val awalongState =
+                            Json.decodeFromString<AwalongGameState>(gameState.rawData)
+                        _awalongGameState.value = awalongState
+                    }
+
+                    org.walks.gamecopilot.lan.data.GameType.DRAW_GUESS -> {
+                        GameLogger.debug("收到你画我猜游戏状态更新")
+                    }
+
+                    org.walks.gamecopilot.lan.data.GameType.HUNT_TOWN -> {
+                        GameLogger.debug("收到猎巫镇房间状态更新")
+                    }
+
+                    org.walks.gamecopilot.lan.data.GameType.RANDOM_TOOLS -> {
+                        GameLogger.debug("收到随机工具状态更新")
+                    }
+
+                    org.walks.gamecopilot.lan.data.GameType.MONOPOLY -> {
+                        GameLogger.debug("收到大富翁状态更新")
+                    }
+
+                    org.walks.gamecopilot.lan.data.GameType.ONE_NIGHT_WEREWOLF -> {
+                        GameLogger.debug("收到一夜终极狼人状态更新")
+                    }
+
+                    else -> {
+                        GameLogger.debug("收到未知类型游戏状态: ${gameState.gameType}")
+                    }
+                }
+            } catch (e: Exception) {
+                GameLogger.error("解析游戏状态失败", e)
+            }
+        }
+    }
+
+    override fun onCleared() {
+        super.onCleared()
+        lanRoomManager.dispose()
     }
 }
 

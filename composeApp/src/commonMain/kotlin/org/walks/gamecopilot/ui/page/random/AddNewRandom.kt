@@ -70,6 +70,7 @@ import org.jetbrains.compose.resources.painterResource
 import org.walks.gamecopilot.RANDOM_PAGE_CONFIG_CATE_CARD
 import org.walks.gamecopilot.RANDOM_PAGE_CONFIG_CATE_COIN
 import org.walks.gamecopilot.RANDOM_PAGE_CONFIG_CATE_DICE
+import org.walks.gamecopilot.RANDOM_PAGE_CONFIG_CATE_FINGER
 import org.walks.gamecopilot.RANDOM_PAGE_CONFIG_CATE_WHEEL
 import org.walks.gamecopilot.clickableWithoutRipple
 import org.walks.gamecopilot.data.RandomItem
@@ -89,6 +90,7 @@ import yigamecopilotx.composeapp.generated.resources.icon_wheel_svg
 
 enum class RandomCate(val key: String, val iconRes: DrawableResource?) {
     Empty("", null),
+    Finger(RANDOM_PAGE_CONFIG_CATE_FINGER, Res.drawable.icon_wheel_svg),
     Card(RANDOM_PAGE_CONFIG_CATE_CARD, Res.drawable.icon_card),
     Dice(RANDOM_PAGE_CONFIG_CATE_DICE, Res.drawable.icon_dice),
     Coin(RANDOM_PAGE_CONFIG_CATE_COIN, Res.drawable.icon_coin),
@@ -97,6 +99,7 @@ enum class RandomCate(val key: String, val iconRes: DrawableResource?) {
     companion object {
         fun getCateByKey(key: String): RandomCate {
             return when (key) {
+                RANDOM_PAGE_CONFIG_CATE_FINGER -> Finger
                 RANDOM_PAGE_CONFIG_CATE_CARD -> Card
                 RANDOM_PAGE_CONFIG_CATE_DICE -> Dice
                 RANDOM_PAGE_CONFIG_CATE_COIN -> Coin
@@ -108,6 +111,8 @@ enum class RandomCate(val key: String, val iconRes: DrawableResource?) {
         fun getCateByItem(item: String): RandomCate {
             return if (item.startsWith(RANDOM_PAGE_CONFIG_CATE_CARD))
                 Card
+            else if (item.startsWith(RANDOM_PAGE_CONFIG_CATE_FINGER))
+                Finger
             else if (item.startsWith(RANDOM_PAGE_CONFIG_CATE_DICE))
                 Dice
             else if (item.startsWith(RANDOM_PAGE_CONFIG_CATE_COIN))
@@ -127,8 +132,11 @@ fun AddNewRandomCateActionBar(
     isEditing: Boolean = false,
     onClick: (RandomCate) -> Unit
 ) {
+    val visibleCateList = RandomCate.entries.filter {
+        it != RandomCate.Empty && it != RandomCate.Finger
+    }
     LazyRow(horizontalArrangement = spacedBy(4.dp)) {
-        items(RandomCate.entries) { cate ->
+        items(visibleCateList) { cate ->
             val isSelected = select == cate.key
             // 边框宽度动画
             val animatedBorderWidth by animateDpAsState(

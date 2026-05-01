@@ -82,10 +82,10 @@ enum class AwalongConfig(
             AwalongRole.ZHONGCHEN,
             AwalongRole.MOGANNA,
             AwalongRole.CISHA,
-            AwalongRole.LADY_OF_LAKE,
+            AwalongRole.ZHONGCHEN,
         ),
         process = listOf(2, 3, 4, 3, 4),
-        description = "6人扩展场：蓝方(梅林+派西维尔+忠臣+湖中仙女) vs 红方(莫德雷德+莫甘娜+刺客)"
+        description = "6人扩展场：蓝方(梅林+派西维尔+2忠臣) vs 红方(莫德雷德+莫甘娜+刺客)；湖中仙女为头衔，第2任务完成后加入"
     ),
 
     Standard_7(
@@ -96,12 +96,12 @@ enum class AwalongConfig(
             AwalongRole.PAIXIWEIWEIER,
             AwalongRole.ZHONGCHEN,
             AwalongRole.ZHONGCHEN,
-            AwalongRole.PROPHET,
+            AwalongRole.ZHONGCHEN,
             AwalongRole.MOGANNA,
             AwalongRole.CISHA,
         ),
         process = listOf(2, 3, 3, 4, 4),
-        description = "7人标准场：蓝方(梅林+派西维尔+2忠臣+预言者) vs 红方(莫德雷德+莫甘娜+刺客)"
+        description = "7人标准场：蓝方(梅林+派西维尔+3忠臣) vs 红方(莫德雷德+莫甘娜+刺客)"
     ),
 
     Standard_7_Extension(
@@ -112,12 +112,12 @@ enum class AwalongConfig(
             AwalongRole.PAIXIWEIWEIER,
             AwalongRole.ZHONGCHEN,
             AwalongRole.ZHONGCHEN,
-            AwalongRole.PROPHET,
+            AwalongRole.ZHONGCHEN,
             AwalongRole.MOGANNA,
             AwalongRole.CISHA,
         ),
         process = listOf(2, 3, 3, 4, 4),
-        description = "7人扩展场：蓝方(梅林+派西维尔+2忠臣+预言者/湖中仙女) vs 红方(莫德雷德+莫甘娜+刺客)，可选奥伯伦"
+        description = "7人扩展场：蓝方(梅林+派西维尔+3忠臣) vs 红方(莫德雷德+莫甘娜+刺客)，可选奥伯伦；湖中仙女为头衔不占位"
     ),
 
     Standard_8(
@@ -128,13 +128,13 @@ enum class AwalongConfig(
             AwalongRole.PAIXIWEIWEIER,
             AwalongRole.ZHONGCHEN,
             AwalongRole.ZHONGCHEN,
-            AwalongRole.PROPHET,
+            AwalongRole.ZHONGCHEN,
             AwalongRole.MOGANNA,
             AwalongRole.CISHA,
             AwalongRole.ZHONGCHEN,
         ),
         process = listOf(3, 4, 4, 5, 5),
-        description = "8人标准场：蓝方(梅林+派西维尔+3忠臣+预言者) vs 红方(莫德雷德+莫甘娜+刺客+忠臣)"
+        description = "8人标准场：蓝方(梅林+派西维尔+4忠臣) vs 红方(莫德雷德+莫甘娜+刺客)"
     ),
 
     Standard_8_Extension(
@@ -145,13 +145,13 @@ enum class AwalongConfig(
             AwalongRole.PAIXIWEIWEIER,
             AwalongRole.ZHONGCHEN,
             AwalongRole.ZHONGCHEN,
-            AwalongRole.PROPHET,
+            AwalongRole.ZHONGCHEN,
             AwalongRole.MOGANNA,
             AwalongRole.CISHA,
             AwalongRole.SHAPESHIFTER,
         ),
         process = listOf(3, 4, 4, 5, 5),
-        description = "8人扩展场：蓝方(梅林+派西维尔+3忠臣+预言者) vs 红方(莫德雷德+莫甘娜+刺客+变形者)，可选奥伯伦"
+        description = "8人扩展场：蓝方(梅林+派西维尔+3忠臣) vs 红方(莫德雷德+莫甘娜+刺客+变形者)，可选奥伯伦"
     ),
 
     Standard_9(
@@ -163,13 +163,13 @@ enum class AwalongConfig(
             AwalongRole.ZHONGCHEN,
             AwalongRole.ZHONGCHEN,
             AwalongRole.ZHONGCHEN,
-            AwalongRole.PROPHET,
-            AwalongRole.LADY_OF_LAKE,
+            AwalongRole.ZHONGCHEN,
             AwalongRole.MOGANNA,
             AwalongRole.CISHA,
+            AwalongRole.ZHONGCHEN,
         ),
         process = listOf(3, 4, 4, 5, 5),
-        description = "9人高级场：蓝方(梅林+派西维尔+3忠臣+预言者+湖中仙女) vs 红方(莫德雷德+莫甘娜+刺客+红方士兵)"
+        description = "9人高级场：蓝方(梅林+派西维尔+4忠臣) vs 红方(莫德雷德+莫甘娜+刺客+红方士兵)；湖中仙女为头衔不占位"
     ),
 
     Standard_10(
@@ -181,14 +181,14 @@ enum class AwalongConfig(
             AwalongRole.ZHONGCHEN,
             AwalongRole.ZHONGCHEN,
             AwalongRole.ZHONGCHEN,
-            AwalongRole.PROPHET,
-            AwalongRole.LADY_OF_LAKE,
+            AwalongRole.ZHONGCHEN,
+            AwalongRole.ZHONGCHEN,
             AwalongRole.MOGANNA,
             AwalongRole.CISHA,
             AwalongRole.SHAPESHIFTER,
         ),
         process = listOf(3, 4, 4, 5, 5),
-        description = "10人高级场：蓝方(梅林+派西维尔+3忠臣+预言者+湖中仙女) vs 红方(莫德雷德+莫甘娜+刺客+红方士兵+变形者)，奥伯伦独立阵营"
+        description = "10人高级场：蓝方(梅林+派西维尔+4忠臣) vs 红方(莫德雷德+莫甘娜+刺客+红方士兵+变形者)，奥伯伦独立阵营；湖中仙女为头衔不占位"
     );
 
 
@@ -258,27 +258,15 @@ enum class AwalongRole(
         title = "刺客",
         description = "在好人阵营完成 3 次任务后，刺客可以单独选择刺杀一名玩家。如果选中梅林，则坏人阵营获胜；如果选错，则好人阵营获胜。"
     ),
+    ZHAOYA(
+        roleType = BAD_PERSON,
+        title = "爪牙",
+        description = "无特殊视野的红方角色。在【夜晚】阶段与红方队友睁眼互认。游戏中玩法灵活，可任意发挥。"
+    ),
     // 扩展包新角色 - 蓝方
-    PROPHET(
-        title = "预言者",
-        description = "游戏开始时，可查看任意2名玩家的阵营（不分具体角色），无法查看莫德雷德，且获知的信息仅限于'好人/坏人'。"
-    ) {
-        override fun checkSkills(
-            role: List<AwalongRole>,
-        ): Map<Int, AwalongRole> {
-            // 预言者能力：查看2名玩家阵营（游戏逻辑中实现）
-            return mapOf()
-        }
-    },
-
     LADY_OF_LAKE(
         title = "湖中仙女",
-        description = "在第2个任务完成后激活，可选择一名玩家秘密查看其阵营（好人/坏人），只能使用一次，且无法查看莫德雷德。"
-    ),
-
-    SIR_GALAHAD(
-        title = "圆桌骑士",
-        description = "在任意一轮投票中，可强制使自己的投票权重翻倍（相当于两票），整场游戏只能使用一次。"
+        description = "头衔（不占角色位）。第2个任务完成后加入，初始传给首任队长右边的玩家。每轮结束持有者可选一名玩家秘密查看其阵营（好人/坏人），使用后头衔传给被查验者；曾持有者不可再被查验。无法查看莫德雷德。"
     ),
 
     // 扩展包新角色 - 红方
@@ -292,33 +280,13 @@ enum class AwalongRole(
         roleType = BAD_PERSON,
         title = "变形者",
         description = "在游戏开始时，复制一名随机玩家的角色（获得相同能力，但阵营不变），无法复制莫德雷德，且复制后无法改变。"
-    ) {
-        override fun checkSkills(
-            role: List<AwalongRole>,
-        ): Map<Int, AwalongRole> {
-            // 变形者可以看到其他坏人（除了奥伯伦）
-            val map = mutableMapOf<Int, AwalongRole>()
-            role.forEachIndexed { index, awalongRole ->
-                if (awalongRole.roleType == BAD_PERSON && awalongRole != AOBOLUN && awalongRole != this) {
-                    map[index] = awalongRole
-                }
-            }
-            return map
-        }
-    },
+    ),
 
     AOBOLUN(
-        roleType = NEUTRAL_PERSON,
+        roleType = BAD_PERSON,
         title = "奥伯伦",
-        description = "完全独立阵营，不属于蓝方也不属于红方，看不到其他任何阵营成员，其他阵营成员也看不到他，需单独胜利：至少破坏2个任务、在蓝方达成3胜后成功刺杀梅林、自己未被揭露身份。"
-    ) {
-        override fun checkSkills(
-            role: List<AwalongRole>,
-        ): Map<Int, AwalongRole> {
-            // 奥伯伦看不到任何人，也看不到其他坏人
-            return mapOf()
-        }
-    },
+        description = "红方角色，但看不到其他红方成员，其他红方成员也看不到他。可以正常参与任务破坏，与红方共享胜利条件。"
+    ),
 
     // 特殊角色
     LANCELOT(
@@ -352,11 +320,10 @@ enum class AwalongRole(
     open fun checkSkills(
         role: List<AwalongRole>,
     ): Map<Int, AwalongRole> {
-        if (this.roleType == BAD_PERSON && this != AOBOLUN) {
+        if (this.roleType == BAD_PERSON) {
             val map = mutableMapOf<Int, AwalongRole>()
             role.forEachIndexed { index, awalongRole ->
-                // 坏人可以看到其他坏人，但看不到奥伯伦和自己
-                if (awalongRole.roleType == BAD_PERSON && awalongRole != AOBOLUN && awalongRole != this) {
+                if (awalongRole.roleType == BAD_PERSON && awalongRole != this) {
                     map[index] = awalongRole
                 }
             }

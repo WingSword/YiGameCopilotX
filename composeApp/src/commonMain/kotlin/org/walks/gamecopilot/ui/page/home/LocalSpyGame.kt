@@ -3,13 +3,16 @@ package org.walks.gamecopilot.ui.page.home
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.LinearEasing
+import androidx.compose.animation.core.MutableTransitionState
 import androidx.compose.animation.core.Spring
-import androidx.compose.animation.core.VisibilityThreshold
 import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
+import androidx.compose.animation.scaleIn
+import androidx.compose.animation.scaleOut
 import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.BorderStroke
@@ -19,6 +22,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.combinedClickable
+import androidx.compose.foundation.gestures.detectHorizontalDragGestures
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.PressInteraction
 import androidx.compose.foundation.layout.Arrangement
@@ -26,17 +30,21 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -44,6 +52,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
@@ -55,15 +64,15 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
-import com.yi.yigamecopilot.android.theme.MorandiColorList
 import kotlinx.coroutines.launch
 import org.walks.gamecopilot.MainViewmodel
 import org.walks.gamecopilot.PlatformHelper
@@ -71,7 +80,7 @@ import org.walks.gamecopilot.data.entity.LocalSpyEntity
 import org.walks.gamecopilot.intent.GameIntent
 import org.walks.gamecopilot.ui.badge.WeBadge
 import org.walks.gamecopilot.ui.picker.WeSingleColumnPicker
-import org.walks.gamecopilot.ui.widget.FlipCard
+import kotlin.math.abs
 
 /**
  *  Created by Wing at 20:53 on 2025/3/25
@@ -333,28 +342,80 @@ fun GameGreetingView(key: Int, gameState: LocalSpyEntity, onStart: () -> Unit) {
     }
 
     // 身份卡片动画显示逻辑
-    AnimatedVisibility(
-        modifier = Modifier.fillMaxSize(),
-        visible = identityDisPlayState.value == IDENTITY_SHOW,
-        // 组合动画+物理效果
-        enter = slideInVertically(
-            animationSpec = spring(
-                stiffness = Spring.StiffnessMediumLow,
-                visibilityThreshold = IntOffset.VisibilityThreshold
-            ),
-            initialOffsetY = { it }
-        ) + fadeIn(spring(dampingRatio = Spring.DampingRatioMediumBouncy)),
-        exit = slideOutVertically() + fadeOut()) {
+    var dialogVisible by remember { mutableStateOf(false) }
+
+    LaunchedEffect(identityDisPlayState.value) {
+        if (identityDisPlayState.value == IDENTITY_SHOW) {
+            dialogVisible = true
+        }
+    }
+
+    if (identityDisPlayState.value == IDENTITY_SHOW || dialogVisible) {
         Dialog(
-            onDismissRequest = { identityDisPlayState.value = IDENTITY_DISMISS },
+            onDismissRequest = { dialogVisible = false },
             properties = DialogProperties(
                 usePlatformDefaultWidth = false // 关键属性
             )
         ) {
-            LocalSpyIdentityCard(
-                gameState = gameState,
-                currentSelectPlayer = currentSelectPlayer,
-            )
+            val cardTransitionState = remember { MutableTransitionState(false) }
+            LaunchedEffect(dialogVisible) {
+                cardTransitionState.targetState = dialogVisible
+            }
+            LaunchedEffect(cardTransitionState.currentState, cardTransitionState.targetState) {
+                if (!cardTransitionState.currentState && !cardTransitionState.targetState) {
+                    identityDisPlayState.value = IDENTITY_DISMISS
+                    dialogVisible = false
+                }
+            }
+
+            AnimatedVisibility(
+                modifier = Modifier.fillMaxSize(),
+                visibleState = cardTransitionState,
+                enter = fadeIn(tween(120)) +
+                        scaleIn(
+                            initialScale = 0.82f,
+                            animationSpec = spring(
+                                dampingRatio = Spring.DampingRatioLowBouncy,
+                                stiffness = Spring.StiffnessLow
+                            )
+                        ) +
+                        slideInVertically(
+                            initialOffsetY = { it / 3 },
+                            animationSpec = spring(
+                                dampingRatio = Spring.DampingRatioNoBouncy,
+                                stiffness = Spring.StiffnessMedium
+                            )
+                        ),
+                exit = fadeOut(tween(100)) +
+                        scaleOut(
+                            targetScale = 0.8f,
+                            animationSpec = tween(180, easing = FastOutSlowInEasing)
+                        ) +
+                        slideOutVertically(
+                            targetOffsetY = { it / 2 },
+                            animationSpec = tween(180, easing = FastOutSlowInEasing)
+                        )
+            ) {
+                Box(modifier = Modifier.fillMaxSize()) {
+                    LocalSpyIdentityCard(
+                        modifier = Modifier.align(Alignment.Center),
+                        gameState = gameState,
+                        currentSelectPlayer = currentSelectPlayer,
+                        onClose = { dialogVisible = false }
+                    )
+                    Text(
+                        text = "左右滑动切换查看身份",
+                        color = MaterialTheme.colorScheme.primary,
+                        fontSize = 24.sp,
+                        fontWeight = FontWeight.Bold,
+                        textAlign = TextAlign.Center,
+                        modifier = Modifier
+                            .align(Alignment.BottomCenter)
+                            .fillMaxWidth()
+                            .padding(vertical = 24.dp)
+                    )
+                }
+            }
         }
     }
 }
@@ -451,83 +512,251 @@ fun LocalPlayerSelectArea(
 fun LocalSpyIdentityCard(
     gameState: LocalSpyEntity,
     currentSelectPlayer: Int = 1,
+    modifier: Modifier = Modifier,
+    onClose: () -> Unit = {}
 ) {
-    val flipState = remember { mutableStateOf(false) }
-    // 主容器：包含卡片布局和交互效果
-    FlipCard(
-        modifier = Modifier.height(200.dp).width(140.dp).clip(RoundedCornerShape(20.dp))
-            .clickable { flipState.value = !flipState.value },
-        backContent = {
-            Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                Text(
-                    text = currentSelectPlayer.toString(),
-                    fontSize = 90.sp,
-                    fontWeight = FontWeight.W900,
-                    color = MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.33f),
-                    textAlign = TextAlign.Right
+    val scope = rememberCoroutineScope()
+    var showIdentity by remember(currentSelectPlayer) { mutableStateOf(false) }
+    var hasSwitched by remember(currentSelectPlayer) { mutableStateOf(false) }
+    var dragOffset by remember(currentSelectPlayer) { mutableFloatStateOf(0f) }
+    var isSwitchAnimating by remember(currentSelectPlayer) { mutableStateOf(false) }
+    val cardSlide = remember(currentSelectPlayer) { Animatable(0f) }
+    val enterScale = remember(currentSelectPlayer) { Animatable(0.84f) }
+    val enterOffsetY = remember(currentSelectPlayer) { Animatable(90f) }
+    val enterRotationX = remember(currentSelectPlayer) { Animatable(-12f) }
+    val identityText = gameState.optIdentity(currentSelectPlayer)
+
+    LaunchedEffect(currentSelectPlayer) {
+        isSwitchAnimating = false
+        dragOffset = 0f
+        cardSlide.snapTo(0f)
+        enterScale.snapTo(0.84f)
+        enterOffsetY.snapTo(90f)
+        enterRotationX.snapTo(-12f)
+        launch {
+            enterScale.animateTo(
+                targetValue = 1f,
+                animationSpec = spring(
+                    dampingRatio = Spring.DampingRatioLowBouncy,
+                    stiffness = Spring.StiffnessLow
                 )
-                Spacer(modifier = Modifier.weight(1f))
-                Text(
-                    if (gameState.isSpy(currentSelectPlayer)) "" else "",
-                    textAlign = TextAlign.Center,
-                    color = if (gameState.isSpy(currentSelectPlayer)) MaterialTheme.colorScheme.error
-                    else MaterialTheme.colorScheme.onSecondaryContainer,
-                    fontSize = 20.sp,
-                    fontWeight = FontWeight.ExtraLight,
-                    modifier = Modifier.fillMaxWidth()
+            )
+        }
+        launch {
+            enterOffsetY.animateTo(
+                targetValue = 0f,
+                animationSpec = spring(
+                    dampingRatio = Spring.DampingRatioNoBouncy,
+                    stiffness = Spring.StiffnessMedium
                 )
-                // 操作提示文本：根据显示状态切换提示语
-                Text(
-                    "点击卡片查看身份词",
-                    color = MaterialTheme.colorScheme.onSecondary,
-                    fontSize = 12.sp,
-                    modifier = Modifier.fillMaxWidth(),
-                    textAlign = TextAlign.Center,
-                )
-                Spacer(modifier = Modifier.weight(1f))
-            }
-        },
-        frontContent = {
-            Box(
-                modifier = Modifier.background(
-                    color = MaterialTheme.colorScheme.secondaryContainer
-                ).border(
-                    BorderStroke(
-                        width = 4.dp,
-                        color = MorandiColorList[(0..7).random()] // 随机生成边框颜色
-                    ),
-                    shape = RoundedCornerShape(20.dp)
-                ),
-                contentAlignment = Alignment.BottomEnd
-            ) {
-                Text(
-                    text = currentSelectPlayer.toString(),
-                    modifier = Modifier.rotate(-30f),
-                    fontSize = 90.sp,
-                    fontWeight = FontWeight.W900,
-                    color = MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.33f),
-                    textAlign = TextAlign.Right
-                )
-                Column(modifier = Modifier.fillMaxSize()) {
-                    Spacer(modifier = Modifier.weight(1f))
+            )
+        }
+        launch {
+            enterRotationX.animateTo(
+                targetValue = 0f,
+                animationSpec = tween(280, easing = FastOutSlowInEasing)
+            )
+        }
+    }
+
+    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+        Box(
+            modifier = Modifier
+                .then(modifier)
+                .height(340.dp)
+                .width(250.dp)
+                .graphicsLayer {
+                    translationX = cardSlide.value + dragOffset
+                    translationY = enterOffsetY.value
+                    scaleX = enterScale.value
+                    scaleY = enterScale.value
+                    rotationX = enterRotationX.value
+                    cameraDistance = 18f * density
+                }
+                .background(MaterialTheme.colorScheme.surface)
+                .border(BorderStroke(2.dp, MaterialTheme.colorScheme.outline))
+                .pointerInput(currentSelectPlayer) {
+                    detectHorizontalDragGestures(
+                        onDragStart = { dragOffset = 0f },
+                        onHorizontalDrag = { _, dragAmount ->
+                            if (!isSwitchAnimating) {
+                                dragOffset = (dragOffset + dragAmount).coerceIn(-200f, 200f)
+                            }
+                        },
+                        onDragCancel = {
+                            scope.launch {
+                                cardSlide.snapTo(dragOffset)
+                                dragOffset = 0f
+                                cardSlide.animateTo(
+                                    targetValue = 0f,
+                                    animationSpec = spring(
+                                        dampingRatio = Spring.DampingRatioNoBouncy,
+                                        stiffness = Spring.StiffnessMedium
+                                    )
+                                )
+                            }
+                        },
+                        onDragEnd = {
+                            if (!isSwitchAnimating && abs(dragOffset) > 56f) {
+                                val direction = if (dragOffset > 0f) 1 else -1
+                                scope.launch {
+                                    try {
+                                        isSwitchAnimating = true
+                                        cardSlide.snapTo(dragOffset)
+                                        dragOffset = 0f
+                                        cardSlide.animateTo(
+                                            targetValue = direction * 320f,
+                                            animationSpec = tween(110, easing = FastOutSlowInEasing)
+                                        )
+                                        showIdentity = !showIdentity
+                                        hasSwitched = true
+                                        cardSlide.snapTo(-direction * 260f)
+                                        cardSlide.animateTo(
+                                            targetValue = 0f,
+                                            animationSpec = spring(
+                                                dampingRatio = Spring.DampingRatioMediumBouncy,
+                                                stiffness = Spring.StiffnessLow
+                                            )
+                                        )
+                                    } finally {
+                                        isSwitchAnimating = false
+                                    }
+                                }
+                            } else {
+                                scope.launch {
+                                    cardSlide.snapTo(dragOffset)
+                                    dragOffset = 0f
+                                    cardSlide.animateTo(
+                                        targetValue = 0f,
+                                        animationSpec = spring(
+                                            dampingRatio = Spring.DampingRatioNoBouncy,
+                                            stiffness = Spring.StiffnessMedium
+                                        )
+                                    )
+                                }
+                            }
+                        }
+                    )
+                }
+        ) {
+            if (!showIdentity) {
+                Column(
+                    modifier = Modifier.fillMaxSize().padding(20.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
                     Text(
-                        gameState.optIdentity(currentSelectPlayer),
-                        textAlign = TextAlign.Center,
-                        color = MaterialTheme.colorScheme.onSecondaryContainer,
-                        fontSize = 28.sp,
-                        fontWeight = FontWeight.SemiBold,
-                        fontFamily = FontFamily.SansSerif,
-                        modifier = Modifier.fillMaxWidth(),
+                        text = "PLAYER $currentSelectPlayer",
+                        fontSize = 14.sp,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        letterSpacing = 1.sp
+                    )
+                    Spacer(modifier = Modifier.height(10.dp))
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(2.dp)
+                            .background(MaterialTheme.colorScheme.outline)
                     )
                     Spacer(modifier = Modifier.weight(1f))
-
+                    Text(
+                        text = currentSelectPlayer.toString(),
+                        fontSize = 130.sp,
+                        fontWeight = FontWeight.Black,
+                        color = MaterialTheme.colorScheme.primary.copy(alpha = 0.16f)
+                    )
+                    Spacer(modifier = Modifier.weight(1f))
+                    Text(
+                        text = "身份已隐藏",
+                        fontSize = 18.sp,
+                        color = MaterialTheme.colorScheme.onSurface,
+                        fontWeight = FontWeight.Medium
+                    )
+                }
+            } else {
+                Column(
+                    modifier = Modifier.fillMaxSize().padding(20.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    Text(
+                        text = "身份词",
+                        fontSize = 14.sp,
+                        color = MaterialTheme.colorScheme.primary,
+                        letterSpacing = 1.sp
+                    )
+                    Spacer(modifier = Modifier.height(10.dp))
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(2.dp)
+                            .background(MaterialTheme.colorScheme.primary)
+                    )
+                    Spacer(modifier = Modifier.weight(1f))
+                    Text(
+                        text = identityText,
+                        textAlign = TextAlign.Center,
+                        color = MaterialTheme.colorScheme.onSurface,
+                        fontSize = 46.sp,
+                        fontWeight = FontWeight.Bold,
+                        fontFamily = FontFamily.SansSerif,
+                        modifier = Modifier.fillMaxWidth(),
+                        lineHeight = 50.sp
+                    )
+                    Spacer(modifier = Modifier.weight(1f))
+                    if (gameState.isSpy(currentSelectPlayer) && identityText != "[空白]") {
+                        Text(
+                            text = "你是卧底阵营",
+                            color = MaterialTheme.colorScheme.error,
+                            fontSize = 16.sp,
+                            fontWeight = FontWeight.SemiBold
+                        )
+                    }
                 }
             }
 
-        },
-        isFlipped = !flipState.value,
-        onFlipComplete = {
-
+            if (hasSwitched) {
+                IconButton(
+                    onClick = onClose,
+                    modifier = Modifier
+                        .align(Alignment.TopEnd)
+                        .padding(8.dp)
+                        .size(32.dp)
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Close,
+                        contentDescription = "关闭",
+                        tint = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier.size(20.dp)
+                    )
+                }
+            }
+            Box(
+                modifier = Modifier
+                    .align(Alignment.BottomCenter)
+                    .fillMaxWidth()
+                    .height(6.dp)
+                    .background(MaterialTheme.colorScheme.outline)
+            ) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth(if (showIdentity) 1f else 0.38f)
+                        .height(6.dp)
+                        .background(MaterialTheme.colorScheme.primary)
+                )
+            }
+            Box(
+                modifier = Modifier
+                    .align(Alignment.CenterStart)
+                    .fillMaxHeight()
+                    .width(2.dp)
+                    .background(MaterialTheme.colorScheme.outline)
+            )
+            Box(
+                modifier = Modifier
+                    .align(Alignment.CenterEnd)
+                    .fillMaxHeight()
+                    .width(2.dp)
+                    .background(MaterialTheme.colorScheme.outline)
+            )
         }
-    )
+    }
 }
