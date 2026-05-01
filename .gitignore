@@ -105,3 +105,13 @@ temp/
 *.temp
 *.bak
 *.orig
+
+# WorkBuddy
+.workbuddy/
+
+# Keystore
+sword
+swordKey
+
+# Base64 temp files
+*.base64

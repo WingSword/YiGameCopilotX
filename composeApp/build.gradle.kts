@@ -1,6 +1,7 @@
 import org.jetbrains.kotlin.gradle.ExperimentalKotlinGradlePluginApi
 import org.jetbrains.kotlin.gradle.ExperimentalWasmDsl
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
+import java.util.Properties
 
 plugins {
     alias(libs.plugins.kotlinMultiplatform)
@@ -123,9 +124,40 @@ android {
         }
     }
 
-    buildTypes {
-        getByName("release") {
-            isMinifyEnabled = false
+    val keystorePropertiesFile = rootProject.file("local.properties")
+    if (keystorePropertiesFile.exists()) {
+        val props = Properties().apply { load(keystorePropertiesFile.inputStream()) }
+        val ksFile = props.getProperty("KEYSTORE_FILE")
+        val ksPwd = props.getProperty("KEYSTORE_PASSWORD")
+        val keyAlias = props.getProperty("KEY_ALIAS")
+        val keyPwd = props.getProperty("KEY_PASSWORD")
+        if (ksFile != null && ksPwd != null && keyAlias != null && keyPwd != null) {
+            signingConfigs {
+                create("release") {
+                    storeFile = rootProject.file(ksFile)
+                    storePassword = ksPwd
+                    this.keyAlias = keyAlias
+                    keyPassword = keyPwd
+                }
+            }
+            buildTypes {
+                getByName("release") {
+                    isMinifyEnabled = false
+                    signingConfig = signingConfigs.getByName("release")
+                }
+            }
+        } else {
+            buildTypes {
+                getByName("release") {
+                    isMinifyEnabled = false
+                }
+            }
+        }
+    } else {
+        buildTypes {
+            getByName("release") {
+                isMinifyEnabled = false
+            }
         }
     }
 
@@ -138,5 +170,3 @@ android {
         compose = true
     }
 }
-
-
