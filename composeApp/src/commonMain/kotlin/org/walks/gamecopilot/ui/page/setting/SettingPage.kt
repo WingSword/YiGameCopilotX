@@ -174,7 +174,7 @@ fun SettingPage(viewmodel: MainViewmodel) {
                     .padding(design.spacing.xl)
             ) {
                 Text(
-                    text = "YiGameCopilotX 是一款专为桌游爱好者设计的智能助手应用。" +
+                    text = "桌游助手是一款专为桌游爱好者设计的智能助手应用。" +
                             "集成多款热门派对桌游，提供便捷的工具和辅助功能，让游戏体验更加流畅。",
                     style = MaterialTheme.typography.bodyMedium,
                     lineHeight = 22.sp,
