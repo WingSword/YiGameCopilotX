@@ -1,16 +1,24 @@
 package org.walks.gamecopilot.lan.discovery
 
-import kotlinx.coroutines.*
-import kotlinx.coroutines.flow.*
-import kotlinx.serialization.encodeToString
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.MutableSharedFlow
+import kotlinx.coroutines.flow.asSharedFlow
+import kotlinx.coroutines.launch
 import kotlinx.serialization.json.Json
 import org.walks.gamecopilot.GameLogger
+import org.walks.gamecopilot.lan.data.LANConstants.DEFAULT_DISCOVERY_PORT
+import org.walks.gamecopilot.lan.data.LANConstants.DISCOVERY_BROADCAST_INTERVAL
 import org.walks.gamecopilot.lan.data.LANMessage
 import org.walks.gamecopilot.lan.data.LANMessageType
 import org.walks.gamecopilot.lan.data.LANRoomInfo
-import org.walks.gamecopilot.lan.data.LANConstants.DISCOVERY_BROADCAST_INTERVAL
-import org.walks.gamecopilot.lan.data.LANConstants.DEFAULT_DISCOVERY_PORT
-import java.net.*
+import java.net.DatagramPacket
+import java.net.DatagramSocket
+import java.net.InetAddress
+import java.net.SocketTimeoutException
 import java.nio.charset.StandardCharsets
 
 class AndroidServiceDiscovery(
@@ -35,11 +43,13 @@ class AndroidServiceDiscovery(
     
     private var currentRoomInfo: LANRoomInfo? = null
     private val discoveredRoomMap = mutableMapOf<String, LANRoomInfo>()
+    private var gameTypeFilter: String? = null
     
     override suspend fun startDiscovery(gameTypeFilter: String?) {
         if (_isDiscovering) return
         
         _isDiscovering = true
+        this.gameTypeFilter = gameTypeFilter
         discoveredRoomMap.clear()
         
         try {
@@ -202,7 +212,7 @@ class AndroidServiceDiscovery(
                 } else {
                     try {
                         val roomInfo = json.decodeFromString<LANRoomInfo>(message.payload)
-                        if (roomInfo.roomId != currentRoomInfo?.roomId) {
+                        if (roomInfo.roomId != currentRoomInfo?.roomId && matchesFilter(roomInfo)) {
                             val existingRoom = discoveredRoomMap[roomInfo.roomId]
                             if (existingRoom == null || existingRoom.createdAt < roomInfo.createdAt) {
                                 discoveredRoomMap[roomInfo.roomId] = roomInfo
@@ -218,7 +228,7 @@ class AndroidServiceDiscovery(
                 try {
                     val roomInfo = json.decodeFromString<LANRoomInfo>(message.payload)
                     val existingRoom = discoveredRoomMap[roomInfo.roomId]
-                    if (existingRoom == null || existingRoom.createdAt < roomInfo.createdAt) {
+                    if (matchesFilter(roomInfo) && (existingRoom == null || existingRoom.createdAt < roomInfo.createdAt)) {
                         discoveredRoomMap[roomInfo.roomId] = roomInfo
                         _discoveredRooms.emit(roomInfo)
                     }
@@ -252,6 +262,14 @@ class AndroidServiceDiscovery(
             }
         }
         return InetAddress.getByName("255.255.255.255")
+    }
+
+    private fun matchesFilter(roomInfo: LANRoomInfo): Boolean {
+        val filter = gameTypeFilter
+        return filter.isNullOrBlank() ||
+                filter == org.walks.gamecopilot.lan.data.GameType.ALL.name ||
+                filter == roomInfo.gameType.name ||
+                filter == roomInfo.gameType.displayName
     }
     
     @Suppress("DEPRECATION")

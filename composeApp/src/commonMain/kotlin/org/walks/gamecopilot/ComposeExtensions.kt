@@ -200,12 +200,34 @@ fun String?.orEmpty(): String = this ?: ""
 /**
  * 安全的字符串转换为整数
  */
-fun String.toIntOrNull(default: Int = 0): Int = this.toIntOrNull() ?: default
+fun String.toIntOrDefault(default: Int = 0): Int {
+    return try {
+        trim().toInt()
+    } catch (_: NumberFormatException) {
+        default
+    }
+}
 
 /**
  * 安全的字符串转换为浮点数
  */
-fun String.toFloatOrNull(default: Float = 0f): Float = this.toFloatOrNull() ?: default
+fun String.toFloatOrDefault(default: Float = 0f): Float {
+    return try {
+        trim().toFloat()
+    } catch (_: NumberFormatException) {
+        default
+    }
+}
+
+/**
+ * 兼容旧调用：返回非空默认值，建议新代码使用 toIntOrDefault。
+ */
+fun String.toIntOrNull(default: Int = 0): Int = toIntOrDefault(default)
+
+/**
+ * 兼容旧调用：返回非空默认值，建议新代码使用 toFloatOrDefault。
+ */
+fun String.toFloatOrNull(default: Float = 0f): Float = toFloatOrDefault(default)
 
 /**
  * 限制字符串长度

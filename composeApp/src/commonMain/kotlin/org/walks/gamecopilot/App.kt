@@ -24,8 +24,8 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Refresh
+import androidx.compose.material.icons.rounded.Groups
 import androidx.compose.material.icons.rounded.Home
-import androidx.compose.material.icons.rounded.NotificationsNone
 import androidx.compose.material.icons.rounded.PersonOutline
 import androidx.compose.material.icons.rounded.WorkOutline
 import androidx.compose.material.icons.sharp.Add
@@ -56,7 +56,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.rotate
-import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -128,11 +127,11 @@ fun BottomNavigationBar(navi: NavHostController, currentRoute: String) {
             icon = Icons.Rounded.WorkOutline
         ),
         HomeBottomNavItem(
-            id = "notice",
-            route = NaviRoute.STATS.route,
+            id = "multiplayer",
+            route = NaviRoute.MULTIPLAYER.route,
             label = null,
-            selectedLabel = "信息",
-            icon = Icons.Rounded.NotificationsNone
+            selectedLabel = "联机",
+            icon = Icons.Rounded.Groups
         ),
         HomeBottomNavItem(
             id = "profile",
@@ -145,17 +144,11 @@ fun BottomNavigationBar(navi: NavHostController, currentRoute: String) {
     val routeSelectedId = when {
         isStartRoute(currentRoute) || currentRoute == NaviRoute.HOME.route -> "home"
         currentRoute == NaviRoute.RANDOM.route -> "bag"
-        currentRoute == NaviRoute.STATS.route -> "notice"
+        currentRoute == NaviRoute.MULTIPLAYER.route -> "multiplayer"
         currentRoute == NaviRoute.SETTING.route -> "profile"
         else -> null
     }
-    var selectedItemId by remember { mutableStateOf(routeSelectedId ?: "home") }
-
-    LaunchedEffect(routeSelectedId) {
-        if (routeSelectedId != null) {
-            selectedItemId = routeSelectedId
-        }
-    }
+    val selectedItemId = routeSelectedId ?: "home"
 
     Box(
         modifier = Modifier
@@ -192,8 +185,17 @@ fun BottomNavigationBar(navi: NavHostController, currentRoute: String) {
                         item = item,
                         isSelected = selectedItemId == item.id,
                         onClick = {
-                            selectedItemId = item.id
-                            item.route?.let { navi.navigate(it) }
+                            item.route?.let { route ->
+                                if (route != currentRoute) {
+                                    navi.navigate(route) {
+                                        launchSingleTop = true
+                                        restoreState = true
+                                        popUpTo(NaviRoute.HOME.route) {
+                                            saveState = true
+                                        }
+                                    }
+                                }
+                            }
                         }
                     )
                 }
@@ -226,7 +228,7 @@ private fun BottomNavItem(
         ) {
             Icon(
                 imageVector = item.icon,
-                contentDescription = item.id,
+                contentDescription = item.selectedLabel ?: item.id,
                 modifier = Modifier.size(20.dp),
                 tint = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
             )
@@ -253,49 +255,25 @@ private fun BottomNavItem(
 
 @Composable
 fun AppView(viewmodel: MainViewmodel) {
-    val snackState = remember { mutableStateOf(SnackbarHostState()) }
+    val snackState = remember { SnackbarHostState() }
     val navi = rememberNavController()
     var currentRoute by remember { mutableStateOf("") }
-
-    var floatButtonShow by remember { mutableStateOf(true) }
+    val floatButtonShow = currentRoute == NaviRoute.RANDOM.route
     LaunchedEffect(navi) {
         navi.currentBackStackEntryFlow.collect { entry ->
             currentRoute = entry.destination.route ?: ""
-
-            currentRoute = entry.destination.route ?: ""
-            // 复合条件判断（示例：当在RANDOM路由且mode=edit时显示）
-            floatButtonShow = when (currentRoute) {
-                NaviRoute.RANDOM.route -> true
-                // 添加其他路由条件...
-                else -> false
-            }
         }
     }
 
     // 移除抽屉导航，改为悬浮导航栏
     Scaffold(
         topBar = {
-            // 一级页面（首页、随机工具、设置）不显示TopBar，由页面自身决定
-            // 二级页面（游戏页面）自行设置导航栏
-            if (!isStartRoute(currentRoute) &&
-                currentRoute != NaviRoute.HOME.route &&
-                currentRoute != NaviRoute.RANDOM.route &&
-                currentRoute != NaviRoute.STATS.route &&
-                currentRoute != NaviRoute.SETTING.route &&
-                currentRoute != NaviRoute.AWALONG.route &&
-                currentRoute != NaviRoute.AWALONG_GAME.route &&
-                currentRoute != NaviRoute.LOCAL_SPY.route &&
-                currentRoute != NaviRoute.DRAW_GUESS.route &&
-                currentRoute != NaviRoute.DRAW_BOARD.route &&
-                currentRoute != NaviRoute.HUNT_TOWN.route &&
-                currentRoute != NaviRoute.ONE_NIGHT_WEREWOLF.route &&
-                currentRoute != NaviRoute.ONE_NIGHT_WEREWOLF_GAME.route
-            ) {
+            if (shouldShowAppTopBar(currentRoute)) {
                 AppTopBar(navi, viewmodel)
             }
         },
         snackbarHost = {
-            SnackbarHost(hostState = snackState.value)
+            SnackbarHost(hostState = snackState)
         },
         floatingActionButton = {
             var isOpen by remember { mutableStateOf(false) }
@@ -341,16 +319,8 @@ fun AppView(viewmodel: MainViewmodel) {
                 }
             }
         },
-        bottomBar = {
-
-        },
-
         ) { inp ->
-        val showBottomNavigation = isStartRoute(currentRoute) ||
-                currentRoute == NaviRoute.HOME.route ||
-                currentRoute == NaviRoute.RANDOM.route ||
-                currentRoute == NaviRoute.STATS.route ||
-                currentRoute == NaviRoute.SETTING.route
+        val showBottomNavigation = shouldShowBottomNavigation(currentRoute)
         Box(
             modifier = Modifier
                 .padding(inp)
@@ -381,7 +351,7 @@ fun AppView(viewmodel: MainViewmodel) {
     LaunchedEffect(key1 = Unit) {
         viewmodel.topTipState.collect {
             if (it != null) {
-                snackState.value.showSnackbar(it)
+                snackState.showSnackbar(it)
             }
         }
     }
@@ -392,21 +362,36 @@ private fun isStartRoute(route: String?): Boolean {
     return route == "start" || route == null
 }
 
+private fun shouldShowBottomNavigation(route: String?): Boolean {
+    return isStartRoute(route) ||
+            route == NaviRoute.HOME.route ||
+            route == NaviRoute.RANDOM.route ||
+            route == NaviRoute.MULTIPLAYER.route ||
+            route == NaviRoute.STATS.route ||
+            route == NaviRoute.SETTING.route
+}
+
+private fun shouldShowAppTopBar(route: String?): Boolean {
+    return route == NaviRoute.ROOM.route ||
+            route == NaviRoute.LAN_DISCOVERY.route ||
+            route == NaviRoute.LAN_CREATE_ROOM.route ||
+            route == NaviRoute.LAN_LOBBY.route
+}
+
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AppTopBar(navi: NavHostController, viewmodel: MainViewmodel) {
+    val design = LocalAppDesign.current
     // 协程作用域：用于处理动画等异步操作
     val scope = rememberCoroutineScope()
     // 旋转动画：刷新按钮的旋转动画控制
     val rotation = remember { Animatable(0f) }
 
-    var roomTitle by remember { mutableStateOf("") }
     var current by remember { mutableStateOf("") }
-    LaunchedEffect(Unit) {
+    LaunchedEffect(navi) {
         navi.currentBackStackEntryFlow.collectLatest {
             current = navi.currentDestination?.route ?: ""
-            roomTitle = viewmodel.roomEntityState.value.roomId
         }
 
     }
@@ -442,16 +427,22 @@ fun AppTopBar(navi: NavHostController, viewmodel: MainViewmodel) {
                 Box(
                     modifier = Modifier
                         .size(36.dp)
-                        .clip(RectangleShape)
-                        .background(MaterialTheme.colorScheme.surface, RectangleShape)
-                        .border(1.dp, MaterialTheme.colorScheme.outline, RectangleShape)
+                        .clip(RoundedCornerShape(design.cornerRadius.md))
+                        .background(
+                            MaterialTheme.colorScheme.surface,
+                            RoundedCornerShape(design.cornerRadius.md)
+                        )
+                        .border(
+                            1.dp,
+                            MaterialTheme.colorScheme.outline,
+                            RoundedCornerShape(design.cornerRadius.md)
+                        )
                         .clickable {
                         if (navi.previousBackStackEntry?.destination?.route == "start") {
                             try {
                                 navi.popBackStack()
                             } catch (e: Exception) {
-                                // 处理 popBackStack 异常，例如记录日志或提示用户
-                                println("Error popping back stack: ${e.message}")
+                                GameLogger.warn("返回上一页失败: ${e.message}")
                             }
                             if (current == "start") {
                                 viewmodel.handleRoomIntent(GameRoomIntent.LeaveGameRoom)
@@ -519,7 +510,7 @@ fun AppTopBar(navi: NavHostController, viewmodel: MainViewmodel) {
         modifier = Modifier
             .padding(top = 10.dp, start = 12.dp, end = 12.dp)
             .clip(RoundedCornerShape(12.dp)),
-        colors = TopAppBarDefaults.centerAlignedTopAppBarColors(
+        colors = TopAppBarDefaults.topAppBarColors(
             containerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.96f),
             titleContentColor = MaterialTheme.colorScheme.onSurface,
             navigationIconContentColor = MaterialTheme.colorScheme.onSurface,

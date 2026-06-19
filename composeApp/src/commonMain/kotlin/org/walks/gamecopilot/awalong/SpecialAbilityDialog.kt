@@ -4,16 +4,14 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxHeight
-import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -21,9 +19,7 @@ import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -36,9 +32,8 @@ import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.compose.ui.window.Dialog
-import androidx.compose.ui.window.DialogProperties
 import org.walks.gamecopilot.MainViewmodel
+import org.walks.gamecopilot.ui.components.AppDialog
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -52,105 +47,65 @@ fun SpecialAbilityDialog(
     val gameState = viewmodel.awalongGameState.value
     val roleList = gameState.roleList
     val nicknameList = gameState.nickNameList
-    
-    Dialog(
-        onDismissRequest = onDismiss,
-        properties = DialogProperties(
-            usePlatformDefaultWidth = false,
-            dismissOnBackPress = false,
-            dismissOnClickOutside = false
-        )
+    val title = when (abilityType) {
+        SpecialAbilityType.LADY_OF_LAKE -> "湖中仙女技能"
+        SpecialAbilityType.ASSASSINATE -> "刺客刺杀"
+        SpecialAbilityType.MORGUSE -> "莫高斯技能"
+    }
+    val canDismiss = abilityType != SpecialAbilityType.ASSASSINATE
+
+    AppDialog(
+        title = title,
+        subtitle = "请选择目标后确认执行",
+        onDismiss = onDismiss,
+        widthFraction = 0.95f,
+        maxHeight = 720.dp,
+        dismissOnBackPress = canDismiss,
+        dismissOnClickOutside = canDismiss,
+        showCloseButton = canDismiss
     ) {
-        Surface(
-            modifier = Modifier
-                .fillMaxWidth(0.95f)
-                .fillMaxHeight(0.9f)
-                .padding(16.dp),
-            shape = RectangleShape,
-            color = MaterialTheme.colorScheme.surface,
-            shadowElevation = 8.dp
-        ) {
-            Column(
-                modifier = Modifier.padding(20.dp)
-            ) {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Text(
-                        text = when (abilityType) {
-                            SpecialAbilityType.LADY_OF_LAKE -> "湖中仙女技能"
-                            SpecialAbilityType.ASSASSINATE -> "刺客刺杀"
-                            SpecialAbilityType.MORGUSE -> "莫高斯技能"
-                        },
-                        fontSize = 20.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = MaterialTheme.colorScheme.onSurface
-                    )
-                    
-                    if (abilityType != SpecialAbilityType.ASSASSINATE) {
-                        IconButton(
-                            onClick = onDismiss,
-                            modifier = Modifier.size(32.dp)
-                        ) {
-                            Icon(
-                                imageVector = Icons.Default.Close,
-                                contentDescription = "关闭",
-                                tint = MaterialTheme.colorScheme.onSurface
-                            )
-                        }
-                    }
-                }
-                
-                Spacer(modifier = Modifier.height(16.dp))
-                
-                AbilityDescription(abilityType = abilityType)
-                
-                Spacer(modifier = Modifier.height(20.dp))
-                
-                when (abilityType) {
-                    SpecialAbilityType.LADY_OF_LAKE -> {
-                        LadyOfLakeContent(
-                            gameState = gameState,
-                            roleList = roleList,
-                            nicknameList = nicknameList,
-                            taskIndex = taskIndex ?: 0,
-                            onPlayerSelected = { targetIndex ->
-                                viewmodel.handleAwalongGameIntent(
-                                    AwalongIntent.LadyOfLakeCheck(targetIndex, taskIndex ?: 0)
-                                )
-                                onDismiss()
-                            }
+        AbilityDescription(abilityType = abilityType)
+
+        when (abilityType) {
+            SpecialAbilityType.LADY_OF_LAKE -> {
+                LadyOfLakeContent(
+                    gameState = gameState,
+                    roleList = roleList,
+                    nicknameList = nicknameList,
+                    taskIndex = taskIndex ?: 0,
+                    onPlayerSelected = { targetIndex ->
+                        viewmodel.handleAwalongGameIntent(
+                            AwalongIntent.LadyOfLakeCheck(targetIndex, taskIndex ?: 0)
                         )
+                        onDismiss()
                     }
-                    
-                    SpecialAbilityType.ASSASSINATE -> {
-                        AssassinContent(
-                            roleList = roleList,
-                            nicknameList = nicknameList,
-                            currentPlayerIndex = currentPlayerIndex,
-                            onTargetSelected = { targetIndex ->
-                                viewmodel.handleAwalongGameIntent(
-                                    AwalongIntent.Assassinate(targetIndex)
-                                )
-                                onDismiss()
-                            }
+                )
+            }
+
+            SpecialAbilityType.ASSASSINATE -> {
+                AssassinContent(
+                    roleList = roleList,
+                    nicknameList = nicknameList,
+                    currentPlayerIndex = currentPlayerIndex,
+                    onTargetSelected = { targetIndex ->
+                        viewmodel.handleAwalongGameIntent(
+                            AwalongIntent.Assassinate(targetIndex)
                         )
+                        onDismiss()
                     }
-                    
-                    SpecialAbilityType.MORGUSE -> {
-                        MorguseContent(
-                            currentPlayerIndex = currentPlayerIndex,
-                            onAbilityUsed = { taskIdx ->
-                                viewmodel.handleAwalongGameIntent(
-                                    AwalongIntent.MorguseConvertSuccessToFailure(taskIdx)
-                                )
-                                onDismiss()
-                            }
+                )
+            }
+
+            SpecialAbilityType.MORGUSE -> {
+                MorguseContent(
+                    currentPlayerIndex = currentPlayerIndex,
+                    onAbilityUsed = { taskIdx ->
+                        viewmodel.handleAwalongGameIntent(
+                            AwalongIntent.MorguseConvertSuccessToFailure(taskIdx)
                         )
+                        onDismiss()
                     }
-                }
+                )
             }
         }
     }
@@ -226,7 +181,9 @@ private fun LadyOfLakeContent(
     
     LazyColumn(
         verticalArrangement = Arrangement.spacedBy(8.dp),
-        modifier = Modifier.fillMaxSize()
+        modifier = Modifier
+            .fillMaxWidth()
+            .heightIn(max = 280.dp)
     ) {
         items(checkableIndices) { playerIndex ->
             PlayerSelectionCard(
@@ -280,13 +237,15 @@ private fun AssassinContent(
     
     LazyColumn(
         verticalArrangement = Arrangement.spacedBy(8.dp),
-        modifier = Modifier.fillMaxSize()
+        modifier = Modifier
+            .fillMaxWidth()
+            .heightIn(max = 280.dp)
     ) {
         items(roleList.indices.toList()) { playerIndex ->
             if (roleList[playerIndex].roleType == GOOD_PERSON) {
                 PlayerSelectionCard(
                     playerIndex = playerIndex,
-                    nickname = nicknameList[playerIndex],
+                    nickname = nicknameList.getOrElse(playerIndex) { "玩家${playerIndex + 1}" },
                     role = roleList[playerIndex],
                     isSelected = selectedTarget == playerIndex,
                     onClick = { selectedTarget = playerIndex }
@@ -334,7 +293,9 @@ private fun MorguseContent(
     
     LazyColumn(
         verticalArrangement = Arrangement.spacedBy(8.dp),
-        modifier = Modifier.fillMaxSize()
+        modifier = Modifier
+            .fillMaxWidth()
+            .heightIn(max = 240.dp)
     ) {
         items(5) { taskIdx ->
             TaskSelectionCard(

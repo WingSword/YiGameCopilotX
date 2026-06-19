@@ -1,0 +1,144 @@
+classDiagram
+    direction LR
+
+    class AiService {
+        <<interface>>
+        +chat(request: AiRequest) Flow~AiResponse~
+        +isAvailable() Boolean
+        +getProviderName() String
+    }
+
+    class AiRequest {
+        +prompt: String
+        +systemPrompt: String
+        +maxTokens: Int
+        +temperature: Float
+    }
+
+    class AiResponse {
+        +content: String
+        +isSuccess: Boolean
+        +errorMessage: String?
+        +provider: AiProvider
+    }
+
+    class AiProvider {
+        <<enumeration>>
+        DEEP_SEEK
+        FALLBACK
+    }
+
+    class AiConfig {
+        +provider: AiProvider
+        +apiKey: String
+        +baseUrl: String
+        +isEnabled: Boolean
+        +aiStyle: AiStyle
+    }
+
+    class AiStyle {
+        <<enumeration>>
+        HUMOROUS
+        SERIOUS
+        SARCASTIC
+    }
+
+    class DeepSeekProvider {
+        -config: AiConfig
+        -httpClient: HttpClient
+        +chat(request) Flow~AiResponse~
+        +isAvailable() Boolean
+    }
+
+    class FallbackAiService {
+        -presetAnswers: Map~String, List~String~~
+        +chat(request) Flow~AiResponse~
+        +isAvailable() Boolean
+    }
+
+    class AiServiceFactory {
+        +create(config: AiConfig) AiService$
+    }
+
+    class GamePromptTemplates {
+        +getSpyHostPrompt() String$
+        +getAwalongAdvisorPrompt() String$
+        +getDrawGuessCommentatorPrompt() String$
+        +getWerewolfNarratorPrompt() String$
+    }
+
+    AiService <|.. DeepSeekProvider : implements
+    AiService <|.. FallbackAiService : implements
+    AiServiceFactory --> AiService : creates
+    AiServiceFactory --> AiConfig : uses
+    DeepSeekProvider --> AiConfig
+    DeepSeekProvider --> AiRequest
+    DeepSeekProvider --> AiResponse
+    FallbackAiService --> AiRequest
+    FallbackAiService --> AiResponse
+    AiConfig --> AiProvider
+    AiConfig --> AiStyle
+    GamePromptTemplates --> AiRequest : builds prompt
+
+    class AnswerBookData {
+        +answers: List~AnswerBookEntry~
+        +getRandomAnswer() AnswerBookEntry$
+        +getRandomAnswerExcluding(lastIndex: Int) AnswerBookEntry$
+    }
+
+    class AnswerBookEntry {
+        +text: String
+        +category: AnswerCategory
+    }
+
+    class AnswerCategory {
+        <<enumeration>>
+        POSITIVE
+        NEUTRAL
+        NEGATIVE
+    }
+
+    class AnswerBookState {
+        +currentQuestion: String
+        +currentAnswer: AnswerBookEntry?
+        +isFlipping: Boolean
+        +lastAnswerIndex: Int
+    }
+
+    AnswerBookData --> AnswerBookEntry
+    AnswerBookEntry --> AnswerCategory
+    AnswerBookState --> AnswerBookEntry
+
+    class AppCornerRadius {
+        +none: Dp = 0.dp
+        +xs: Dp = 4.dp
+        +sm: Dp = 6.dp
+        +md: Dp = 8.dp
+        +lg: Dp = 12.dp
+        +xl: Dp = 16.dp
+        +xxl: Dp = 20.dp
+        +xxxl: Dp = 28.dp
+        +full: Dp = 9999.dp
+        +button: Dp = 12.dp
+        +card: Dp = 16.dp
+        +dialog: Dp = 20.dp
+        +input: Dp = 10.dp
+        +badge: Dp = 8.dp
+        +iconButton: Dp = 9999.dp
+        +chip: Dp = 8.dp
+    }
+
+    class GameCardTheme {
+        +gradient: Brush
+        +iconMask: Float
+    }
+
+    class GameMode {
+        <<enumeration>>
+        SPY_MAIN
+        SPY_AWALONG
+        DRAW_GUESS
+        HUNT_TOWN
+        ONE_NIGHT_WEREWOLF
+        +getTheme() GameCardTheme
+    }

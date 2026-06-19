@@ -2,14 +2,47 @@ package org.walks.gamecopilot.ui.page.lan
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.*
-import androidx.compose.material3.*
-import androidx.compose.runtime.*
+import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.ChevronRight
+import androidx.compose.material.icons.filled.FilterList
+import androidx.compose.material.icons.filled.Lock
+import androidx.compose.material.icons.filled.Refresh
+import androidx.compose.material.icons.filled.Stop
+import androidx.compose.material.icons.filled.WifiOff
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.LinearProgressIndicator
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.RadioButton
+import androidx.compose.material3.Text
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -17,24 +50,25 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.lifecycle.viewmodel.compose.viewModel
 import org.walks.gamecopilot.MainViewmodel
 import org.walks.gamecopilot.intent.LANIntent
 import org.walks.gamecopilot.lan.data.ConnectionStatus
 import org.walks.gamecopilot.lan.data.GameType
 import org.walks.gamecopilot.lan.data.LANRoomInfo
-import org.walks.gamecopilot.lan.lanRoomManager
+import org.walks.gamecopilot.ui.components.AppDialog
+import org.walks.gamecopilot.ui.components.AppEmptyState
+import org.walks.gamecopilot.ui.components.AppScreen
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun LANRoomDiscoveryPage(
     onRoomSelected: (LANRoomInfo) -> Unit,
     onCreateRoom: () -> Unit,
-    viewModel: MainViewmodel = viewModel()
+    viewModel: MainViewmodel
 ) {
     val lanState by viewModel.lanState.collectAsState()
-    val discoveredRooms by lanRoomManager.discoveredRooms.collectAsState()
-    val connectionState by lanRoomManager.connectionState.collectAsState()
+    val discoveredRooms = lanState.discoveredRooms
+    val connectionState = lanState.connectionState
 
     var selectedGameType by remember(lanState.preferredGameType) {
         mutableStateOf(lanState.preferredGameType)
@@ -46,43 +80,35 @@ fun LANRoomDiscoveryPage(
     LaunchedEffect(Unit) {
         viewModel.handleLANIntent(LANIntent.StartDiscovery(selectedGameType))
     }
-    
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(16.dp)
-    ) {
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Text(
-                text = "局域网房间",
-                fontSize = 24.sp,
-                fontWeight = FontWeight.Bold
-            )
-            
-            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                IconButton(onClick = { showGameTypeFilter = true }) {
-                    Icon(Icons.Default.FilterList, contentDescription = "筛选")
+
+    DisposableEffect(Unit) {
+        onDispose {
+            viewModel.handleLANIntent(LANIntent.StopDiscovery)
+        }
+    }
+
+    AppScreen(
+        title = "局域网房间",
+        subtitle = "搜索同一 WiFi 下正在等待加入的桌游房间。",
+        actions = {
+            IconButton(onClick = { showGameTypeFilter = true }) {
+                Icon(Icons.Default.FilterList, contentDescription = "筛选")
+            }
+
+            IconButton(onClick = {
+                if (isDiscovering) {
+                    viewModel.handleLANIntent(LANIntent.StopDiscovery)
+                } else {
+                    viewModel.handleLANIntent(LANIntent.StartDiscovery(selectedGameType))
                 }
-                
-                IconButton(onClick = {
-                    if (isDiscovering) {
-                        viewModel.handleLANIntent(LANIntent.StopDiscovery)
-                    } else {
-                        viewModel.handleLANIntent(LANIntent.StartDiscovery(selectedGameType))
-                    }
-                }) {
-                    Icon(
-                        if (isDiscovering) Icons.Default.Stop else Icons.Default.Refresh,
-                        contentDescription = if (isDiscovering) "停止" else "刷新"
-                    )
-                }
+            }) {
+                Icon(
+                    if (isDiscovering) Icons.Default.Stop else Icons.Default.Refresh,
+                    contentDescription = if (isDiscovering) "停止" else "刷新"
+                )
             }
         }
-        
+    ) {
         if (isDiscovering) {
             LinearProgressIndicator(
                 modifier = Modifier
@@ -92,50 +118,27 @@ fun LANRoomDiscoveryPage(
         }
         
         ConnectionStatusIndicator(connectionState.status)
-        
-        Spacer(modifier = Modifier.height(16.dp))
-        
-        LazyColumn(
-            modifier = Modifier.weight(1f),
-            verticalArrangement = Arrangement.spacedBy(12.dp)
-        ) {
-            items(discoveredRooms, key = { it.roomId }) { room ->
-                RoomCard(
-                    room = room,
-                    onClick = { onRoomSelected(room) }
-                )
-            }
-        }
-        
+
         if (discoveredRooms.isEmpty() && !isDiscovering) {
-            Box(
-                modifier = Modifier
-                    .weight(1f)
-                    .fillMaxWidth(),
-                contentAlignment = Alignment.Center
+            AppEmptyState(
+                title = "未发现房间",
+                description = "请确认设备在同一局域网内，且房主 App 保持在前台。",
+                icon = Icons.Default.WifiOff,
+                modifier = Modifier.weight(1f)
+            )
+        } else {
+            LazyColumn(
+                modifier = Modifier.weight(1f),
+                verticalArrangement = Arrangement.spacedBy(12.dp)
             ) {
-                Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                    Icon(
-                        Icons.Default.WifiOff,
-                        contentDescription = null,
-                        modifier = Modifier.size(64.dp),
-                        tint = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                    Spacer(modifier = Modifier.height(16.dp))
-                    Text(
-                        text = "未发现房间",
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                    Text(
-                        text = "请确保设备在同一局域网内",
-                        fontSize = 12.sp,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                items(discoveredRooms, key = { it.roomId }) { room ->
+                    RoomCard(
+                        room = room,
+                        onClick = { onRoomSelected(room) }
                     )
                 }
             }
         }
-        
-        Spacer(modifier = Modifier.height(16.dp))
         
         Button(
             onClick = onCreateRoom,
@@ -286,11 +289,27 @@ private fun GameTypeFilterDialog(
     onConfirm: (GameType) -> Unit
 ) {
     var selectedType by remember { mutableStateOf(currentType) }
-    
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        title = { Text("筛选游戏类型") },
-        text = {
+
+    AppDialog(
+        title = "筛选游戏类型",
+        subtitle = "只显示你想加入的游戏房间。",
+        onDismiss = onDismiss,
+        actions = {
+            OutlinedButton(
+                onClick = onDismiss,
+                modifier = Modifier.weight(1f)
+            ) {
+                Text("取消")
+            }
+            Spacer(modifier = Modifier.width(10.dp))
+            Button(
+                onClick = { onConfirm(selectedType) },
+                modifier = Modifier.weight(1f)
+            ) {
+                Text("确定")
+            }
+        }
+    ) {
             Column {
                 GameType.values().forEach { type ->
                     Row(
@@ -309,16 +328,5 @@ private fun GameTypeFilterDialog(
                     }
                 }
             }
-        },
-        confirmButton = {
-            TextButton(onClick = { onConfirm(selectedType) }) {
-                Text("确定")
-            }
-        },
-        dismissButton = {
-            TextButton(onClick = onDismiss) {
-                Text("取消")
-            }
-        }
-    )
+    }
 }

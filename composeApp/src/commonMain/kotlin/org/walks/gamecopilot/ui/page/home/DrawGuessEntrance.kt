@@ -11,7 +11,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.icons.rounded.ArrowForward
+import androidx.compose.material.icons.automirrored.rounded.ArrowForward
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
@@ -31,6 +31,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavHostController
 import org.walks.gamecopilot.PlatformHelper
+import org.walks.gamecopilot.currentTimeMillis
 import org.walks.gamecopilot.data.WordImportEngine
 import org.walks.gamecopilot.navigation.NaviRoute
 import org.walks.gamecopilot.registerCustomDrawWords
@@ -125,7 +126,7 @@ fun DrawGuessEntrance(navController: NavHostController) {
                     )
                 }
                 Icon(
-                    imageVector = androidx.compose.material.icons.Icons.Rounded.ArrowForward,
+                    imageVector = androidx.compose.material.icons.Icons.AutoMirrored.Rounded.ArrowForward,
                     contentDescription = null,
                     tint = MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier.size(20.dp)
@@ -143,7 +144,7 @@ fun DrawGuessEntrance(navController: NavHostController) {
             onImportSuccess = { text ->
                 val result = WordImportEngine.parseDrawWords(text)
                 if (result is WordImportEngine.ImportResult.DrawWords) {
-                    val groupId = "custom_draw_${System.currentTimeMillis()}"
+                    val groupId = "custom_draw_${currentTimeMillis()}"
                     registerCustomDrawWords(groupId, result.words)
                 }
             }

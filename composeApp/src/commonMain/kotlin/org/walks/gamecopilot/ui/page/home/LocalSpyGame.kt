@@ -22,7 +22,6 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.combinedClickable
-import androidx.compose.foundation.gestures.detectHorizontalDragGestures
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.PressInteraction
 import androidx.compose.foundation.layout.Arrangement
@@ -30,21 +29,17 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -52,7 +47,6 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
@@ -64,13 +58,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.graphicsLayer
-import androidx.compose.ui.input.pointer.pointerInput
-import androidx.compose.ui.text.font.FontFamily
-import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import kotlinx.coroutines.launch
@@ -79,8 +67,8 @@ import org.walks.gamecopilot.PlatformHelper
 import org.walks.gamecopilot.data.entity.LocalSpyEntity
 import org.walks.gamecopilot.intent.GameIntent
 import org.walks.gamecopilot.ui.badge.WeBadge
+import org.walks.gamecopilot.ui.components.common.LocalSpySwipeableIdentityCard
 import org.walks.gamecopilot.ui.picker.WeSingleColumnPicker
-import kotlin.math.abs
 
 /**
  *  Created by Wing at 20:53 on 2025/3/25
@@ -108,7 +96,7 @@ fun LocalSpyGame(viewmodel: MainViewmodel) {
     val currentGame = gameEntity.currentGame
 
     // 当前玩家总数，默认取当前游戏配置或4人
-    val playerNum = currentGame?.totalPlayerNumber ?: 4
+    val playerNum = currentGame.totalPlayerNumber
     // 状态控制：控制人数选择器弹窗的显示状态
     var showNumberPicker by remember { mutableStateOf(false) }
     // 可选的游玩人数范围（4-12人）
@@ -144,8 +132,8 @@ fun LocalSpyGame(viewmodel: MainViewmodel) {
             val maxSpyList = (1..playerNum / 3).map { "$it" }
 
             // 从游戏状态获取当前配置值
-            val spyNumber = currentGame?.spyNum ?: 1
-            val blackNum = currentGame?.blackNum ?: 0
+            val spyNumber = currentGame.spyNum
+            val blackNum = currentGame.blackNum
 
             Spacer(Modifier.weight(1f))
 
@@ -164,8 +152,7 @@ fun LocalSpyGame(viewmodel: MainViewmodel) {
             WeSingleColumnPicker(
                 visible = showSpyNumberPicker != 0,
                 title = if (showSpyNumberPicker == 1) "选择卧底人数" else "选择空白卡片数量",
-                range = if (showSpyNumberPicker == 1) maxSpyList else (0..(currentGame?.spyNum
-                    ?: 1)).map { "$it" },
+                range = if (showSpyNumberPicker == 1) maxSpyList else (0..currentGame.spyNum).map { "$it" },
                 onCancel = { showSpyNumberPicker = 0 },
                 onChange = {
                     gameTimeState++
@@ -191,8 +178,7 @@ fun LocalSpyGame(viewmodel: MainViewmodel) {
                         }
                     }
                 },
-                value = if (showSpyNumberPicker == 1) currentGame?.spyNum
-                    ?: 1 else currentGame?.blackNum ?: 0
+                value = if (showSpyNumberPicker == 1) currentGame.spyNum else currentGame.blackNum
             )
 
             // 主人数选择器组件
@@ -211,19 +197,17 @@ fun LocalSpyGame(viewmodel: MainViewmodel) {
         }
 
         // 游戏数据显示区
-        if (currentGame != null) {
-            Spacer(Modifier.height(8.dp))
+        Spacer(Modifier.height(8.dp))
 
-            // 游戏结果显示组件，key控制强制刷新
-            GameGreetingView(
-                key = gameTimeState,
-                gameState = currentGame,
-                onStart = {
-                    viewmodel.handleGameIntent(GameIntent.StartGame)
-                    gameTimeState++
-                }
-            )
-        }
+        // 游戏结果显示组件，key控制强制刷新
+        GameGreetingView(
+            key = gameTimeState,
+            gameState = currentGame,
+            onStart = {
+                viewmodel.handleGameIntent(GameIntent.StartGame)
+                gameTimeState++
+            }
+        )
     }
 }
 
@@ -262,7 +246,7 @@ fun GameGreetingView(key: Int, gameState: LocalSpyEntity, onStart: () -> Unit) {
     /* 当key变化时重置游戏状态 */
     LaunchedEffect(key1 = realGameState.gameWord) {
         identityDisPlayState.value = IDENTITY_DISMISS
-        watchedTimeList.map {
+        watchedTimeList.indices.forEach {
             watchedTimeList[it] = 0
         }
         playerIdentityState.clear()
@@ -403,17 +387,6 @@ fun GameGreetingView(key: Int, gameState: LocalSpyEntity, onStart: () -> Unit) {
                         currentSelectPlayer = currentSelectPlayer,
                         onClose = { dialogVisible = false }
                     )
-                    Text(
-                        text = "左右滑动切换查看身份",
-                        color = MaterialTheme.colorScheme.primary,
-                        fontSize = 24.sp,
-                        fontWeight = FontWeight.Bold,
-                        textAlign = TextAlign.Center,
-                        modifier = Modifier
-                            .align(Alignment.BottomCenter)
-                            .fillMaxWidth()
-                            .padding(vertical = 24.dp)
-                    )
                 }
             }
         }
@@ -515,248 +488,17 @@ fun LocalSpyIdentityCard(
     modifier: Modifier = Modifier,
     onClose: () -> Unit = {}
 ) {
-    val scope = rememberCoroutineScope()
-    var showIdentity by remember(currentSelectPlayer) { mutableStateOf(false) }
-    var hasSwitched by remember(currentSelectPlayer) { mutableStateOf(false) }
-    var dragOffset by remember(currentSelectPlayer) { mutableFloatStateOf(0f) }
-    var isSwitchAnimating by remember(currentSelectPlayer) { mutableStateOf(false) }
-    val cardSlide = remember(currentSelectPlayer) { Animatable(0f) }
-    val enterScale = remember(currentSelectPlayer) { Animatable(0.84f) }
-    val enterOffsetY = remember(currentSelectPlayer) { Animatable(90f) }
-    val enterRotationX = remember(currentSelectPlayer) { Animatable(-12f) }
     val identityText = gameState.optIdentity(currentSelectPlayer)
-
-    LaunchedEffect(currentSelectPlayer) {
-        isSwitchAnimating = false
-        dragOffset = 0f
-        cardSlide.snapTo(0f)
-        enterScale.snapTo(0.84f)
-        enterOffsetY.snapTo(90f)
-        enterRotationX.snapTo(-12f)
-        launch {
-            enterScale.animateTo(
-                targetValue = 1f,
-                animationSpec = spring(
-                    dampingRatio = Spring.DampingRatioLowBouncy,
-                    stiffness = Spring.StiffnessLow
-                )
-            )
-        }
-        launch {
-            enterOffsetY.animateTo(
-                targetValue = 0f,
-                animationSpec = spring(
-                    dampingRatio = Spring.DampingRatioNoBouncy,
-                    stiffness = Spring.StiffnessMedium
-                )
-            )
-        }
-        launch {
-            enterRotationX.animateTo(
-                targetValue = 0f,
-                animationSpec = tween(280, easing = FastOutSlowInEasing)
-            )
-        }
-    }
-
-    Column(horizontalAlignment = Alignment.CenterHorizontally) {
-        Box(
-            modifier = Modifier
-                .then(modifier)
-                .height(340.dp)
-                .width(250.dp)
-                .graphicsLayer {
-                    translationX = cardSlide.value + dragOffset
-                    translationY = enterOffsetY.value
-                    scaleX = enterScale.value
-                    scaleY = enterScale.value
-                    rotationX = enterRotationX.value
-                    cameraDistance = 18f * density
-                }
-                .background(MaterialTheme.colorScheme.surface)
-                .border(BorderStroke(2.dp, MaterialTheme.colorScheme.outline))
-                .pointerInput(currentSelectPlayer) {
-                    detectHorizontalDragGestures(
-                        onDragStart = { dragOffset = 0f },
-                        onHorizontalDrag = { _, dragAmount ->
-                            if (!isSwitchAnimating) {
-                                dragOffset = (dragOffset + dragAmount).coerceIn(-200f, 200f)
-                            }
-                        },
-                        onDragCancel = {
-                            scope.launch {
-                                cardSlide.snapTo(dragOffset)
-                                dragOffset = 0f
-                                cardSlide.animateTo(
-                                    targetValue = 0f,
-                                    animationSpec = spring(
-                                        dampingRatio = Spring.DampingRatioNoBouncy,
-                                        stiffness = Spring.StiffnessMedium
-                                    )
-                                )
-                            }
-                        },
-                        onDragEnd = {
-                            if (!isSwitchAnimating && abs(dragOffset) > 56f) {
-                                val direction = if (dragOffset > 0f) 1 else -1
-                                scope.launch {
-                                    try {
-                                        isSwitchAnimating = true
-                                        cardSlide.snapTo(dragOffset)
-                                        dragOffset = 0f
-                                        cardSlide.animateTo(
-                                            targetValue = direction * 320f,
-                                            animationSpec = tween(110, easing = FastOutSlowInEasing)
-                                        )
-                                        showIdentity = !showIdentity
-                                        hasSwitched = true
-                                        cardSlide.snapTo(-direction * 260f)
-                                        cardSlide.animateTo(
-                                            targetValue = 0f,
-                                            animationSpec = spring(
-                                                dampingRatio = Spring.DampingRatioMediumBouncy,
-                                                stiffness = Spring.StiffnessLow
-                                            )
-                                        )
-                                    } finally {
-                                        isSwitchAnimating = false
-                                    }
-                                }
-                            } else {
-                                scope.launch {
-                                    cardSlide.snapTo(dragOffset)
-                                    dragOffset = 0f
-                                    cardSlide.animateTo(
-                                        targetValue = 0f,
-                                        animationSpec = spring(
-                                            dampingRatio = Spring.DampingRatioNoBouncy,
-                                            stiffness = Spring.StiffnessMedium
-                                        )
-                                    )
-                                }
-                            }
-                        }
-                    )
-                }
-        ) {
-            if (!showIdentity) {
-                Column(
-                    modifier = Modifier.fillMaxSize().padding(20.dp),
-                    horizontalAlignment = Alignment.CenterHorizontally
-                ) {
-                    Text(
-                        text = "PLAYER $currentSelectPlayer",
-                        fontSize = 14.sp,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        letterSpacing = 1.sp
-                    )
-                    Spacer(modifier = Modifier.height(10.dp))
-                    Box(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(2.dp)
-                            .background(MaterialTheme.colorScheme.outline)
-                    )
-                    Spacer(modifier = Modifier.weight(1f))
-                    Text(
-                        text = currentSelectPlayer.toString(),
-                        fontSize = 130.sp,
-                        fontWeight = FontWeight.Black,
-                        color = MaterialTheme.colorScheme.primary.copy(alpha = 0.16f)
-                    )
-                    Spacer(modifier = Modifier.weight(1f))
-                    Text(
-                        text = "身份已隐藏",
-                        fontSize = 18.sp,
-                        color = MaterialTheme.colorScheme.onSurface,
-                        fontWeight = FontWeight.Medium
-                    )
-                }
-            } else {
-                Column(
-                    modifier = Modifier.fillMaxSize().padding(20.dp),
-                    horizontalAlignment = Alignment.CenterHorizontally
-                ) {
-                    Text(
-                        text = "身份词",
-                        fontSize = 14.sp,
-                        color = MaterialTheme.colorScheme.primary,
-                        letterSpacing = 1.sp
-                    )
-                    Spacer(modifier = Modifier.height(10.dp))
-                    Box(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(2.dp)
-                            .background(MaterialTheme.colorScheme.primary)
-                    )
-                    Spacer(modifier = Modifier.weight(1f))
-                    Text(
-                        text = identityText,
-                        textAlign = TextAlign.Center,
-                        color = MaterialTheme.colorScheme.onSurface,
-                        fontSize = 46.sp,
-                        fontWeight = FontWeight.Bold,
-                        fontFamily = FontFamily.SansSerif,
-                        modifier = Modifier.fillMaxWidth(),
-                        lineHeight = 50.sp
-                    )
-                    Spacer(modifier = Modifier.weight(1f))
-                    if (gameState.isSpy(currentSelectPlayer) && identityText != "[空白]") {
-                        Text(
-                            text = "你是卧底阵营",
-                            color = MaterialTheme.colorScheme.error,
-                            fontSize = 16.sp,
-                            fontWeight = FontWeight.SemiBold
-                        )
-                    }
-                }
-            }
-
-            if (hasSwitched) {
-                IconButton(
-                    onClick = onClose,
-                    modifier = Modifier
-                        .align(Alignment.TopEnd)
-                        .padding(8.dp)
-                        .size(32.dp)
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.Close,
-                        contentDescription = "关闭",
-                        tint = MaterialTheme.colorScheme.primary,
-                        modifier = Modifier.size(20.dp)
-                    )
-                }
-            }
-            Box(
-                modifier = Modifier
-                    .align(Alignment.BottomCenter)
-                    .fillMaxWidth()
-                    .height(6.dp)
-                    .background(MaterialTheme.colorScheme.outline)
-            ) {
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth(if (showIdentity) 1f else 0.38f)
-                        .height(6.dp)
-                        .background(MaterialTheme.colorScheme.primary)
-                )
-            }
-            Box(
-                modifier = Modifier
-                    .align(Alignment.CenterStart)
-                    .fillMaxHeight()
-                    .width(2.dp)
-                    .background(MaterialTheme.colorScheme.outline)
-            )
-            Box(
-                modifier = Modifier
-                    .align(Alignment.CenterEnd)
-                    .fillMaxHeight()
-                    .width(2.dp)
-                    .background(MaterialTheme.colorScheme.outline)
-            )
-        }
+    Box(modifier = modifier) {
+        LocalSpySwipeableIdentityCard(
+            resetKey = "legacy-local-spy-$currentSelectPlayer-$identityText",
+            playerNumber = currentSelectPlayer,
+            nickname = gameState.nicknames.getOrNull(currentSelectPlayer - 1)
+                ?.takeIf { it.isNotBlank() }
+                ?: "玩家$currentSelectPlayer",
+            identity = identityText,
+            isSpy = gameState.isSpy(currentSelectPlayer),
+            onClose = onClose
+        )
     }
 }

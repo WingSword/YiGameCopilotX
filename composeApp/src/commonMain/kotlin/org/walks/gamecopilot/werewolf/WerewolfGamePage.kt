@@ -19,26 +19,15 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.rounded.Bedtime
 import androidx.compose.material.icons.rounded.Cottage
 import androidx.compose.material.icons.rounded.DarkMode
-import androidx.compose.material.icons.rounded.LocalBar
-import androidx.compose.material.icons.rounded.LocalFireDepartment
-import androidx.compose.material.icons.rounded.Lock
-import androidx.compose.material.icons.rounded.MyLocation
-import androidx.compose.material.icons.rounded.Nightlight
-import androidx.compose.material.icons.rounded.Pets
-import androidx.compose.material.icons.rounded.Shield
 import androidx.compose.material.icons.rounded.Smartphone
-import androidx.compose.material.icons.rounded.SwapHoriz
-import androidx.compose.material.icons.rounded.Visibility
-import androidx.compose.material.icons.rounded.ContentCopy
-import androidx.compose.material.icons.rounded.BackHand
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateListOf
@@ -47,8 +36,6 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-
-import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -56,15 +43,17 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import org.walks.gamecopilot.PlatformHelper
+import org.walks.gamecopilot.intent.AiIntent
+import org.walks.gamecopilot.ui.components.AiMessageBubble
+import org.walks.gamecopilot.werewolf.components.WerewolfIdentityCard
+import org.walks.gamecopilot.werewolf.components.getRoleColor
+import org.walks.gamecopilot.werewolf.components.getRoleIcon
 import org.walks.gamecopilot.werewolf.data.NightActionSubStep
 import org.walks.gamecopilot.werewolf.data.WerewolfFaction
 import org.walks.gamecopilot.werewolf.data.WerewolfGamePhase
 import org.walks.gamecopilot.werewolf.data.WerewolfGameState
 import org.walks.gamecopilot.werewolf.data.WerewolfPlayer
 import org.walks.gamecopilot.werewolf.data.WerewolfPresets
-import org.walks.gamecopilot.werewolf.components.WerewolfIdentityCard
-import org.walks.gamecopilot.werewolf.components.getRoleColor
-import org.walks.gamecopilot.werewolf.components.getRoleIcon
 import org.walks.gamecopilot.werewolf.data.WerewolfRole
 import org.walks.gamecopilot.werewolf.theme.WerewolfColors
 
@@ -82,13 +71,42 @@ fun WerewolfGamePage(
     viewmodel: org.walks.gamecopilot.MainViewmodel,
     onBack: () -> Unit
 ) {
-    var gameState by remember { mutableStateOf(WerewolfGameState()) }
-    var playerCount by remember { mutableIntStateOf(5) }
-    val nicknames = remember { mutableStateListOf<String>().apply {
-        repeat(5) { add("玩家${it + 1}") }
-    }}
+    val configuredPlayerCount by viewmodel.oneNightWerewolfPlayerCount.collectAsState()
+    val configuredNicknames by viewmodel.oneNightWerewolfNicknames.collectAsState()
+
+    fun createInitialGameState(): WerewolfGameState {
+        val preset = WerewolfPresets.getPresetForPlayerCount(configuredPlayerCount)
+        return WerewolfGameLogic.initializeGame(preset, configuredNicknames)
+    }
+
+    var gameState by remember(configuredPlayerCount, configuredNicknames) {
+        mutableStateOf(createInitialGameState())
+    }
 
     val votes = remember { mutableStateListOf<Pair<Int, Int>>() }
+
+    // AI 旁白状态
+    val aiMessage by viewmodel.aiMessage.collectAsState()
+    val isLoadingAi by viewmodel.isLoadingAi.collectAsState()
+
+    // 构建当前阶段的 AI 上下文
+    val aiContext = when (gameState.phase) {
+        WerewolfGamePhase.NIGHT_START -> "一夜终极狼人游戏：天黑了，所有玩家闭眼。请作为旁白播报氛围描述。"
+        WerewolfGamePhase.NIGHT_ACTION -> "一夜终极狼人游戏：夜间行动进行中，步骤${gameState.currentNightStep + 1}/${gameState.nightActionOrder.size}。请简短描述夜晚氛围。"
+        WerewolfGamePhase.DAY_DISCUSSION -> "一夜终极狼人游戏：天亮了，${gameState.players.filter { it.isAlive }.size}名存活玩家进入讨论。请给出推理线索提示。"
+        WerewolfGamePhase.DAY_VOTING -> "一夜终极狼人游戏：投票阶段，请作为旁白营造紧张氛围。"
+        WerewolfGamePhase.GAME_OVER -> {
+            val winner = when (gameState.winner) {
+                WerewolfFaction.VILLAGER -> "村民阵营"
+                WerewolfFaction.WEREWOLF -> "狼人阵营"
+                WerewolfFaction.INDEPENDENT -> "皮匠"
+                else -> "未知"
+            }
+            "一夜终极狼人游戏结束，${winner}胜利！请总结这场对局。"
+        }
+
+        else -> "一夜终极狼人游戏进行中，请作为旁白简短点评。"
+    }
 
     Column(
         modifier = Modifier
@@ -114,57 +132,46 @@ fun WerewolfGamePage(
         Box(modifier = Modifier.weight(1f)) {
             when (gameState.phase) {
                 WerewolfGamePhase.SETUP -> {
-                    SetupPhase(
-                    playerCount = playerCount,
-                    onPlayerCountChange = { count ->
-                        playerCount = count
-                        nicknames.clear()
-                        repeat(count) { nicknames.add("玩家${it + 1}") }
-                    },
-                    nicknames = nicknames,
-                    onStart = {
-                        val preset = WerewolfPresets.getPresetForPlayerCount(playerCount)
-                        gameState = WerewolfGameLogic.initializeGame(preset, nicknames.toList())
-                        PlatformHelper.getInstance().vibrateLongMethod()
+                    LaunchedEffect(configuredPlayerCount, configuredNicknames) {
+                        gameState = createInitialGameState()
                     }
-                )
-            }
+                }
 
-            WerewolfGamePhase.DEAL_CARDS -> {
-                DealCardsPhase(
-                    gameState = gameState,
-                    onRevealCard = {
-                        gameState = gameState.copy(dealCardRevealed = true)
-                    },
-                    onConfirmCard = {
-                        val nextIndex = gameState.dealCardPlayerIndex + 1
-                        if (nextIndex >= gameState.playerCount) {
+                WerewolfGamePhase.DEAL_CARDS -> {
+                    DealCardsPhase(
+                        gameState = gameState,
+                        onRevealCard = {
+                            gameState = gameState.copy(dealCardRevealed = true)
+                        },
+                        onConfirmCard = {
+                            val nextIndex = gameState.dealCardPlayerIndex + 1
+                            if (nextIndex >= gameState.playerCount) {
+                                gameState = gameState.copy(
+                                    phase = WerewolfGamePhase.NIGHT_START,
+                                    dealCardPlayerIndex = 0,
+                                    dealCardRevealed = false
+                                )
+                            } else {
+                                gameState = gameState.copy(
+                                    dealCardPlayerIndex = nextIndex,
+                                    dealCardRevealed = false
+                                )
+                            }
+                        }
+                    )
+                }
+
+                WerewolfGamePhase.NIGHT_START -> {
+                    NightStartPhase(
+                        onContinue = {
                             gameState = gameState.copy(
-                                phase = WerewolfGamePhase.NIGHT_START,
-                                dealCardPlayerIndex = 0,
-                                dealCardRevealed = false
-                            )
-                        } else {
-                            gameState = gameState.copy(
-                                dealCardPlayerIndex = nextIndex,
-                                dealCardRevealed = false
+                                phase = WerewolfGamePhase.NIGHT_ACTION,
+                                currentNightStep = 0,
+                                nightSubStep = NightActionSubStep.HAND_OFF
                             )
                         }
-                    }
-                )
-            }
-
-            WerewolfGamePhase.NIGHT_START -> {
-                NightStartPhase(
-                    onContinue = {
-                        gameState = gameState.copy(
-                            phase = WerewolfGamePhase.NIGHT_ACTION,
-                            currentNightStep = 0,
-                            nightSubStep = NightActionSubStep.HAND_OFF
-                        )
-                    }
-                )
-            }
+                    )
+                }
 
             WerewolfGamePhase.NIGHT_ACTION -> {
                 NightActionPhase(
@@ -260,7 +267,7 @@ fun WerewolfGamePage(
                 GameOverPhase(
                     gameState = gameState,
                     onRestart = {
-                        gameState = WerewolfGameState()
+                        gameState = createInitialGameState()
                         votes.clear()
                     },
                     onBack = onBack
@@ -268,6 +275,16 @@ fun WerewolfGamePage(
             }
         }
         }
+
+        // AI 旁白消息气泡
+        AiMessageBubble(
+            message = aiMessage,
+            isLoading = isLoadingAi,
+            onRefresh = {
+                viewmodel.handleAiIntent(AiIntent.SendMessage("werewolf", aiContext))
+            },
+            modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp)
+        )
     }
 }
 
@@ -537,7 +554,7 @@ private fun DealCardsPhase(
                 // 已翻开 - 使用公共身份卡组件
                 WerewolfIdentityCard(
                     resetKey = "${player.id}-${player.initialRole}",
-                    playerNumber = player.id,
+                    playerNumber = player.id + 1,
                     nickname = player.nickname,
                     role = player.initialRole,
                     showDescription = true,
@@ -1306,7 +1323,7 @@ private fun DayDiscussionPhase(
                 ) {
                     WerewolfIdentityCard(
                         resetKey = "day-${player.id}-${player.currentRole}",
-                        playerNumber = player.id,
+                        playerNumber = player.id + 1,
                         nickname = player.nickname,
                         role = player.currentRole,
                         showDescription = false,

@@ -18,7 +18,6 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.consumeAsFlow
 import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.launch
-import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 import org.walks.gamecopilot.GameLogger
 import org.walks.gamecopilot.data.WsMessage
@@ -55,6 +54,9 @@ class RoomModule(
 
     // 修改connect方法
     suspend fun connect(): Boolean {
+        if (webSocketSession != null && _connectionState.value == ConnectionState.CONNECTED) {
+            return true
+        }
         _connectionState.value = ConnectionState.CONNECTING
         return try {
             webSocketSession = wsClient.webSocketSession {
@@ -107,31 +109,34 @@ class RoomModule(
         GameLogger.info("连接已断开")
     }
 
-    suspend fun sendMessageWs(wsMessage: WsMessage) {
-        try {
-            webSocketSession?.send(
+    suspend fun sendMessageWs(wsMessage: WsMessage): Boolean {
+        return try {
+            val session = webSocketSession ?: return false
+            session.send(
                 Frame.Text(
                     Json.encodeToString(
                         wsMessage
                     )
                 )
             )
+            true
         } catch (e: Exception) {
             GameLogger.error("发送消息失败: ${e.message}")
+            false
         }
     }
 
 
-    suspend fun createRoom(roomId: String, password: String) {
+    suspend fun createRoom(roomId: String, password: String): Boolean {
         // 先确保连接
         if (webSocketSession == null) {
             val connected = connect()
             if (!connected) {
                 GameLogger.error("连接服务器失败")
-                return
+                return false
             }
         }
-        sendMessageWs(
+        return sendMessageWs(
             WsMessage(
                 type = "CREATE_ROOM",
                 roomId = roomId,
@@ -140,16 +145,16 @@ class RoomModule(
         )
     }
 
-    suspend fun joinRoom(roomId: String, password: String) {
+    suspend fun joinRoom(roomId: String, password: String): Boolean {
         // 先确保连接
         if (webSocketSession == null) {
             val connected = connect()
             if (!connected) {
                 GameLogger.error("连接服务器失败")
-                return
+                return false
             }
         }
-        sendMessageWs(
+        return sendMessageWs(
             WsMessage(
                 type = "JOIN_ROOM",
                 roomId = roomId,

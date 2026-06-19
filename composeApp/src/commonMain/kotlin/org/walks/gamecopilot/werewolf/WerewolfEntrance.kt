@@ -14,19 +14,16 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Close
-import androidx.compose.material.icons.rounded.ArrowForward
+import androidx.compose.material.icons.automirrored.rounded.ArrowForward
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
-import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -40,20 +37,18 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.compose.ui.window.Dialog
-import androidx.compose.ui.window.DialogProperties
 import androidx.navigation.NavHostController
 import org.jetbrains.compose.resources.painterResource
 import org.walks.gamecopilot.MainViewmodel
 import org.walks.gamecopilot.data.entity.GameMode
 import org.walks.gamecopilot.navigation.NaviRoute
+import org.walks.gamecopilot.ui.components.AppDialog
+import org.walks.gamecopilot.ui.components.common.OfflinePassingGuideDialog
+import org.walks.gamecopilot.werewolf.data.WerewolfFaction
 import org.walks.gamecopilot.werewolf.data.WerewolfPreset
 import org.walks.gamecopilot.werewolf.data.WerewolfPresets
-import org.walks.gamecopilot.werewolf.data.WerewolfFaction
-import org.walks.gamecopilot.ui.components.common.OfflinePassingGuideDialog
 import org.walks.gamecopilot.werewolf.data.WerewolfRole
 import yigamecopilotx.composeapp.generated.resources.Res
 import yigamecopilotx.composeapp.generated.resources.icon_info
@@ -198,6 +193,7 @@ fun WerewolfEntrance(viewmodel: MainViewmodel, navi: NavHostController) {
                 .height(52.dp)
                 .padding(horizontal = 16.dp)
                 .clickable {
+                    viewmodel.prepareOneNightWerewolfGame(playerCount, nicknames.toList())
                     viewmodel.handleGameIntent(
                         org.walks.gamecopilot.intent.GameIntent.SwitchGameMode(GameMode.ONE_NIGHT_WEREWOLF.ordinal)
                     )
@@ -218,7 +214,7 @@ fun WerewolfEntrance(viewmodel: MainViewmodel, navi: NavHostController) {
                     color = MaterialTheme.colorScheme.onPrimary
                 )
                 Icon(
-                    imageVector = Icons.Rounded.ArrowForward,
+                    imageVector = Icons.AutoMirrored.Rounded.ArrowForward,
                     contentDescription = null,
                     tint = MaterialTheme.colorScheme.onPrimary,
                     modifier = Modifier.size(20.dp)
@@ -322,6 +318,7 @@ private fun PresetCard(
 
 /**
  * 获取角色对应颜色
+ * 狼人 → error，村民 → primary，独立 → tertiary
  */
 private fun getRoleColor(role: WerewolfRole): Color {
     return when (role.faction) {
@@ -333,48 +330,41 @@ private fun getRoleColor(role: WerewolfRole): Color {
 
 @Composable
 private fun WerewolfRulesDialog(onDismiss: () -> Unit) {
-    Dialog(
-        onDismissRequest = onDismiss,
-        properties = DialogProperties(usePlatformDefaultWidth = false)
+    AppDialog(
+        title = "一夜终极狼人规则",
+        subtitle = "一夜一白天，无淘汰长流程，适合快速身份推理。",
+        onDismiss = onDismiss,
+        actions = {
+            Button(
+                onClick = onDismiss,
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(8.dp),
+                colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
+            ) {
+                Text(
+                    "知道了",
+                    fontSize = 16.sp,
+                    fontWeight = FontWeight.Medium,
+                    color = MaterialTheme.colorScheme.onPrimary
+                )
+            }
+        }
     ) {
-        Surface(
-            modifier = Modifier
-                .fillMaxWidth(0.95f)
-                .padding(16.dp),
-            shape = RoundedCornerShape(12.dp),
-            color = MaterialTheme.colorScheme.surface
+        LazyColumn(
+            verticalArrangement = Arrangement.spacedBy(14.dp),
+            modifier = Modifier.height(400.dp)
         ) {
-            Column(modifier = Modifier.padding(20.dp)) {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Text(
-                        text = "一夜终极狼人规则",
-                        fontSize = 20.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = MaterialTheme.colorScheme.onSurface
-                    )
-                    IconButton(onClick = onDismiss, modifier = Modifier.size(32.dp)) {
-                        Icon(Icons.Default.Close, "关闭", tint = MaterialTheme.colorScheme.onSurfaceVariant)
-                    }
-                }
-                Spacer(modifier = Modifier.height(16.dp))
-
-                LazyColumn(
-                    verticalArrangement = Arrangement.spacedBy(14.dp),
-                    modifier = Modifier.height(400.dp)
-                ) {
-                    item {
-                        RuleBlock("基础信息", """
+            item {
+                RuleBlock(
+                    "基础信息", """
 人数：3~10人，无需淘汰，1夜+1白天，约10分钟
 总牌数 = 玩家数 + 3（3张中央底牌）
 阵营：村民阵营、狼人阵营、皮匠（独立）
                         """.trimIndent())
-                    }
-                    item {
-                        RuleBlock("夜间行动（按顺序）", """
+            }
+            item {
+                RuleBlock(
+                    "夜间行动（按顺序）", """
 ①化身幽灵：查看1名玩家身份并复制
 ②狼人：互认队友；独狼可看1张底牌
 ③爪牙/守夜人：爪牙认狼，守夜人互认
@@ -384,33 +374,23 @@ private fun WerewolfRulesDialog(onDismiss: () -> Unit) {
 ⑦酒鬼：与底牌交换，不看新牌
 ⑧失眠者：查看自己最终身份
                         """.trimIndent())
-                    }
-                    item {
-                        RuleBlock("白天阶段", """
+            }
+            item {
+                RuleBlock(
+                    "白天阶段", """
 • 自由讨论约5分钟，可撒谎，禁止亮牌
 • 倒数321同时投票，手指指向1名玩家
 • 最高票出局并亮明身份；平票全部出局
 • 全员互投（无人超1票）则无人出局
                         """.trimIndent())
-                    }
-                    item {
-                        RuleBlock("胜负判定", """
+            }
+            item {
+                RuleBlock(
+                    "胜负判定", """
 皮匠胜利（最高优先级）：皮匠被投票出局
 村民胜利：至少1名狼人出局 或 场上无狼人且无人出局
 狼人胜利：所有狼人存活 且 有玩家出局
                         """.trimIndent())
-                    }
-                }
-
-                Spacer(modifier = Modifier.height(16.dp))
-                Button(
-                    onClick = onDismiss,
-                    modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(8.dp),
-                    colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
-                ) {
-                    Text("知道了", fontSize = 16.sp, fontWeight = FontWeight.Medium, color = MaterialTheme.colorScheme.onPrimary)
-                }
             }
         }
     }

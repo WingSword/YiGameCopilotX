@@ -70,6 +70,7 @@ kotlin {
             implementation(libs.androidx.activity.compose)
             implementation(compose.uiTooling)
             implementation(libs.places)
+            implementation("io.ktor:ktor-client-okhttp:3.1.1")
         }
         commonMain.dependencies {
             implementation(compose.runtime)
@@ -83,6 +84,9 @@ kotlin {
             implementation(libs.androidx.lifecycle.runtime.compose)
             api(projects.shared)
             implementation("org.jetbrains.compose.material:material-icons-extended:1.7.3")
+            implementation("io.ktor:ktor-client-core:3.1.1")
+            implementation("io.ktor:ktor-client-content-negotiation:3.1.1")
+            implementation("io.ktor:ktor-serialization-kotlinx-json:3.1.1")
         }
 
         wasmJsMain.dependencies {
@@ -90,6 +94,7 @@ kotlin {
             implementation(compose.ui)
             implementation(compose.foundation)
             implementation(compose.material3)
+            implementation("io.ktor:ktor-client-js:3.1.1")
         }
 
         iosMain.dependencies {

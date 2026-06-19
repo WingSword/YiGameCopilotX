@@ -8,4 +8,6 @@ const val RANDOM_PAGE_CONFIG_CATE_CARD = "card:"
 const val RANDOM_PAGE_CONFIG_CATE_COIN = "coin:"
 const val RANDOM_PAGE_CONFIG_CATE_WHEEL = "wheel:"
 const val RANDOM_PAGE_CONFIG_CATE_FINGER = "finger:"
+const val RANDOM_PAGE_CONFIG_CATE_ANSWER_BOOK = "answer_book:"
+
 const val RANDOM_PAGE_SYSTEM_FINGER_SPINNER_NAME = "finger:手指转盘"

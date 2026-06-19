@@ -19,7 +19,6 @@ import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -31,6 +30,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.Button
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
@@ -47,7 +47,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.rotate
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -58,6 +57,7 @@ import androidx.compose.ui.window.DialogProperties
 import com.yi.yigamecopilot.android.theme.MorandiColorList
 import org.jetbrains.compose.resources.painterResource
 import org.walks.gamecopilot.PlatformHelper
+import org.walks.gamecopilot.ui.components.AppDialog
 import org.walks.gamecopilot.ui.page.home.IDENTITY_DISMISS
 import org.walks.gamecopilot.ui.page.home.IDENTITY_SHOW
 import org.walks.gamecopilot.ui.widget.FlipCard
@@ -94,6 +94,16 @@ fun IdentitySelector(
     val nicknameEditState = remember(refreshKey) { mutableStateOf(false) }
     val nicknameText = remember(refreshKey) { mutableStateOf("") }
     var forceRefresh by remember(refreshKey) { mutableStateOf(0) }
+    val displayNicknames = remember(playerNum, nicknames) {
+        List(playerNum) { index ->
+            nicknames.getOrNull(index)?.takeIf { it.isNotBlank() } ?: "${index + 1}"
+        }
+    }
+    val displayIdentities = remember(playerNum, identities) {
+        List(playerNum) { index ->
+            identities.getOrNull(index)?.takeIf { it.isNotBlank() } ?: "未知身份"
+        }
+    }
 
     // 单个玩家身份展示状态列表，记录已查看过身份的玩家
     val playerIdentityState = remember(refreshKey) {
@@ -111,11 +121,11 @@ fun IdentitySelector(
     ) {
         PlayerSelectArea(
             playerNum = playerNum,
-            nicknames = nicknames,
+            nicknames = displayNicknames,
             getWatchedTime = { watchedTimeList[it] },
             identityDisplayState = identityDisplayState.value,
             playerIdentityState = playerIdentityState,
-            identities = identities,
+            identities = displayIdentities,
             forceRefresh = forceRefresh,
             refreshKey = refreshKey,
             onRefreshIdentities = onRefreshIdentities,
@@ -127,7 +137,7 @@ fun IdentitySelector(
             }
         ) { currentSelect ->
             currentSelectPlayer = currentSelect - 1
-            val currentNickname = nicknames[currentSelectPlayer]
+            val currentNickname = displayNicknames[currentSelectPlayer]
             nicknameText.value =
                 if (currentNickname == currentSelect.toString()) "" else currentNickname
             nicknameEditState.value = true
@@ -184,8 +194,8 @@ fun IdentitySelector(
                         Box(modifier = Modifier.align(Alignment.Center)) {
                             customIdentityCard(
                                 currentSelectPlayer + 1,
-                                identities[currentSelectPlayer],
-                                nicknames[currentSelectPlayer],
+                                displayIdentities[currentSelectPlayer],
+                                displayNicknames[currentSelectPlayer],
                                 { dialogVisible = false }
                             )
                         }
@@ -193,22 +203,11 @@ fun IdentitySelector(
                         Box(modifier = Modifier.align(Alignment.Center)) {
                             IdentityCard(
                                 playerNumber = currentSelectPlayer + 1,
-                                identity = identities[currentSelectPlayer],
-                                nickname = nicknames[currentSelectPlayer]
+                                identity = displayIdentities[currentSelectPlayer],
+                                nickname = displayNicknames[currentSelectPlayer]
                             )
                         }
                     }
-                    Text(
-                        text = "左右滑动切换查看身份",
-                        color = Color(0xFFF2C72B),
-                        fontSize = 20.sp,
-                        fontWeight = FontWeight.Bold,
-                        textAlign = TextAlign.Center,
-                        modifier = Modifier
-                            .align(Alignment.BottomCenter)
-                            .fillMaxWidth()
-                            .padding(vertical = 24.dp)
-                    )
                 }
             }
         }
@@ -216,20 +215,15 @@ fun IdentitySelector(
 
     // 昵称编辑弹窗
     if (nicknameEditState.value) {
-        Dialog(
-            onDismissRequest = { nicknameEditState.value = false },
-            properties = DialogProperties(usePlatformDefaultWidth = false)
-        ) {
-            NicknameEditDialog(
-                playerNumber = currentSelectPlayer + 1,
-                currentNickname = nicknameText.value,
-                onNicknameChange = { newNickname ->
-                    nicknameText.value = newNickname
-                    onNicknameChange(currentSelectPlayer, newNickname)
-                },
-                onDismiss = { nicknameEditState.value = false }
-            )
-        }
+        NicknameEditDialog(
+            playerNumber = currentSelectPlayer + 1,
+            currentNickname = nicknameText.value,
+            onNicknameChange = { newNickname ->
+                nicknameText.value = newNickname
+                onNicknameChange(currentSelectPlayer, newNickname)
+            },
+            onDismiss = { nicknameEditState.value = false }
+        )
     }
 }
 
@@ -373,6 +367,9 @@ fun IdentityCard(
     nickname: String
 ) {
     val flipState = remember { mutableStateOf(false) }
+    val accentColor = remember(playerNumber) {
+        MorandiColorList[playerNumber % MorandiColorList.size]
+    }
 
     FlipCard(
         modifier = Modifier.height(200.dp).width(140.dp).clip(RoundedCornerShape(12.dp))
@@ -422,7 +419,7 @@ fun IdentityCard(
                     color = MaterialTheme.colorScheme.surface
                 ).border(
                     width = 4.dp,
-                    color = MorandiColorList[(0..7).random()],
+                    color = accentColor,
                     shape = RoundedCornerShape(12.dp)
                 ),
                 contentAlignment = Alignment.BottomEnd
@@ -485,46 +482,30 @@ fun NicknameEditDialog(
 ) {
     var nickname by remember { mutableStateOf(currentNickname) }
 
-    androidx.compose.material3.Card(
-        modifier = Modifier.padding(16.dp)
-    ) {
-        Column(
-            modifier = Modifier.padding(16.dp),
-            horizontalAlignment = Alignment.CenterHorizontally
-        ) {
-            Text(
-                text = "设置玩家$playerNumber 昵称",
-                style = MaterialTheme.typography.headlineSmall,
-                modifier = Modifier.padding(bottom = 16.dp)
-            )
-
-            OutlinedTextField(
-                value = nickname,
-                onValueChange = { nickname = it },
-                label = { Text("昵称") },
-                singleLine = true,
-                modifier = Modifier.fillMaxWidth()
-            )
-
-            Spacer(modifier = Modifier.height(16.dp))
-
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = androidx.compose.foundation.layout.Arrangement.End
+    AppDialog(
+        title = "设置玩家$playerNumber 昵称",
+        subtitle = "昵称会显示在玩家卡片顶部，留空则使用默认编号",
+        onDismiss = onDismiss,
+        actions = {
+            TextButton(onClick = onDismiss) {
+                Text("取消")
+            }
+            Button(
+                onClick = {
+                    onNicknameChange(nickname)
+                    onDismiss()
+                }
             ) {
-                TextButton(onClick = onDismiss) {
-                    Text("取消")
-                }
-                TextButton(
-                    onClick = {
-                        onNicknameChange(nickname)
-                        onDismiss()
-                    }
-                ) {
-                    Text("确定")
-                }
+                Text("确定")
             }
         }
+    ) {
+        OutlinedTextField(
+            value = nickname,
+            onValueChange = { nickname = it },
+            label = { Text("昵称") },
+            singleLine = true,
+            modifier = Modifier.fillMaxWidth()
+        )
     }
 }
-

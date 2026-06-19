@@ -3,10 +3,8 @@ package org.walks.gamecopilot.theme
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.navigationBarsPadding
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.LocalTextStyle
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Shapes
 import androidx.compose.material3.darkColorScheme
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
@@ -16,7 +14,6 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.TextStyle
-import androidx.compose.ui.unit.dp
 
 /**
  * 主题模式：跟随系统 / 浅色 / 深色
@@ -82,15 +79,6 @@ private val LightColorScheme = lightColorScheme(
     scrim = Color.Black.copy(alpha = 0.32f)
 )
 
-private val NoRoundShapes = Shapes(
-    extraSmall = RoundedCornerShape(0.dp),
-    small = RoundedCornerShape(0.dp),
-    medium = RoundedCornerShape(0.dp),
-    large = RoundedCornerShape(0.dp),
-    extraLarge = RoundedCornerShape(0.dp)
-)
-
-
 @Composable
 fun WeUITheme(
     darkTheme: Boolean = isSystemInDarkTheme(),
@@ -115,8 +103,8 @@ fun WeUITheme(
 
     MaterialTheme(
         colorScheme = colorScheme,
-        typography = Typography,
-        shapes = NoRoundShapes
+        typography = AppTypography(),
+        shapes = designSystem.cornerRadius.toMaterialShapes()
     ) {
         CompositionLocalProvider(
             LocalTextStyle provides TextStyle(),

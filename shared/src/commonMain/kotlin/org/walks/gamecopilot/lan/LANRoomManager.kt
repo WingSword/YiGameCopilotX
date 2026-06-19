@@ -1,18 +1,39 @@
 package org.walks.gamecopilot.lan
 
-import kotlinx.coroutines.*
-import kotlinx.coroutines.flow.*
-import kotlinx.datetime.Clock
-import kotlinx.serialization.encodeToString
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.cancel
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.MutableSharedFlow
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asSharedFlow
+import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.launchIn
+import kotlinx.coroutines.flow.onEach
+import kotlinx.coroutines.launch
 import kotlinx.serialization.json.Json
 import org.walks.gamecopilot.GameLogger
 import org.walks.gamecopilot.lan.client.LANClient
 import org.walks.gamecopilot.lan.client.createLANClient
-import org.walks.gamecopilot.lan.data.*
+import org.walks.gamecopilot.lan.data.ConnectionStatus
+import org.walks.gamecopilot.lan.data.GameType
+import org.walks.gamecopilot.lan.data.LANConnectionState
+import org.walks.gamecopilot.lan.data.LANError
+import org.walks.gamecopilot.lan.data.LANErrorCodes
+import org.walks.gamecopilot.lan.data.LANGameState
+import org.walks.gamecopilot.lan.data.LANMessage
+import org.walks.gamecopilot.lan.data.LANMessageType
+import org.walks.gamecopilot.lan.data.LANPlayer
+import org.walks.gamecopilot.lan.data.LANRoomInfo
+import org.walks.gamecopilot.lan.data.LANRoomState
 import org.walks.gamecopilot.lan.discovery.ServiceDiscovery
 import org.walks.gamecopilot.lan.discovery.createServiceDiscovery
 import org.walks.gamecopilot.lan.server.LANHostServer
 import org.walks.gamecopilot.lan.server.createLANHostServer
+import kotlin.time.Clock
 
 class LANRoomManager {
     
@@ -45,7 +66,14 @@ class LANRoomManager {
     val isHost: StateFlow<Boolean> = _isHost.asStateFlow()
     
     private var currentRoomPassword: String = ""
-    private var messageHandlerJob: Job? = null
+    private var discoveryRoomsJob: Job? = null
+    private var hostPlayersJob: Job? = null
+    private var hostMessagesJob: Job? = null
+    private var clientStateJob: Job? = null
+    private var clientMessagesJob: Job? = null
+    private var hostPlayer: LANPlayer? = null
+    private var latestServerPlayers: List<LANPlayer> = emptyList()
+    private val acceptedPlayerIds = mutableSetOf<String>()
     
     val isConnected: Boolean get() = _connectionState.value.status == ConnectionStatus.CONNECTED
     val currentRoomInfo: LANRoomInfo? get() = _currentRoom.value?.roomInfo
@@ -56,15 +84,12 @@ class LANRoomManager {
             client.currentPlayer?.id
         }
     
-    init {
-        setupMessageHandlers()
-    }
-    
     fun startDiscovery(gameType: GameType = GameType.ALL) {
         scope.launch {
+            if (_currentRoom.value != null) return@launch
             _connectionState.value = LANConnectionState(ConnectionStatus.DISCOVERING)
-            
-            discovery.discoveredRooms
+            discoveryRoomsJob?.cancel()
+            discoveryRoomsJob = discovery.discoveredRooms
                 .onEach { room ->
                     val currentList = _discoveredRooms.value.toMutableList()
                     val existingIndex = currentList.indexOfFirst { it.roomId == room.roomId }
@@ -78,15 +103,18 @@ class LANRoomManager {
                     _discoveredRooms.value = currentList.sortedByDescending { it.createdAt }
                 }
                 .launchIn(scope)
-            
-            discovery.startDiscovery(gameType.displayName)
+
+            discovery.startDiscovery(gameType.name)
         }
     }
     
     fun stopDiscovery() {
         scope.launch {
             discovery.stopDiscovery()
-            _connectionState.value = LANConnectionState(ConnectionStatus.DISCONNECTED)
+            discoveryRoomsJob?.cancel()
+            if (_currentRoom.value == null && _connectionState.value.status == ConnectionStatus.DISCOVERING) {
+                _connectionState.value = LANConnectionState(ConnectionStatus.DISCONNECTED)
+            }
         }
     }
     
@@ -133,34 +161,39 @@ class LANRoomManager {
             )
             
             currentRoomPassword = password
-            
-            val hostPlayer = LANPlayer(
+
+            val owner = LANPlayer(
                 id = "host_${Clock.System.now().toEpochMilliseconds()}",
                 name = hostName,
                 isHost = true,
                 isReady = true,
                 playerIndex = 0
             )
+            hostPlayer = owner
+            acceptedPlayerIds.clear()
+            acceptedPlayerIds.add(owner.id)
             
             _currentRoom.value = LANRoomState(
                 roomInfo = roomInfo,
-                players = listOf(hostPlayer),
+                players = listOf(owner),
                 gameStarted = false
             )
-            
-            _players.value = listOf(hostPlayer)
+
+            _players.value = listOf(owner)
             _isHost.value = true
             _connectionState.value = LANConnectionState(ConnectionStatus.CONNECTED)
             
             discovery.broadcastPresence(roomInfo)
-            
-            hostServer.connectedPlayers
+
+            hostPlayersJob?.cancel()
+            hostPlayersJob = hostServer.connectedPlayers
                 .onEach { playerList ->
                     updatePlayerList(playerList)
                 }
                 .launchIn(scope)
-            
-            hostServer.receivedMessages
+
+            hostMessagesJob?.cancel()
+            hostMessagesJob = hostServer.receivedMessages
                 .onEach { (playerId, message) ->
                     handleHostMessage(playerId, message)
                 }
@@ -205,10 +238,10 @@ class LANRoomManager {
                 return@launch
             }
             
-            _currentRoom.value = LANRoomState(roomInfo = roomInfo, gameStarted = false)
             _connectionState.value = LANConnectionState(ConnectionStatus.CONNECTED)
-            
-            client.connectionState
+
+            clientStateJob?.cancel()
+            clientStateJob = client.connectionState
                 .onEach { state ->
                     _connectionState.value = state
                     if (state.status == ConnectionStatus.ERROR || state.status == ConnectionStatus.DISCONNECTED) {
@@ -218,8 +251,9 @@ class LANRoomManager {
                     }
                 }
                 .launchIn(scope)
-            
-            client.receivedMessages
+
+            clientMessagesJob?.cancel()
+            clientMessagesJob = client.receivedMessages
                 .onEach { message ->
                     handleClientMessage(message)
                 }
@@ -242,12 +276,18 @@ class LANRoomManager {
                 hostServer.stop()
                 _currentRoom.value = null
                 _players.value = emptyList()
+                hostPlayer = null
+                latestServerPlayers = emptyList()
+                acceptedPlayerIds.clear()
             } else {
                 client.leaveRoom()
                 client.disconnect()
+                _currentRoom.value = null
+                _players.value = emptyList()
             }
             
             _isHost.value = false
+            currentRoomPassword = ""
             _connectionState.value = LANConnectionState(ConnectionStatus.DISCONNECTED)
             GameLogger.info("已断开连接")
         }
@@ -270,6 +310,7 @@ class LANRoomManager {
             
             _currentRoom.value?.let { state ->
                 _currentRoom.value = state.copy(gameStarted = true)
+                broadcastRoomState()
             }
             
             GameLogger.info("游戏已开始")
@@ -288,6 +329,7 @@ class LANRoomManager {
             
             _currentRoom.value?.let { state ->
                 _currentRoom.value = state.copy(gameStarted = false)
+                broadcastRoomState()
             }
             
             GameLogger.info("游戏已结束")
@@ -349,19 +391,36 @@ class LANRoomManager {
         hostServer.broadcast(message)
     }
     
-    private fun setupMessageHandlers() {
-        messageHandlerJob = scope.launch {
-            combine(
-                hostServer.receivedMessages,
-                client.receivedMessages
-            ) { hostMsg, clientMsg ->
-                Pair(hostMsg, clientMsg)
-            }.collect()
-        }
-    }
-    
     private suspend fun handleHostMessage(playerId: String, message: LANMessage) {
         when (message.type) {
+            LANMessageType.JOIN_ROOM -> {
+                val room = _currentRoom.value
+                when {
+                    room == null -> {
+                        hostServer.kickPlayer(playerId, "房间不存在")
+                    }
+
+                    currentRoomPassword.isNotEmpty() && message.payload != currentRoomPassword -> {
+                        hostServer.kickPlayer(playerId, "房间密码错误")
+                    }
+
+                    _players.value.size >= room.roomInfo.maxPlayers -> {
+                        hostServer.kickPlayer(playerId, "房间人数已满")
+                    }
+
+                    else -> {
+                        acceptedPlayerIds.add(playerId)
+                        updatePlayerList(latestServerPlayers)
+                        broadcastRoomState()
+                    }
+                }
+            }
+
+            LANMessageType.LEAVE_ROOM -> {
+                acceptedPlayerIds.remove(playerId)
+                updatePlayerList(latestServerPlayers)
+                broadcastRoomState()
+            }
             LANMessageType.GAME_ACTION -> {
                 broadcastGameAction(message.copy(playerId = playerId))
             }
@@ -389,13 +448,29 @@ class LANRoomManager {
                     )
                 )
             }
+            LANMessageType.ROOM_STATE_SYNC -> {
+                try {
+                    val roomState = json.decodeFromString<LANRoomState>(message.payload)
+                    _currentRoom.value = roomState
+                    _players.value = roomState.players
+                } catch (e: Exception) {
+                    GameLogger.error("解析房间状态失败", e)
+                }
+            }
             LANMessageType.PLAYER_JOINED -> {
                 val player = json.decodeFromString<LANPlayer>(message.payload)
                 updateClientPlayerList(player, true)
             }
             LANMessageType.PLAYER_LEFT -> {
-                val player = json.decodeFromString<LANPlayer>(message.payload)
-                updateClientPlayerList(player, false)
+                if (message.payload.isNotBlank()) {
+                    val player = json.decodeFromString<LANPlayer>(message.payload)
+                    updateClientPlayerList(player, false)
+                } else {
+                    updateClientPlayerList(
+                        LANPlayer(id = message.playerId, name = message.playerName),
+                        false
+                    )
+                }
             }
             LANMessageType.START_GAME -> {
                 _currentRoom.value?.let { state ->
@@ -421,13 +496,28 @@ class LANRoomManager {
     }
     
     private fun updatePlayerList(newPlayers: List<LANPlayer>) {
-        _players.value = newPlayers
+        latestServerPlayers = newPlayers
+        acceptedPlayerIds.retainAll(newPlayers.map { it.id }.toSet() + setOfNotNull(hostPlayer?.id))
+        val normalizedPlayers = buildList {
+            hostPlayer?.let { add(it) }
+            newPlayers
+                .filterNot { it.id == hostPlayer?.id }
+                .filter { it.id in acceptedPlayerIds }
+                .sortedBy { it.connectedAt }
+                .forEachIndexed { index, player ->
+                    add(player.copy(playerIndex = index + 1))
+                }
+        }
+        _players.value = normalizedPlayers
         
         _currentRoom.value?.let { state ->
             _currentRoom.value = state.copy(
-                players = newPlayers,
-                roomInfo = state.roomInfo.copy(currentPlayers = newPlayers.size)
+                players = normalizedPlayers,
+                roomInfo = state.roomInfo.copy(currentPlayers = normalizedPlayers.size)
             )
+        }
+        scope.launch {
+            broadcastRoomState()
         }
     }
     
@@ -456,6 +546,16 @@ class LANRoomManager {
         val chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
         return (1..6).map { chars.random() }.joinToString("")
     }
+
+    private suspend fun broadcastRoomState() {
+        val roomState = _currentRoom.value ?: return
+        val message = LANMessage(
+            type = LANMessageType.ROOM_STATE_SYNC,
+            roomId = roomState.roomInfo.roomId,
+            payload = json.encodeToString(roomState)
+        )
+        hostServer.broadcast(message)
+    }
     
     fun dispose() {
         scope.launch {
@@ -463,7 +563,6 @@ class LANRoomManager {
             discovery.dispose()
             hostServer.dispose()
             client.dispose()
-            messageHandlerJob?.cancel()
         }
         scope.cancel()
     }

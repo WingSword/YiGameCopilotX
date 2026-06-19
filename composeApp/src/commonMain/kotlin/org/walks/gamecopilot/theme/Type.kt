@@ -1,12 +1,78 @@
 package org.walks.gamecopilot.theme
 
 import androidx.compose.material3.Typography
+import androidx.compose.runtime.Composable
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.sp
+import org.jetbrains.compose.resources.Font
+import yigamecopilotx.composeapp.generated.resources.Res
+import yigamecopilotx.composeapp.generated.resources.notosanssc_regular
+
+@Composable
+fun appFontFamily(): FontFamily = FontFamily(
+    Font(Res.font.notosanssc_regular, FontWeight.Normal),
+)
 
 // Set of Material typography styles to start with
+@Composable
+fun AppTypography(): Typography {
+    val appFont = appFontFamily()
+    return Typography(
+        bodyLarge = TextStyle(
+            fontFamily = appFont,
+            fontWeight = FontWeight.Normal,
+            fontSize = 20.sp,
+            lineHeight = 24.sp,
+            letterSpacing = 0.5.sp
+        ),
+        bodyMedium = TextStyle(
+            fontFamily = appFont,
+            fontWeight = FontWeight.Normal,
+            fontSize = 16.sp,
+            lineHeight = 24.sp,
+            letterSpacing = 0.5.sp
+        ),
+        bodySmall = TextStyle(
+            fontFamily = appFont,
+            fontWeight = FontWeight.Normal,
+            fontSize = 12.sp,
+            lineHeight = 20.sp,
+            letterSpacing = 0.25.sp
+        ),
+        titleLarge = TextStyle(
+            fontFamily = appFont,
+            fontWeight = FontWeight.Normal,
+            fontSize = 22.sp,
+            lineHeight = 28.sp,
+            letterSpacing = 0.sp
+        ),
+        titleMedium = TextStyle(
+            fontFamily = appFont,
+            fontWeight = FontWeight.Normal,
+            fontSize = 18.sp,
+            lineHeight = 24.sp,
+            letterSpacing = 0.sp
+        ),
+        titleSmall = TextStyle(
+            fontFamily = appFont,
+            fontWeight = FontWeight.Normal,
+            fontSize = 16.sp,
+            lineHeight = 20.sp,
+            letterSpacing = 0.sp
+        ),
+        labelSmall = TextStyle(
+            fontFamily = appFont,
+            fontWeight = FontWeight.Medium,
+            fontSize = 11.sp,
+            lineHeight = 16.sp,
+            letterSpacing = 0.5.sp
+        )
+    )
+}
+
+// Keep legacy non-composable version for Android previews / fallback
 val Typography = Typography(
     bodyLarge = TextStyle(
         fontFamily = FontFamily.Default,
@@ -29,8 +95,6 @@ val Typography = Typography(
         lineHeight = 20.sp,
         letterSpacing = 0.25.sp
     ),
-
-
     titleLarge = TextStyle(
         fontFamily = FontFamily.Default,
         fontWeight = FontWeight.Normal,
@@ -59,7 +123,6 @@ val Typography = Typography(
         lineHeight = 16.sp,
         letterSpacing = 0.5.sp
     )
-
 )
 
 /**

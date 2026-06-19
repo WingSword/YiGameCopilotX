@@ -1,7 +1,7 @@
 package org.walks.gamecopilot.lan.data
 
-import kotlinx.datetime.Clock
 import kotlinx.serialization.Serializable
+import kotlin.time.Clock
 
 @Serializable
 data class LANRoomInfo(
@@ -38,6 +38,7 @@ enum class LANMessageType(val code: String) {
     LEAVE_ROOM("LEAVE"),
     PLAYER_JOINED("PLAYER_JOINED"),
     PLAYER_LEFT("PLAYER_LEFT"),
+    ROOM_STATE_SYNC("ROOM_STATE"),
     GAME_STATE_SYNC("GAME_STATE"),
     GAME_ACTION("GAME_ACTION"),
     CHAT_MESSAGE("CHAT"),

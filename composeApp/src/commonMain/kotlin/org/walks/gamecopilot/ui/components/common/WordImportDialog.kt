@@ -2,7 +2,6 @@ package org.walks.gamecopilot.ui.components.common
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -11,22 +10,17 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.layout.wrapContentHeight
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.rounded.ContentCopy
+import androidx.compose.material.icons.rounded.ContentPaste
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.rounded.ArrowBack
-import androidx.compose.material.icons.rounded.ContentCopy
-import androidx.compose.material.icons.rounded.ContentPaste
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -40,9 +34,9 @@ import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.compose.ui.window.Dialog
 import org.walks.gamecopilot.PlatformHelper
 import org.walks.gamecopilot.data.WordImportEngine
+import org.walks.gamecopilot.ui.components.AppDialog
 
 /**
  * 词库导入对话框
@@ -68,151 +62,16 @@ fun WordImportDialog(
 
     val clipboardManager = LocalClipboardManager.current
 
-    Dialog(onDismissRequest = onDismiss) {
-        Surface(
-            modifier = Modifier
-                .fillMaxWidth()
-                .wrapContentHeight(),
-            shape = RoundedCornerShape(16.dp),
-            color = MaterialTheme.colorScheme.surface,
-            tonalElevation = 6.dp
-        ) {
-            Column(
-                modifier = Modifier.padding(20.dp)
-            ) {
-                // 标题栏
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    IconButton(
-                        onClick = onDismiss,
-                        modifier = Modifier.size(36.dp)
-                    ) {
-                        Icon(
-                            Icons.AutoMirrored.Rounded.ArrowBack,
-                            contentDescription = "返回",
-                            tint = MaterialTheme.colorScheme.onSurface
-                        )
-                    }
-
-                    Spacer(modifier = Modifier.width(8.dp))
-
-                    Text(
-                        text = title,
-                        style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.SemiBold,
-                        color = MaterialTheme.colorScheme.onSurface
-                    )
-                }
-
-                Spacer(modifier = Modifier.height(16.dp))
-
-                // 成功状态
-                if (isImported) {
-                    ImportSuccessView(
-                        warnings = warnings,
-                        onDismiss = onDismiss
-                    )
-                    return@Column
-                }
-
-                // 操作按钮行：复制模板 + 粘贴
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
-                    // 复制模板按钮
-                    OutlinedButton(
-                        onClick = {
-                            val template = if (isSpyMode) {
-                                WordImportEngine.spyTemplate()
-                            } else {
-                                WordImportEngine.drawTemplate()
-                            }
-                            clipboardManager.setText(AnnotatedString(template))
-                            PlatformHelper.getInstance().vibrateMethod()
-                        },
-                        modifier = Modifier.weight(1f),
-                        shape = RoundedCornerShape(8.dp)
-                    ) {
-                        Icon(
-                            Icons.Rounded.ContentCopy,
-                            contentDescription = null,
-                            modifier = Modifier.size(16.dp)
-                        )
-                        Spacer(modifier = Modifier.width(4.dp))
-                        Text("复制模板", fontSize = 13.sp)
-                    }
-
-                    // 粘贴按钮
-                    OutlinedButton(
-                        onClick = {
-                            val clipText = clipboardManager.getText()?.text ?: ""
-                            if (clipText.isNotBlank()) {
-                                inputText = clipText
-                                PlatformHelper.getInstance().vibrateMethod()
-                            }
-                        },
-                        modifier = Modifier.weight(1f),
-                        shape = RoundedCornerShape(8.dp)
-                    ) {
-                        Icon(
-                            Icons.Rounded.ContentPaste,
-                            contentDescription = null,
-                            modifier = Modifier.size(16.dp)
-                        )
-                        Spacer(modifier = Modifier.width(4.dp))
-                        Text("从剪贴板粘贴", fontSize = 13.sp)
-                    }
-                }
-
-                Spacer(modifier = Modifier.height(12.dp))
-
-                // 格式提示
-                Text(
-                    text = if (isSpyMode) {
-                        "格式：每行一对词汇，用 - 分隔（如：牛奶 - 豆浆）"
-                    } else {
-                        "格式：每行一个词汇（如：苹果）"
-                    },
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-
-                Spacer(modifier = Modifier.height(8.dp))
-
-                // 输入框
-                OutlinedTextField(
-                    value = inputText,
-                    onValueChange = {
-                        inputText = it
-                        errorMessage = null
-                        lineErrors = emptyList()
-                    },
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(180.dp),
-                    placeholder = {
-                        Text(
-                            if (isSpyMode) "在此粘贴或输入词库内容...\n牛奶 - 豆浆\n橙子 - 橘子"
-                            else "在此粘贴或输入词库内容...\n苹果\n香蕉\n长颈鹿",
-                            color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f)
-                        )
-                    },
-                    isError = errorMessage != null,
-                    shape = RoundedCornerShape(8.dp)
-                )
-
-                // 错误提示
-                if (errorMessage != null) {
-                    Spacer(modifier = Modifier.height(8.dp))
-                    ErrorView(message = errorMessage!!, lineErrors = lineErrors)
-                }
-
-                Spacer(modifier = Modifier.height(16.dp))
-
-                // 导入按钮
+    AppDialog(
+        title = title,
+        subtitle = if (isSpyMode) {
+            "每行一对词汇，用 - 分隔"
+        } else {
+            "每行一个词汇，适合你画我猜题库"
+        },
+        onDismiss = onDismiss,
+        actions = {
+            if (!isImported) {
                 Button(
                     onClick = {
                         val result = if (isSpyMode) {
@@ -228,12 +87,14 @@ fun WordImportDialog(
                                 isImported = true
                                 onImportSuccess(inputText)
                             }
+
                             is WordImportEngine.ImportResult.DrawWords -> {
                                 PlatformHelper.getInstance().vibrateLongMethod()
                                 warnings = result.warnings
                                 isImported = true
                                 onImportSuccess(inputText)
                             }
+
                             is WordImportEngine.ImportResult.Error -> {
                                 errorMessage = result.message
                                 lineErrors = result.lineErrors
@@ -243,7 +104,6 @@ fun WordImportDialog(
                     modifier = Modifier
                         .fillMaxWidth()
                         .height(44.dp),
-                    shape = RoundedCornerShape(8.dp),
                     enabled = inputText.isNotBlank(),
                     colors = ButtonDefaults.buttonColors(
                         containerColor = MaterialTheme.colorScheme.primary
@@ -251,6 +111,101 @@ fun WordImportDialog(
                 ) {
                     Text("导入词库", fontSize = 15.sp, fontWeight = FontWeight.SemiBold)
                 }
+            }
+        }
+    ) {
+        if (isImported) {
+            ImportSuccessView(
+                warnings = warnings,
+                onDismiss = onDismiss
+            )
+        } else {
+            // 操作按钮行：复制模板 + 粘贴
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                // 复制模板按钮
+                OutlinedButton(
+                    onClick = {
+                        val template = if (isSpyMode) {
+                            WordImportEngine.spyTemplate()
+                        } else {
+                            WordImportEngine.drawTemplate()
+                        }
+                        clipboardManager.setText(AnnotatedString(template))
+                        PlatformHelper.getInstance().vibrateMethod()
+                    },
+                    modifier = Modifier.weight(1f),
+                    shape = RoundedCornerShape(8.dp)
+                ) {
+                    Icon(
+                        Icons.Rounded.ContentCopy,
+                        contentDescription = null,
+                        modifier = Modifier.size(16.dp)
+                    )
+                    Spacer(modifier = Modifier.width(4.dp))
+                    Text("复制模板", fontSize = 13.sp)
+                }
+
+                // 粘贴按钮
+                OutlinedButton(
+                    onClick = {
+                        val clipText = clipboardManager.getText()?.text ?: ""
+                        if (clipText.isNotBlank()) {
+                            inputText = clipText
+                            PlatformHelper.getInstance().vibrateMethod()
+                        }
+                    },
+                    modifier = Modifier.weight(1f),
+                    shape = RoundedCornerShape(8.dp)
+                ) {
+                    Icon(
+                        Icons.Rounded.ContentPaste,
+                        contentDescription = null,
+                        modifier = Modifier.size(16.dp)
+                    )
+                    Spacer(modifier = Modifier.width(4.dp))
+                    Text("粘贴", fontSize = 13.sp)
+                }
+            }
+
+            // 格式提示
+            Text(
+                text = if (isSpyMode) {
+                    "示例：牛奶 - 豆浆"
+                } else {
+                    "示例：苹果"
+                },
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+
+            // 输入框
+            OutlinedTextField(
+                value = inputText,
+                onValueChange = {
+                    inputText = it
+                    errorMessage = null
+                    lineErrors = emptyList()
+                },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(180.dp),
+                placeholder = {
+                    Text(
+                        if (isSpyMode) "在此粘贴或输入词库内容...\n牛奶 - 豆浆\n橙子 - 橘子"
+                        else "在此粘贴或输入词库内容...\n苹果\n香蕉\n长颈鹿",
+                        color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f)
+                    )
+                },
+                isError = errorMessage != null,
+                shape = RoundedCornerShape(8.dp)
+            )
+
+            // 错误提示
+            if (errorMessage != null) {
+                ErrorView(message = errorMessage!!, lineErrors = lineErrors)
             }
         }
     }

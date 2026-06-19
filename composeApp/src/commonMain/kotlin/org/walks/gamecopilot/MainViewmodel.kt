@@ -3,6 +3,7 @@ package org.walks.gamecopilot
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -21,16 +22,20 @@ import org.walks.gamecopilot.awalong.AwalongRole
 import org.walks.gamecopilot.awalong.DefaultCustomConfig
 import org.walks.gamecopilot.awalong.data.AwalongGameDayEntity
 import org.walks.gamecopilot.awalong.data.AwalongGameState
+import org.walks.gamecopilot.data.AnswerBookData
 import org.walks.gamecopilot.data.LANState
 import org.walks.gamecopilot.data.RandomItem
 import org.walks.gamecopilot.data.RandomListEntity
 import org.walks.gamecopilot.data.WheelItem
 import org.walks.gamecopilot.data.WsRoomDataEntity
+import org.walks.gamecopilot.data.entity.AnswerBookState
 import org.walks.gamecopilot.data.entity.GameEntity
 import org.walks.gamecopilot.data.entity.LocalSpyEntity
 import org.walks.gamecopilot.event.NavigationEvent
 import org.walks.gamecopilot.http.RoomModule
 import org.walks.gamecopilot.http.roomModule
+import org.walks.gamecopilot.intent.AiIntent
+import org.walks.gamecopilot.intent.AnswerBookIntent
 import org.walks.gamecopilot.intent.GameIntent
 import org.walks.gamecopilot.intent.GameRoomIntent
 import org.walks.gamecopilot.intent.LANIntent
@@ -38,9 +43,20 @@ import org.walks.gamecopilot.intent.RandomPageIntent
 import org.walks.gamecopilot.lan.data.LANGameState
 import org.walks.gamecopilot.lan.lanRoomManager
 import org.walks.gamecopilot.mmkv.MMKVUtils
+import org.walks.gamecopilot.mmkv.MMKV_AI_API_KEY
+import org.walks.gamecopilot.mmkv.MMKV_AI_BASE_URL
+import org.walks.gamecopilot.mmkv.MMKV_AI_ENABLED_KEY
+import org.walks.gamecopilot.mmkv.MMKV_AI_PROVIDER_KEY
+import org.walks.gamecopilot.mmkv.MMKV_AI_STYLE_KEY
+import org.walks.gamecopilot.mmkv.MMKV_AI_TIMEOUT_KEY
 import org.walks.gamecopilot.mmkv.MMKV_RANDOM_CARDS_SETTING_KEY
 import org.walks.gamecopilot.mmkv.MMKV_RANDOM_LABEL_NAME_KEY
 import org.walks.gamecopilot.navigation.NaviRoute
+import org.walks.gamecopilot.service.ai.AiConfig
+import org.walks.gamecopilot.service.ai.AiProvider
+import org.walks.gamecopilot.service.ai.AiServiceFactory
+import org.walks.gamecopilot.service.ai.AiStyle
+import org.walks.gamecopilot.service.ai.prompts.GamePromptTemplates
 import org.walks.gamecopilot.utils.DateTimeUtils
 import kotlin.time.Clock
 import kotlin.time.ExperimentalTime
@@ -167,11 +183,57 @@ class MainViewmodel : ViewModel() {
     private val _lanState = MutableStateFlow(LANState())
     val lanState: StateFlow<LANState> = _lanState
 
+    /**
+     * 答案之书状态
+     * 包含当前问题、答案、翻书动画进度等
+     */
+    private val _answerBookState = MutableStateFlow(AnswerBookState())
+    val answerBookState: StateFlow<AnswerBookState> = _answerBookState
+
+    /**
+     * 一夜狼人入口页选定的开局配置
+     * 游戏页直接消费该配置，避免进入游戏后重复出现配置界面。
+     */
+    private val _oneNightWerewolfPlayerCount = MutableStateFlow(5)
+    val oneNightWerewolfPlayerCount: StateFlow<Int> = _oneNightWerewolfPlayerCount
+    private val _oneNightWerewolfNicknames = MutableStateFlow(List(5) { "玩家${it + 1}" })
+    val oneNightWerewolfNicknames: StateFlow<List<String>> = _oneNightWerewolfNicknames
+
+    /**
+     * AI 助手配置状态
+     * 包含 AI 提供商、API Key、风格等配置
+     */
+    private val _aiConfig = MutableStateFlow(AiConfig())
+    val aiConfig: StateFlow<AiConfig> = _aiConfig
+
+    /**
+     * AI 消息内容状态
+     * 当前 AI 回复的文本内容
+     */
+    private val _aiMessage = MutableStateFlow("")
+    val aiMessage: StateFlow<String> = _aiMessage
+
+    /**
+     * AI 加载中状态
+     * 标识当前是否正在等待 AI 回复
+     */
+    private val _isLoadingAi = MutableStateFlow(false)
+    val isLoadingAi: StateFlow<Boolean> = _isLoadingAi
+
     private var userId = ""
+
+    fun prepareOneNightWerewolfGame(playerCount: Int, nicknames: List<String>) {
+        val safeCount = playerCount.coerceIn(3, 10)
+        _oneNightWerewolfPlayerCount.value = safeCount
+        _oneNightWerewolfNicknames.value = List(safeCount) { index ->
+            nicknames.getOrNull(index)?.takeIf { it.isNotBlank() } ?: "玩家${index + 1}"
+        }
+    }
 
     init {
         initLANObservers()
         initDefaultRandomConfigs()
+        loadAiConfig()
         
         roomModule.connectionState
             .onEach { state ->
@@ -186,10 +248,8 @@ class MainViewmodel : ViewModel() {
         roomModule.messages
             .onEach { rawMessage ->
                 try {
-                    when (val message = Json.decodeFromString<WsRoomDataEntity>(rawMessage)) {
-                        is WsRoomDataEntity -> handleWsData(message)
-                        else -> GameLogger.debug("未知消息类型")
-                    }
+                    val message = Json.decodeFromString<WsRoomDataEntity>(rawMessage)
+                    handleWsData(message)
                 } catch (e: Exception) {
                     GameLogger.error("消息解析失败", e)
                 }
@@ -270,7 +330,9 @@ class MainViewmodel : ViewModel() {
             }
 
             is RandomPageIntent.OnAddNewRandom -> {
-                if (intent.randomListEntity.name.startsWith(RANDOM_PAGE_CONFIG_CATE_FINGER)) {
+                if (intent.randomListEntity.name.startsWith(RANDOM_PAGE_CONFIG_CATE_FINGER) ||
+                    intent.randomListEntity.name.startsWith(RANDOM_PAGE_CONFIG_CATE_ANSWER_BOOK)
+                ) {
                     return
                 }
                 try {
@@ -288,14 +350,14 @@ class MainViewmodel : ViewModel() {
                         )
                     }
                 } catch (e: Exception) {
-                    e.printStackTrace()
-                    // 添加错误处理
-
+                    GameLogger.error("保存随机配置失败: ${intent.randomListEntity.name}", e)
                 }
             }
 
             is RandomPageIntent.OnEditRandomConfig -> {
-                if (intent.randomListEntity.name.startsWith(RANDOM_PAGE_CONFIG_CATE_FINGER)) {
+                if (intent.randomListEntity.name.startsWith(RANDOM_PAGE_CONFIG_CATE_FINGER) ||
+                    intent.randomListEntity.name.startsWith(RANDOM_PAGE_CONFIG_CATE_ANSWER_BOOK)
+                ) {
                     return
                 }
                 try {
@@ -322,8 +384,7 @@ class MainViewmodel : ViewModel() {
                         _currentRandomContentState.value = intent.randomListEntity
                     }
                 } catch (e: Exception) {
-                    e.printStackTrace()
-                    // 添加错误处理
+                    GameLogger.error("编辑随机配置失败: ${intent.randomListEntity.name}", e)
                 }
             }
 
@@ -340,16 +401,18 @@ class MainViewmodel : ViewModel() {
             }
 
             is RandomPageIntent.DeleteRandomConfig -> {
-                if (intent.name.startsWith(RANDOM_PAGE_CONFIG_CATE_FINGER)) {
+                if (intent.name.startsWith(RANDOM_PAGE_CONFIG_CATE_FINGER) ||
+                    intent.name.startsWith(RANDOM_PAGE_CONFIG_CATE_ANSWER_BOOK)
+                ) {
                     return
                 }
                 randomLabelChange("")
-                val list=randomLabelsState.value.minus(intent.name)
+                val list = randomLabelsState.value.minus(intent.name)
                 _randomLabelsState.update {
                     mutableListOf()
                 }
                 _randomLabelsState.update {
-                   list
+                    list
                 }
 
                 try {
@@ -359,14 +422,12 @@ class MainViewmodel : ViewModel() {
                         putSet(
                             MMKV_RANDOM_LABEL_NAME_KEY,
                             getSet(MMKV_RANDOM_LABEL_NAME_KEY)
-                                ?.minus(intent.name)?:setOf()
+                                ?.minus(intent.name) ?: setOf()
 
                         )
                     }
                 } catch (e: Exception) {
-                    e.printStackTrace()
-                    // 添加错误处理
-
+                    GameLogger.error("删除随机配置失败: ${intent.name}", e)
                 }
             }
             RandomPageIntent.OnAddNewRandomDialogShow -> {
@@ -405,9 +466,9 @@ class MainViewmodel : ViewModel() {
             is GameIntent.RefreshPlayerNumber -> {
                 _gameEntity.update { current ->
                     current.copy(
-                        currentGame = current.currentGame?.copy(
+                        currentGame = current.currentGame.copy(
                             totalPlayerNumber = intent.num
-                        ) ?: LocalSpyEntity(totalPlayerNumber = intent.num)
+                        )
                     )
                 }
             }
@@ -415,10 +476,10 @@ class MainViewmodel : ViewModel() {
             is GameIntent.RefreshSpyNumber -> {
                 _gameEntity.update { current ->
                     current.copy(
-                        currentGame = current.currentGame?.copy(
+                        currentGame = current.currentGame.copy(
                             spyNum = intent.spyNum,
                             blackNum = intent.blackNum
-                        ) ?: LocalSpyEntity(spyNum = intent.spyNum, blackNum = intent.blackNum)
+                        )
                     )
                 }
             }
@@ -448,18 +509,17 @@ class MainViewmodel : ViewModel() {
     private fun startNewLocalSpyGame() {
         _gameEntity.update { current ->
             // 保存当前游戏到历史记录
-            if (current.currentGame != null) {
-                saveCurrentGameToHistory(current.currentGame, current.gameCount)
-            }
+            saveCurrentGameToHistory(current.currentGame, current.gameCount)
 
             // 创建新游戏，保留可能的昵称设置
-            val previousNicknames = current.currentGame?.nicknames ?: emptyList()
-            val playerNumber = current.currentGame?.totalPlayerNumber ?: 4
+            val previousGame = current.currentGame
+            val previousNicknames = previousGame.nicknames
+            val playerNumber = previousGame.totalPlayerNumber
             
             val newGame = LocalSpyEntity(
                 totalPlayerNumber = playerNumber,
-                spyNum = current.currentGame?.spyNum ?: 1,
-                blackNum = current.currentGame?.blackNum ?: 0,
+                spyNum = previousGame.spyNum,
+                blackNum = previousGame.blackNum,
                 nicknames = if (previousNicknames.size == playerNumber) previousNicknames
                 else List(playerNumber) { (it + 1).toString() } // 初始化默认昵称
             )
@@ -476,52 +536,54 @@ class MainViewmodel : ViewModel() {
 
     private fun refreshCurrentGameIdentities() {
         _gameEntity.update { current ->
-            current.currentGame?.let { game ->
-                // 创建新的游戏实例，确保重新分配身份，但保留昵称
-                val refreshedGame = LocalSpyEntity(
-                    totalPlayerNumber = game.totalPlayerNumber,
-                    spyNum = game.spyNum,
-                    blackNum = game.blackNum,
-                    nicknames = game.nicknames // 保留现有昵称
-                ).apply {
-                    refreshGame(current.globalSelectedWordGroups)
-                }
+            val game = current.currentGame
+            // 创建新的游戏实例，确保重新分配身份，但保留昵称
+            val refreshedGame = LocalSpyEntity(
+                totalPlayerNumber = game.totalPlayerNumber,
+                spyNum = game.spyNum,
+                blackNum = game.blackNum,
+                nicknames = game.nicknames // 保留现有昵称
+            ).apply {
+                refreshGame(current.globalSelectedWordGroups)
+            }
 
-                GameLogger.debug("重新分配身份完成，旧的卧底索引: ${game.spies}, 新的卧底索引: ${refreshedGame.spies}")
-                GameLogger.debug("词汇也重新分配了，旧词汇: ${game.gameWord}/${game.spyWord}, 新词汇: ${refreshedGame.gameWord}/${refreshedGame.spyWord}")
-                current.copy(
-                    currentGame = refreshedGame
-                )
-            } ?: current
+            GameLogger.debug("重新分配身份完成，旧的卧底索引: ${game.spies}, 新的卧底索引: ${refreshedGame.spies}")
+            GameLogger.debug("词汇也重新分配了，旧词汇: ${game.gameWord}/${game.spyWord}, 新词汇: ${refreshedGame.gameWord}/${refreshedGame.spyWord}")
+            current.copy(
+                currentGame = refreshedGame
+            )
         }
     }
 
     private fun updatePlayerNickname(playerIndex: Int, newNickname: String) {
         _gameEntity.update { current ->
-            current.currentGame?.let { game ->
-                // 确保昵称列表长度足够
-                val updatedNicknames = if (game.nicknames.size >= game.totalPlayerNumber) {
-                    game.nicknames.toMutableList().apply {
-                        set(playerIndex, newNickname.ifEmpty { (playerIndex + 1).toString() })
-                    }
-                } else {
-                    // 如果昵称列表长度不够，创建新的列表
-                    List(game.totalPlayerNumber) { index ->
-                        if (index == playerIndex) {
-                            newNickname.ifEmpty { (playerIndex + 1).toString() }
-                        } else if (index < game.nicknames.size) {
-                            game.nicknames[index]
-                        } else {
-                            (index + 1).toString()
-                        }
+            val game = current.currentGame
+            if (playerIndex !in 0 until game.totalPlayerNumber) {
+                return@update current
+            }
+
+            // 确保昵称列表长度足够
+            val updatedNicknames = if (game.nicknames.size >= game.totalPlayerNumber) {
+                game.nicknames.toMutableList().apply {
+                    set(playerIndex, newNickname.ifEmpty { (playerIndex + 1).toString() })
+                }
+            } else {
+                // 如果昵称列表长度不够，创建新的列表
+                List(game.totalPlayerNumber) { index ->
+                    if (index == playerIndex) {
+                        newNickname.ifEmpty { (playerIndex + 1).toString() }
+                    } else if (index < game.nicknames.size) {
+                        game.nicknames[index]
+                    } else {
+                        (index + 1).toString()
                     }
                 }
+            }
 
-                GameLogger.debug("更新昵称: 玩家${playerIndex + 1} -> $newNickname")
-                current.copy(
-                    currentGame = game.copy(nicknames = updatedNicknames)
-                )
-            } ?: current
+            GameLogger.debug("更新昵称: 玩家${playerIndex + 1} -> $newNickname")
+            current.copy(
+                currentGame = game.copy(nicknames = updatedNicknames)
+            )
         }
     }
     
@@ -933,21 +995,11 @@ class MainViewmodel : ViewModel() {
 
     private fun enterGameRoom(roomId: String, roomKey: String, asOwner: Boolean = false) {
         viewModelScope.launch {
-            emitNavigationEvent(NavigationEvent.NavigateTo("room"))
-        }
-        _roomEntityState.update {
-            it.copy(
-                roomId = roomId,
-                roomKey = roomKey,
-                isRoomOwner = asOwner
-            )
-        }
-        viewModelScope.launch {
             // 串行执行连接和创建房间
-            val createResult = withContext(Dispatchers.Default) {
+            val roomReady = withContext(Dispatchers.Default) {
                 // 先连接
                 val connected = roomModule.connect()
-                if (!connected) return@withContext null
+                if (!connected) return@withContext false
 
                 if (asOwner) {
                     roomModule.createRoom(roomId, roomKey)
@@ -957,12 +1009,20 @@ class MainViewmodel : ViewModel() {
             }
 
             // 处理创建结果
-            createResult?.let {
+            if (roomReady) {
+                _roomEntityState.update {
+                    it.copy(
+                        roomId = roomId,
+                        roomKey = roomKey,
+                        isRoomOwner = asOwner
+                    )
+                }
                 GameLogger.debug("房间创建成功: $roomId")
-            } ?: run {
+                emitNavigationEvent(NavigationEvent.NavigateTo(NaviRoute.ROOM.route))
+            } else {
                 GameLogger.error("房间创建失败")
                 clearRoomState()
-                emitNavigationEvent(NavigationEvent.NavigateTo(route = NaviRoute.HOME.route))
+                _topTipState.emit("网络房间连接失败，请检查网络或稍后重试")
             }
         }
     }
@@ -1018,6 +1078,7 @@ class MainViewmodel : ViewModel() {
                 val diceConfigName = RANDOM_PAGE_CONFIG_CATE_DICE + "六面骰子"
                 val coinConfigName = RANDOM_PAGE_CONFIG_CATE_COIN + "硬币"
                 val wheelConfigName = RANDOM_PAGE_CONFIG_CATE_WHEEL + "今天吃啥"
+                val answerBookConfigName = RANDOM_PAGE_CONFIG_CATE_ANSWER_BOOK + "答案之书"
 
                 if (!existingLabels.contains(fingerConfigName)) {
                     val fingerConfig = RandomListEntity(
@@ -1081,13 +1142,29 @@ class MainViewmodel : ViewModel() {
                     existingLabels.add(wheelConfig.name)
                 }
 
+                // 检查并添加预置答案之书
+                if (!existingLabels.contains(answerBookConfigName)) {
+                    val answerBookConfig = RandomListEntity(
+                        name = answerBookConfigName,
+                        list = emptyList() // 答案之书数据由 AnswerBookData 对象提供
+                    )
+                    val answerBookJson = Json.encodeToString(
+                        RandomListEntity.serializer(), answerBookConfig
+                    )
+                    MMKVUtils.put(
+                        MMKV_RANDOM_CARDS_SETTING_KEY + answerBookConfig.name,
+                        answerBookJson
+                    )
+                    existingLabels.add(answerBookConfig.name)
+                }
+
                 // 保存更新后的配置列表
                 MMKVUtils.putSet(MMKV_RANDOM_LABEL_NAME_KEY, existingLabels)
 
                 // 更新状态
                 _randomLabelsState.value = existingLabels.toList()
             } catch (e: Exception) {
-                e.printStackTrace()
+                GameLogger.error("初始化默认随机配置失败", e)
             }
         }
     }
@@ -1120,7 +1197,7 @@ class MainViewmodel : ViewModel() {
                 val json = Json.encodeToString(RandomListEntity.serializer(), configEntity)
                 MMKVUtils.put(MMKV_RANDOM_CARDS_SETTING_KEY + currentConfig, json)
             } catch (e: Exception) {
-                e.printStackTrace()
+                GameLogger.error("保存转盘配置失败: $currentConfig", e)
             }
         }
     }
@@ -1170,6 +1247,229 @@ class MainViewmodel : ViewModel() {
             .launchIn(viewModelScope)
     }
 
+    /**
+     * 处理答案之书意图
+     * @param intent 答案之书意图（翻书、重置、更新问题）
+     */
+    fun handleAnswerBookIntent(intent: AnswerBookIntent) {
+        when (intent) {
+            is AnswerBookIntent.FlipBook -> {
+                val currentState = _answerBookState.value
+                if (currentState.isFlipping) return
+
+                // 开始翻书动画
+                _answerBookState.update {
+                    it.copy(
+                        isFlipping = true,
+                        flipProgress = 0f
+                    )
+                }
+
+                // 使用协程驱动翻书动画进度
+                viewModelScope.launch {
+                    val totalDuration = 1500L // 动画总时长 1.5 秒
+                    val steps = 30 // 动画帧数
+                    val stepDuration = totalDuration / steps
+
+                    for (step in 1..steps) {
+                        delay(stepDuration)
+                        val progress = step.toFloat() / steps.toFloat()
+
+                        // 动画过半时，设置答案内容
+                        if (step == steps / 2) {
+                            val answer = AnswerBookData.getRandomAnswerExcluding(
+                                _answerBookState.value.lastAnswerIndex
+                            )
+                            val answerIndex = AnswerBookData.answers.indexOf(answer)
+                            _answerBookState.update { state ->
+                                state.copy(
+                                    currentAnswer = answer,
+                                    lastAnswerIndex = answerIndex
+                                )
+                            }
+                        }
+
+                        _answerBookState.update { state ->
+                            state.copy(flipProgress = progress)
+                        }
+                    }
+
+                    // 动画结束
+                    _answerBookState.update { state ->
+                        state.copy(
+                            isFlipping = false,
+                            flipProgress = 1f
+                        )
+                    }
+                }
+            }
+
+            is AnswerBookIntent.ResetFlip -> {
+                // 重置状态，回到初始封面
+                _answerBookState.update {
+                    it.copy(
+                        currentAnswer = null,
+                        isFlipping = false,
+                        flipProgress = 0f
+                    )
+                }
+            }
+
+            is AnswerBookIntent.UpdateQuestion -> {
+                _answerBookState.update {
+                    it.copy(currentQuestion = intent.question)
+                }
+            }
+        }
+    }
+
+    /**
+     * 处理 AI 助手相关意图
+     * @param intent AI 意图（发送消息、更新配置等）
+     */
+    fun handleAiIntent(intent: AiIntent) {
+        when (intent) {
+            is AiIntent.SendMessage -> {
+                sendAiMessage(intent.gameType, intent.context)
+            }
+
+            is AiIntent.UpdateConfig -> {
+                _aiConfig.value = intent.config
+                saveAiConfig(intent.config)
+            }
+
+            is AiIntent.ToggleAi -> {
+                _aiConfig.update { it.copy(isEnabled = intent.enabled) }
+                saveAiConfig(_aiConfig.value)
+            }
+
+            is AiIntent.UpdateApiKey -> {
+                _aiConfig.update { it.copy(apiKey = intent.key) }
+                saveAiConfig(_aiConfig.value)
+            }
+
+            is AiIntent.UpdateProvider -> {
+                _aiConfig.update {
+                    it.copy(
+                        provider = intent.provider,
+                        baseUrl = intent.provider.defaultBaseUrl
+                    )
+                }
+                saveAiConfig(_aiConfig.value)
+            }
+
+            is AiIntent.UpdateStyle -> {
+                _aiConfig.update { it.copy(aiStyle = intent.style) }
+                saveAiConfig(_aiConfig.value)
+            }
+
+            is AiIntent.ClearMessage -> {
+                _aiMessage.value = ""
+            }
+        }
+    }
+
+    /**
+     * 发送消息给 AI 并更新回复
+     * @param gameType 游戏类型标识
+     * @param context 用户输入的上下文内容
+     */
+    private fun sendAiMessage(gameType: String, context: String) {
+        viewModelScope.launch {
+            _isLoadingAi.value = true
+            try {
+                val config = _aiConfig.value
+                val systemPrompt = GamePromptTemplates.getPromptForGame(gameType, config.aiStyle)
+                val service = AiServiceFactory.create(config)
+
+                val response = service.chat(
+                    org.walks.gamecopilot.service.ai.AiRequest(
+                        prompt = context,
+                        systemPrompt = systemPrompt
+                    )
+                )
+
+                if (response.isSuccess) {
+                    _aiMessage.value = response.content
+                } else {
+                    // AI 调用失败，自动降级为本地预设
+                    GameLogger.warn("AI 请求失败: ${response.errorMessage}，降级为本地预设")
+                    val fallbackService = org.walks.gamecopilot.service.ai.FallbackAiService()
+                    val fallbackResponse = fallbackService.chat(
+                        org.walks.gamecopilot.service.ai.AiRequest(
+                            prompt = context,
+                            systemPrompt = systemPrompt
+                        )
+                    )
+                    _aiMessage.value = if (fallbackResponse.isSuccess) {
+                        fallbackResponse.content
+                    } else {
+                        "AI 助手暂时不可用，请稍后再试~"
+                    }
+                }
+            } catch (e: Exception) {
+                GameLogger.error("AI 消息处理异常", e)
+                _aiMessage.value = "AI 助手遇到了一些问题，请稍后再试~"
+            } finally {
+                _isLoadingAi.value = false
+            }
+        }
+    }
+
+    /**
+     * 从持久化存储加载 AI 配置
+     */
+    private fun loadAiConfig() {
+        try {
+            val providerName = MMKVUtils.getString(MMKV_AI_PROVIDER_KEY, AiProvider.FALLBACK.name)
+            val provider = try {
+                AiProvider.valueOf(providerName)
+            } catch (_: Exception) {
+                AiProvider.FALLBACK
+            }
+            val apiKey = MMKVUtils.getString(MMKV_AI_API_KEY, "")
+            val baseUrl = MMKVUtils.getString(MMKV_AI_BASE_URL, AiProvider.DEEP_SEEK.defaultBaseUrl)
+            val isEnabled = MMKVUtils.getBoolean(MMKV_AI_ENABLED_KEY, false)
+            val styleName = MMKVUtils.getString(MMKV_AI_STYLE_KEY, AiStyle.HUMOROUS.name)
+            val aiStyle = try {
+                AiStyle.valueOf(styleName)
+            } catch (_: Exception) {
+                AiStyle.HUMOROUS
+            }
+            val timeoutMs = MMKVUtils.getLong(MMKV_AI_TIMEOUT_KEY, 10000L)
+
+            _aiConfig.value = AiConfig(
+                provider = provider,
+                apiKey = apiKey,
+                baseUrl = baseUrl,
+                isEnabled = isEnabled,
+                aiStyle = aiStyle,
+                timeoutMs = timeoutMs
+            )
+        } catch (e: Exception) {
+            GameLogger.error("加载 AI 配置失败", e)
+        }
+    }
+
+    /**
+     * 保存 AI 配置到持久化存储
+     * @param config AI 配置
+     */
+    private fun saveAiConfig(config: AiConfig) {
+        try {
+            MMKVUtils.apply {
+                put(MMKV_AI_PROVIDER_KEY, config.provider.name)
+                put(MMKV_AI_API_KEY, config.apiKey)
+                put(MMKV_AI_BASE_URL, config.baseUrl)
+                put(MMKV_AI_ENABLED_KEY, config.isEnabled)
+                put(MMKV_AI_STYLE_KEY, config.aiStyle.name)
+                put(MMKV_AI_TIMEOUT_KEY, config.timeoutMs)
+            }
+        } catch (e: Exception) {
+            GameLogger.error("保存 AI 配置失败", e)
+        }
+    }
+
     fun handleLANIntent(intent: LANIntent) {
         when (intent) {
             is LANIntent.SetPreferredGameType -> {
@@ -1178,7 +1478,7 @@ class MainViewmodel : ViewModel() {
 
             is LANIntent.StartDiscovery -> {
                 lanRoomManager.startDiscovery(intent.gameType)
-                _lanState.update { it.copy(isDiscovering = true) }
+                _lanState.update { it.copy(isDiscovering = true, error = null) }
             }
 
             is LANIntent.StopDiscovery -> {
@@ -1191,6 +1491,7 @@ class MainViewmodel : ViewModel() {
             }
 
             is LANIntent.CreateRoom -> {
+                _lanState.update { it.copy(error = null) }
                 lanRoomManager.createRoom(
                     roomName = intent.roomName,
                     hostName = intent.hostName,
@@ -1201,6 +1502,7 @@ class MainViewmodel : ViewModel() {
             }
 
             is LANIntent.JoinRoom -> {
+                _lanState.update { it.copy(error = null) }
                 lanRoomManager.joinRoom(
                     roomInfo = intent.roomInfo,
                     playerName = intent.playerName,

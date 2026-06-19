@@ -18,6 +18,8 @@ import androidx.compose.ui.unit.dp
 import org.walks.gamecopilot.MainViewmodel
 import org.walks.gamecopilot.PlatformHelper
 import org.walks.gamecopilot.getWordMapBySelectedGroups
+import org.walks.gamecopilot.intent.AiIntent
+import org.walks.gamecopilot.ui.components.AiMessageBubble
 import org.walks.gamecopilot.ui.components.common.OfflinePassingGuideDialog
 import org.walks.gamecopilot.ui.page.game.localspy.components.GameConfigurationSection
 import org.walks.gamecopilot.ui.page.game.localspy.components.GameHeaderView
@@ -87,6 +89,11 @@ fun LocalSpyGamePage(viewmodel: MainViewmodel, onBack: () -> Unit) {
         getWordMapBySelectedGroups(selectedWordGroups)
     }
 
+    // AI 相关状态
+    val aiMessage by viewmodel.aiMessage.collectAsState()
+    val isLoadingAi by viewmodel.isLoadingAi.collectAsState()
+    val aiConfig by viewmodel.aiConfig.collectAsState()
+
     Column(modifier = Modifier.fillMaxSize()) {
         GameHeaderView(
             onBack = onBack,
@@ -133,6 +140,22 @@ fun LocalSpyGamePage(viewmodel: MainViewmodel, onBack: () -> Unit) {
                     showAllIdentities = showAllIdentities,
                     onShowAllIdentitiesChange = { showAllIdentities = it },
                     onAllPlayersViewed = { allPlayersViewed = it }
+                )
+
+                // AI 主持人消息气泡
+                Spacer(Modifier.height(8.dp))
+                AiMessageBubble(
+                    message = aiMessage,
+                    isLoading = isLoadingAi,
+                    onRefresh = {
+                        // 根据 gameTimeState 构建上下文
+                        val context = if (showAllIdentities) {
+                            "游戏已结束，所有身份已揭晓。平民词：${currentGame.gameWord}，卧底词：${currentGame.spyWord}。请总结本局游戏。"
+                        } else {
+                            "当前正在进行「谁是卧底」游戏第${gameTimeState}局，共${playerNum}名玩家，请主持人给出趣味点评。"
+                        }
+                        viewmodel.handleAiIntent(AiIntent.SendMessage("spy", context))
+                    }
                 )
             }
         }

@@ -8,3 +8,11 @@ package org.walks.gamecopilot.mmkv
 const val MMKV_RANDOM_LABEL_NAME_KEY= "mmkv_random_cards_setting_name"
 const val MMKV_RANDOM_CARDS_SETTING_KEY = "mmkv_random_cards_setting_1"
 const val MMKV_RANDOM_CARDS_B_SETTING_KEY = "mmkv_random_cards_setting_2"
+
+// AI 助手相关配置键
+const val MMKV_AI_PROVIDER_KEY = "ai_provider"
+const val MMKV_AI_API_KEY = "ai_api_key"
+const val MMKV_AI_BASE_URL = "ai_base_url"
+const val MMKV_AI_ENABLED_KEY = "ai_enabled"
+const val MMKV_AI_STYLE_KEY = "ai_style"
+const val MMKV_AI_TIMEOUT_KEY = "ai_timeout"

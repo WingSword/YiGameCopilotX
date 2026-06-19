@@ -169,7 +169,7 @@ fun WheelRandomComponent(
             ) {
                 Text(
                     text = if (isSpinning) "转动中" else "开始",
-                    color = Color.White,
+                    color = MaterialTheme.colorScheme.onPrimary,
                     style = MaterialTheme.typography.bodyMedium,
                     textAlign = TextAlign.Center
                 )
@@ -195,11 +195,14 @@ fun WheelCanvas(
     rotationAngle: Float = 0f
 ) {
     val textMeasurer = rememberTextMeasurer()
+    // 在 @Composable 上下文中预先获取颜色，传给 DrawScope 函数
+    val textColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.85f)
+    val borderColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.55f)
 
     Canvas(modifier = modifier) {
         if (items.isNotEmpty()) {
             rotate(rotationAngle) {
-                drawWheel(items, size, textMeasurer)
+                drawWheel(items, size, textMeasurer, textColor, borderColor)
             }
         }
     }
@@ -211,7 +214,9 @@ fun WheelCanvas(
 private fun DrawScope.drawWheel(
     items: List<WheelItem>,
     size: Size,
-    textMeasurer: androidx.compose.ui.text.TextMeasurer
+    textMeasurer: androidx.compose.ui.text.TextMeasurer,
+    textColor: Color,
+    borderColor: Color
 ) {
     // 转盘尺寸（使用Canvas的最小边）
     val wheelDiameter = min(size.width, size.height)
@@ -276,7 +281,9 @@ private fun DrawScope.drawWheel(
             centerX = centerX,
             centerY = centerY,
             sweepAngle = sweepAngle,
-            textMeasurer = textMeasurer
+            textMeasurer = textMeasurer,
+            textColor = textColor,
+            borderColor = borderColor
         )
 
         // 更新当前角度为下一个选项的起始角度
@@ -317,7 +324,9 @@ private fun DrawScope.drawWheelItemText(
     centerX: Float,
     centerY: Float,
     sweepAngle: Float,
-    textMeasurer: androidx.compose.ui.text.TextMeasurer
+    textMeasurer: androidx.compose.ui.text.TextMeasurer,
+    textColor: Color,
+    borderColor: Color
 ) {
     // 根据扇形大小调整文本位置
     // 扇形越大，文本越靠近边缘；扇形越小，文本越靠近中心
@@ -330,7 +339,7 @@ private fun DrawScope.drawWheelItemText(
     val textLayoutResult = textMeasurer.measure(
         text = "  " + item.text + "  ",
         style = TextStyle(
-            color = Color(0xFF121212),
+            color = textColor,
             fontSize = fontSize,
             textAlign = TextAlign.Center,
             fontWeight = androidx.compose.ui.text.font.FontWeight.SemiBold,
@@ -362,7 +371,7 @@ private fun DrawScope.drawWheelItemText(
             cornerRadius = androidx.compose.ui.geometry.CornerRadius(4.dp.toPx())
         )
         drawRoundRect(
-            color = Color(0xFF1E1E1E).copy(alpha = 0.65f),
+            color = borderColor,
             topLeft = Offset(
                 -backgroundSize.width / 2f,
                 -backgroundSize.height / 2f

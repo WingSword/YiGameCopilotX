@@ -1,29 +1,59 @@
 package org.walks.gamecopilot.ui.page.lan
 
 import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.*
-import androidx.compose.material3.*
-import androidx.compose.runtime.*
+import androidx.compose.material.icons.automirrored.filled.ExitToApp
+import androidx.compose.material.icons.filled.CheckCircle
+import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.Groups
+import androidx.compose.material.icons.filled.Lock
+import androidx.compose.material.icons.filled.PersonRemove
+import androidx.compose.material.icons.filled.PlayArrow
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.Text
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.lifecycle.viewmodel.compose.viewModel
 import org.walks.gamecopilot.MainViewmodel
 import org.walks.gamecopilot.intent.LANIntent
 import org.walks.gamecopilot.lan.data.ConnectionStatus
 import org.walks.gamecopilot.lan.data.GameType
 import org.walks.gamecopilot.lan.data.LANPlayer
 import org.walks.gamecopilot.lan.lanRoomManager
+import org.walks.gamecopilot.ui.components.AppDialog
+import org.walks.gamecopilot.ui.components.AppEmptyState
+import org.walks.gamecopilot.ui.components.AppScreen
 import kotlin.math.max
 import kotlin.random.Random
 
@@ -32,7 +62,7 @@ import kotlin.random.Random
 fun LANRoomLobbyPage(
     onStartGame: () -> Unit,
     onLeaveRoom: () -> Unit,
-    viewModel: MainViewmodel = viewModel()
+    viewModel: MainViewmodel
 ) {
     val currentRoom by lanRoomManager.currentRoom.collectAsState()
     val players by lanRoomManager.players.collectAsState()
@@ -45,48 +75,26 @@ fun LANRoomLobbyPage(
     val roomInfo = currentRoom?.roomInfo
     val isHuntTown = roomInfo?.gameType == GameType.HUNT_TOWN
     val currentPlayerId = lanRoomManager.currentPlayerId
-    val roleMapping = remember(players, roomInfo?.roomId) {
-        if (isHuntTown && !roomInfo?.roomId.isNullOrBlank()) {
-            buildHuntTownRoleMap(players, roomInfo!!.roomId)
+    val roleMapping = remember(players, roomInfo?.roomId, isHuntTown) {
+        val roomId = roomInfo?.roomId
+        if (isHuntTown && !roomId.isNullOrBlank()) {
+            buildHuntTownRoleMap(players, roomId)
         } else {
             emptyMap()
         }
     }
     val currentPlayerRole = currentPlayerId?.let(roleMapping::get)
-    
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(16.dp)
-    ) {
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Column {
-                Text(
-                    text = roomInfo?.roomName ?: "房间",
-                    fontSize = 24.sp,
-                    fontWeight = FontWeight.Bold
-                )
-                Text(
-                    text = "房主: ${roomInfo?.hostName}",
-                    fontSize = 14.sp,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-            }
-            
+
+    AppScreen(
+        title = roomInfo?.roomName ?: "房间",
+        subtitle = "房主: ${roomInfo?.hostName ?: "等待同步"} · ${roomInfo?.gameType?.displayName ?: "桌游"}",
+        actions = {
             IconButton(onClick = { showLeaveDialog = true }) {
-                Icon(Icons.Default.ExitToApp, contentDescription = "离开房间")
+                Icon(Icons.AutoMirrored.Filled.ExitToApp, contentDescription = "离开房间")
             }
         }
-        
-        Spacer(modifier = Modifier.height(8.dp))
-        
+    ) {
         RoomInfoCard(roomInfo)
-        
-        Spacer(modifier = Modifier.height(16.dp))
         
         if (isHuntTown) {
             if (currentRoom?.gameStarted == true) {
@@ -99,7 +107,6 @@ fun LANRoomLobbyPage(
             } else {
                 HuntTownPreparePanel(players = players)
             }
-            Spacer(modifier = Modifier.height(16.dp))
         }
 
         Text(
@@ -109,32 +116,26 @@ fun LANRoomLobbyPage(
         )
         
         Spacer(modifier = Modifier.height(8.dp))
-        
-        LazyColumn(
-            modifier = Modifier.weight(1f),
-            verticalArrangement = Arrangement.spacedBy(8.dp)
-        ) {
-            items(players, key = { it.id }) { player ->
-                PlayerCard(
-                    player = player,
-                    isHost = isHost,
-                    canKick = isHost && !player.isHost,
-                    onKick = { showKickDialog = player }
-                )
-            }
-        }
-        
+
         if (players.isEmpty()) {
-            Box(
-                modifier = Modifier
-                    .weight(1f)
-                    .fillMaxWidth(),
-                contentAlignment = Alignment.Center
+            AppEmptyState(
+                title = "等待玩家加入",
+                description = "保持房主 App 在前台，其他玩家可从局域网房间列表加入。",
+                icon = Icons.Default.Groups,
+                modifier = Modifier.weight(1f)
+            )
+        } else {
+            LazyColumn(
+                modifier = Modifier.weight(1f),
+                verticalArrangement = Arrangement.spacedBy(8.dp)
             ) {
-                Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                    CircularProgressIndicator()
-                    Spacer(modifier = Modifier.height(16.dp))
-                    Text("等待玩家加入...")
+                items(players, key = { it.id }) { player ->
+                    PlayerCard(
+                        player = player,
+                        isHost = isHost,
+                        canKick = isHost && !player.isHost,
+                        onKick = { showKickDialog = player }
+                    )
                 }
             }
         }
@@ -176,7 +177,7 @@ fun LANRoomLobbyPage(
                     containerColor = MaterialTheme.colorScheme.error
                 )
             ) {
-                Icon(Icons.Default.ExitToApp, contentDescription = null)
+                Icon(Icons.AutoMirrored.Filled.ExitToApp, contentDescription = null)
                 Spacer(modifier = Modifier.width(8.dp))
                 Text("离开房间")
             }
@@ -184,58 +185,74 @@ fun LANRoomLobbyPage(
     }
     
     showKickDialog?.let { player ->
-        AlertDialog(
-            onDismissRequest = { showKickDialog = null },
-            title = { Text("移出玩家") },
-            text = { Text("确定要将 ${player.name} 移出房间吗？") },
-            confirmButton = {
-                TextButton(
+        AppDialog(
+            title = "移出玩家",
+            subtitle = "确定要将 ${player.name} 移出房间吗？",
+            onDismiss = { showKickDialog = null },
+            actions = {
+                OutlinedButton(
+                    onClick = { showKickDialog = null },
+                    modifier = Modifier.weight(1f)
+                ) {
+                    Text("取消")
+                }
+                Spacer(modifier = Modifier.width(10.dp))
+                Button(
                     onClick = {
                         viewModel.handleLANIntent(LANIntent.KickPlayer(player.id))
                         showKickDialog = null
                     },
-                    colors = ButtonDefaults.textButtonColors(
-                        contentColor = MaterialTheme.colorScheme.error
+                    modifier = Modifier.weight(1f),
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = MaterialTheme.colorScheme.error
                     )
                 ) {
-                    Text("确定")
-                }
-            },
-            dismissButton = {
-                TextButton(onClick = { showKickDialog = null }) {
-                    Text("取消")
+                    Text("移出")
                 }
             }
-        )
+        ) {
+            Text(
+                text = "该玩家会被断开连接，需要重新加入才能回到房间。",
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+        }
     }
     
     if (showLeaveDialog) {
-        AlertDialog(
-            onDismissRequest = { showLeaveDialog = false },
-            title = { Text(if (isHost) "关闭房间" else "离开房间") },
-            text = { 
-                Text(if (isHost) "确定要关闭房间吗？所有玩家将被断开连接。" else "确定要离开房间吗？") 
-            },
-            confirmButton = {
-                TextButton(
+        AppDialog(
+            title = if (isHost) "关闭房间" else "离开房间",
+            subtitle = if (isHost) "所有玩家都将被断开连接。" else "你将退出当前局域网房间。",
+            onDismiss = { showLeaveDialog = false },
+            actions = {
+                OutlinedButton(
+                    onClick = { showLeaveDialog = false },
+                    modifier = Modifier.weight(1f)
+                ) {
+                    Text("取消")
+                }
+                Spacer(modifier = Modifier.width(10.dp))
+                Button(
                     onClick = {
                         viewModel.handleLANIntent(LANIntent.Disconnect)
                         showLeaveDialog = false
                         onLeaveRoom()
                     },
-                    colors = ButtonDefaults.textButtonColors(
-                        contentColor = MaterialTheme.colorScheme.error
+                    modifier = Modifier.weight(1f),
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = MaterialTheme.colorScheme.error
                     )
                 ) {
                     Text(if (isHost) "关闭" else "离开")
                 }
-            },
-            dismissButton = {
-                TextButton(onClick = { showLeaveDialog = false }) {
-                    Text("取消")
-                }
             }
-        )
+        ) {
+            Text(
+                text = if (isHost) "建议在确认所有玩家已完成当前流程后再关闭房间。" else "离开后如需继续游戏，请从房间列表重新加入。",
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+        }
     }
 }
 

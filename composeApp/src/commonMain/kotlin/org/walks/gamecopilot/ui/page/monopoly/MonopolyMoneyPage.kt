@@ -1,34 +1,65 @@
 package org.walks.gamecopilot.ui.page.monopoly
 
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.*
-import androidx.compose.material3.*
-import androidx.compose.runtime.*
+import androidx.compose.material.icons.filled.AttachMoney
+import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material.icons.filled.Payment
+import androidx.compose.material.icons.filled.PersonAdd
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.ExposedDropdownMenuAnchorType
+import androidx.compose.material3.ExposedDropdownMenuBox
+import androidx.compose.material3.ExposedDropdownMenuDefaults
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.lifecycle.viewmodel.compose.viewModel
 import org.walks.gamecopilot.MainViewmodel
+import org.walks.gamecopilot.currentTimeMillis
 import org.walks.gamecopilot.data.entity.MonopolyPlayer
 import org.walks.gamecopilot.data.entity.MonopolyTransaction
 import org.walks.gamecopilot.intent.LANIntent
-import org.walks.gamecopilot.lan.data.GameType
 import org.walks.gamecopilot.lan.lanRoomManager
+import org.walks.gamecopilot.ui.components.AppCard
+import org.walks.gamecopilot.ui.components.AppDialog
+import org.walks.gamecopilot.ui.components.AppEmptyState
+import org.walks.gamecopilot.ui.components.AppScreen
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun MonopolyMoneyPage(
-    viewModel: MainViewmodel = viewModel()
+    viewModel: MainViewmodel
 ) {
     val isHost by lanRoomManager.isHost.collectAsState()
-    val players by lanRoomManager.players.collectAsState()
     
     var showAddPlayerDialog by remember { mutableStateOf(false) }
     var showTransactionDialog by remember { mutableStateOf(false) }
@@ -36,83 +67,60 @@ fun MonopolyMoneyPage(
     
     var monopolyPlayers by remember { mutableStateOf(listOf<MonopolyPlayer>()) }
     var transactions by remember { mutableStateOf(listOf<MonopolyTransaction>()) }
-    
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(16.dp)
+
+    AppScreen(
+        title = "大富翁银钱管理",
+        subtitle = "记录玩家余额和银行交易",
+        actions = {
+            if (isHost) {
+                IconButton(onClick = { showAddPlayerDialog = true }) {
+                    Icon(Icons.Default.PersonAdd, contentDescription = "添加玩家")
+                }
+            }
+            IconButton(
+                onClick = { showTransactionDialog = true },
+                enabled = monopolyPlayers.isNotEmpty()
+            ) {
+                Icon(Icons.Default.Payment, contentDescription = "交易")
+            }
+        }
     ) {
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Text(
-                text = "大富翁银钱管理",
-                fontSize = 24.sp,
-                fontWeight = FontWeight.Bold
-            )
-            
-            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                if (isHost) {
-                    IconButton(onClick = { showAddPlayerDialog = true }) {
-                        Icon(Icons.Default.PersonAdd, contentDescription = "添加玩家")
-                    }
-                }
-                IconButton(onClick = { showTransactionDialog = true }) {
-                    Icon(Icons.Default.Payment, contentDescription = "交易")
-                }
-            }
-        }
-        
-        Spacer(modifier = Modifier.height(16.dp))
-        
-        LazyColumn(
-            modifier = Modifier.weight(1f),
-            verticalArrangement = Arrangement.spacedBy(12.dp)
-        ) {
-            items(monopolyPlayers, key = { it.id }) { player ->
-                PlayerBalanceCard(
-                    player = player,
-                    onEdit = if (isHost) {
-                        { selectedPlayer = player }
-                    } else null
-                )
-            }
-        }
-        
         if (monopolyPlayers.isEmpty()) {
-            Box(
+            Column(
                 modifier = Modifier
                     .weight(1f)
                     .fillMaxWidth(),
-                contentAlignment = Alignment.Center
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.Center
             ) {
-                Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                    Icon(
-                        Icons.Default.AttachMoney,
-                        contentDescription = null,
-                        modifier = Modifier.size(64.dp),
-                        tint = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                    Spacer(modifier = Modifier.height(16.dp))
-                    Text(
-                        text = "暂无玩家",
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                    if (isHost) {
-                        TextButton(onClick = { showAddPlayerDialog = true }) {
-                            Text("添加玩家")
-                        }
+                AppEmptyState(
+                    title = "暂无玩家",
+                    description = if (isHost) "先添加玩家，再开始记账。" else "等待房主添加玩家。",
+                    icon = Icons.Default.AttachMoney
+                )
+                if (isHost) {
+                    TextButton(onClick = { showAddPlayerDialog = true }) {
+                        Text("添加玩家")
                     }
                 }
             }
+        } else {
+            LazyColumn(
+                modifier = Modifier.weight(1f),
+                verticalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                items(monopolyPlayers, key = { it.id }) { player ->
+                    PlayerBalanceCard(
+                        player = player,
+                        onEdit = if (isHost) {
+                            { selectedPlayer = player }
+                        } else null
+                    )
+                }
+            }
         }
-        
-        Spacer(modifier = Modifier.height(16.dp))
-        
-        Card(
-            modifier = Modifier.fillMaxWidth(),
+
+        AppCard(
             colors = CardDefaults.cardColors(
                 containerColor = MaterialTheme.colorScheme.primaryContainer
             )
@@ -146,14 +154,15 @@ fun MonopolyMoneyPage(
             onDismiss = { showAddPlayerDialog = false },
             onAdd = { name ->
                 val newPlayer = MonopolyPlayer(
-                    id = "player_${System.currentTimeMillis()}",
+                    id = "player_${currentTimeMillis()}",
                     name = name
                 )
-                monopolyPlayers = monopolyPlayers + newPlayer
+                val updatedPlayers = monopolyPlayers + newPlayer
+                monopolyPlayers = updatedPlayers
                 
                 if (isHost) {
                     viewModel.handleLANIntent(
-                        LANIntent.SyncGameState(monopolyPlayers)
+                        LANIntent.SyncGameState(updatedPlayers)
                     )
                 }
                 
@@ -173,20 +182,21 @@ fun MonopolyMoneyPage(
                     amount = amount,
                     description = description
                 )
-                
-                monopolyPlayers = monopolyPlayers.map { player ->
+
+                val updatedPlayers = monopolyPlayers.map { player ->
                     when (player.id) {
                         fromId -> player.copy(balance = player.balance - amount)
                         toId -> player.copy(balance = player.balance + amount)
                         else -> player
                     }
                 }
+                monopolyPlayers = updatedPlayers
                 
                 transactions = transactions + transaction
                 
                 if (isHost) {
                     viewModel.handleLANIntent(
-                        LANIntent.SyncGameState(monopolyPlayers)
+                        LANIntent.SyncGameState(updatedPlayers)
                     )
                 }
                 
@@ -200,24 +210,26 @@ fun MonopolyMoneyPage(
             player = player,
             onDismiss = { selectedPlayer = null },
             onSave = { updatedPlayer ->
-                monopolyPlayers = monopolyPlayers.map {
+                val updatedPlayers = monopolyPlayers.map {
                     if (it.id == updatedPlayer.id) updatedPlayer else it
                 }
+                monopolyPlayers = updatedPlayers
                 
                 if (isHost) {
                     viewModel.handleLANIntent(
-                        LANIntent.SyncGameState(monopolyPlayers)
+                        LANIntent.SyncGameState(updatedPlayers)
                     )
                 }
                 
                 selectedPlayer = null
             },
             onDelete = {
-                monopolyPlayers = monopolyPlayers.filter { it.id != player.id }
+                val updatedPlayers = monopolyPlayers.filter { it.id != player.id }
+                monopolyPlayers = updatedPlayers
                 
                 if (isHost) {
                     viewModel.handleLANIntent(
-                        LANIntent.SyncGameState(monopolyPlayers)
+                        LANIntent.SyncGameState(updatedPlayers)
                     )
                 }
                 
@@ -309,33 +321,31 @@ private fun AddPlayerDialog(
     onAdd: (String) -> Unit
 ) {
     var name by remember { mutableStateOf("") }
-    
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        title = { Text("添加玩家") },
-        text = {
-            OutlinedTextField(
-                value = name,
-                onValueChange = { name = it },
-                label = { Text("玩家名称") },
-                singleLine = true,
-                modifier = Modifier.fillMaxWidth()
-            )
-        },
-        confirmButton = {
+
+    AppDialog(
+        title = "添加玩家",
+        subtitle = "新玩家会使用默认起始资金",
+        onDismiss = onDismiss,
+        actions = {
+            TextButton(onClick = onDismiss) {
+                Text("取消")
+            }
             Button(
                 onClick = { onAdd(name) },
                 enabled = name.isNotBlank()
             ) {
                 Text("添加")
             }
-        },
-        dismissButton = {
-            TextButton(onClick = onDismiss) {
-                Text("取消")
-            }
         }
-    )
+    ) {
+        OutlinedTextField(
+            value = name,
+            onValueChange = { name = it },
+            label = { Text("玩家名称") },
+            singleLine = true,
+            modifier = Modifier.fillMaxWidth()
+        )
+    }
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -351,15 +361,41 @@ private fun TransactionDialog(
     var description by remember { mutableStateOf("") }
     var expandedFrom by remember { mutableStateOf(false) }
     var expandedTo by remember { mutableStateOf(false) }
-    
-    val isValid = amount.toLongOrNull()?.let { it > 0 } == true && 
-        (fromPlayerId != null || toPlayerId != null)
-    
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        title = { Text("新建交易") },
-        text = {
-            Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+
+    val parsedAmount = amount.toLongOrNull()
+    val isValid = parsedAmount?.let { it > 0 } == true &&
+            (fromPlayerId != null || toPlayerId != null) &&
+            fromPlayerId != toPlayerId
+
+    AppDialog(
+        title = "新建交易",
+        subtitle = "银行可作为付款方或收款方",
+        onDismiss = onDismiss,
+        actions = {
+            TextButton(onClick = onDismiss) {
+                Text("取消")
+            }
+            Button(
+                onClick = {
+                    val defaultDescription = when {
+                        fromPlayerId == null -> "银行发放"
+                        toPlayerId == null -> "缴纳给银行"
+                        else -> "转账"
+                    }
+                    onConfirm(
+                        fromPlayerId,
+                        toPlayerId,
+                        parsedAmount ?: 0L,
+                        description.ifEmpty { defaultDescription }
+                    )
+                },
+                enabled = isValid
+            ) {
+                Text("确认")
+            }
+        }
+    ) {
+        Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                 ExposedDropdownMenuBox(
                     expanded = expandedFrom,
                     onExpandedChange = { expandedFrom = it }
@@ -370,7 +406,8 @@ private fun TransactionDialog(
                         readOnly = true,
                         label = { Text("付款方") },
                         trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expandedFrom) },
-                        modifier = Modifier.menuAnchor().fillMaxWidth()
+                        modifier = Modifier.menuAnchor(ExposedDropdownMenuAnchorType.PrimaryNotEditable)
+                            .fillMaxWidth()
                     )
                     
                     ExposedDropdownMenu(
@@ -406,7 +443,8 @@ private fun TransactionDialog(
                         readOnly = true,
                         label = { Text("收款方") },
                         trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expandedTo) },
-                        modifier = Modifier.menuAnchor().fillMaxWidth()
+                        modifier = Modifier.menuAnchor(ExposedDropdownMenuAnchorType.PrimaryNotEditable)
+                            .fillMaxWidth()
                     )
                     
                     ExposedDropdownMenu(
@@ -449,28 +487,7 @@ private fun TransactionDialog(
                     modifier = Modifier.fillMaxWidth()
                 )
             }
-        },
-        confirmButton = {
-            Button(
-                onClick = {
-                    onConfirm(
-                        fromPlayerId,
-                        toPlayerId,
-                        amount.toLong(),
-                        description.ifEmpty { "转账" }
-                    )
-                },
-                enabled = isValid
-            ) {
-                Text("确认")
-            }
-        },
-        dismissButton = {
-            TextButton(onClick = onDismiss) {
-                Text("取消")
-            }
-        }
-    )
+    }
 }
 
 @Composable
@@ -482,64 +499,76 @@ private fun EditPlayerDialog(
 ) {
     var name by remember { mutableStateOf(player.name) }
     var balance by remember { mutableStateOf(player.balance.toString()) }
-    
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        title = { Text("编辑玩家") },
-        text = {
-            Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                OutlinedTextField(
-                    value = name,
-                    onValueChange = { name = it },
-                    label = { Text("玩家名称") },
-                    singleLine = true,
-                    modifier = Modifier.fillMaxWidth()
+
+    AppDialog(
+        title = "编辑玩家",
+        subtitle = "可以直接调整余额或删除玩家",
+        onDismiss = onDismiss,
+        actions = {
+            TextButton(
+                onClick = onDelete,
+                colors = ButtonDefaults.textButtonColors(
+                    contentColor = MaterialTheme.colorScheme.error
                 )
-                
-                OutlinedTextField(
-                    value = balance,
-                    onValueChange = { balance = it.filter { c -> c.isDigit() || c == '-' } },
-                    label = { Text("余额") },
-                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                    singleLine = true,
-                    modifier = Modifier.fillMaxWidth()
-                )
+            ) {
+                Text("删除")
             }
-        },
-        confirmButton = {
-            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                TextButton(
-                    onClick = onDelete,
-                    colors = ButtonDefaults.textButtonColors(
-                        contentColor = MaterialTheme.colorScheme.error
-                    )
-                ) {
-                    Text("删除")
-                }
-                Button(
-                    onClick = {
-                        onSave(player.copy(
-                            name = name,
-                            balance = balance.toLongOrNull() ?: player.balance
-                        ))
-                    }
-                ) {
-                    Text("保存")
-                }
-            }
-        },
-        dismissButton = {
             TextButton(onClick = onDismiss) {
                 Text("取消")
             }
+            Button(
+                onClick = {
+                    onSave(
+                        player.copy(
+                            name = name,
+                            balance = balance.toLongOrNull() ?: player.balance
+                        )
+                    )
+                },
+                enabled = name.isNotBlank()
+            ) {
+                Text("保存")
+            }
         }
-    )
+    ) {
+        Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+            OutlinedTextField(
+                value = name,
+                onValueChange = { name = it },
+                label = { Text("玩家名称") },
+                singleLine = true,
+                modifier = Modifier.fillMaxWidth()
+            )
+
+            OutlinedTextField(
+                value = balance,
+                onValueChange = { input ->
+                    balance = input.filterIndexed { index, c ->
+                        c.isDigit() || (c == '-' && index == 0)
+                    }
+                },
+                label = { Text("余额") },
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                singleLine = true,
+                modifier = Modifier.fillMaxWidth()
+            )
+        }
+    }
 }
 
 private fun formatMoney(amount: Long): String {
     return when {
-        amount >= 100000000 -> String.format("%.2f亿", amount / 100000000.0)
-        amount >= 10000 -> String.format("%.2f万", amount / 10000.0)
+        amount >= 100000000 -> {
+            val value = amount / 100000000.0
+            val formatted = (value * 100).toLong().toDouble() / 100.0
+            "$formatted" + "亿"
+        }
+
+        amount >= 10000 -> {
+            val value = amount / 10000.0
+            val formatted = (value * 100).toLong().toDouble() / 100.0
+            "$formatted" + "万"
+        }
         else -> amount.toString()
     }
 }

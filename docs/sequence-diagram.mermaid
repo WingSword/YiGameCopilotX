@@ -1,0 +1,83 @@
+sequenceDiagram
+    participant UI as 游戏页面 (Compose)
+    participant VM as MainViewmodel
+    participant Factory as AiServiceFactory
+    participant Service as AiService
+    participant Provider as DeepSeekProvider
+    participant Fallback as FallbackAiService
+    participant Templates as GamePromptTemplates
+
+    UI->>VM: handleAiIntent(AiRequest)
+    VM->>VM: 检查 aiConfig.isEnabled
+    
+    alt AI 已启用
+        VM->>Factory: create(aiConfig)
+        Factory->>VM: 返回 AiService 实例
+        VM->>Templates: 获取游戏 Prompt
+        Templates-->>VM: systemPrompt + prompt
+        VM->>Service: chat(AiRequest)
+        
+        alt 网络可用
+            Service->>Provider: HTTP POST /chat/completions
+            Provider-->>Service: Flow<AiResponse>
+            Service-->>VM: AI 回复内容
+        else 网络异常
+            Service->>Fallback: chat(AiRequest)
+            Fallback-->>Service: 预设回答
+            Service-->>VM: 降级回复
+        end
+        
+        VM-->>UI: 更新 aiMessageState
+    else AI 未启用
+        VM->>Fallback: chat(AiRequest)
+        Fallback-->>VM: 预设回答
+        VM-->>UI: 显示本地回复
+    end
+
+sequenceDiagram
+    participant User as 用户
+    participant RP as RandomPage
+    participant AB as AnswerBookPage
+    participant VM as MainViewmodel
+    participant Data as AnswerBookData
+
+    User->>RP: 点击"答案之书"图标
+    RP->>RP: RandomCate = AnswerBook
+    RP->>AB: 渲染答案之书页面
+
+    User->>AB: 输入问题（可选）
+    User->>AB: 点击"翻开答案之书"
+    AB->>VM: handleAnswerBookIntent(FlipBook)
+    VM->>AB: isFlipping = true（触发翻书动画）
+
+    AB->>AB: 播放翻书动画 (0 ~ 1.5s)
+    
+    AB->>Data: getRandomAnswerExcluding(lastIndex)
+    Data-->>AB: AnswerBookEntry
+    
+    AB->>VM: handleAnswerBookIntent(ShowAnswer)
+    VM-->>AB: 更新 currentAnswer + isFlipping = false
+    
+    AB->>AB: 显示答案文字
+
+    User->>AB: 点击"再翻一次"
+    AB->>VM: handleAnswerBookIntent(ResetFlip)
+    VM-->>AB: 重置状态，可再次翻书
+
+sequenceDiagram
+    participant Dev as 开发者
+    participant DS as DesignSystem.kt
+    participant Theme as Theme.kt
+    participant Page as 各页面
+
+    Dev->>DS: 修改 AppCornerRadius 默认值
+    Note over DS: card: 16.dp, button: 12.dp,<br/>dialog: 20.dp, input: 10.dp, chip: 8.dp
+    
+    Dev->>Theme: 更新 WeUITheme 中的 Shapes
+    Theme->>Theme: 使用 designSystem.cornerRadius 构建 Shapes
+
+    loop 每个页面
+        Page->>DS: LocalAppDesign.current.cornerRadius
+        DS-->>Page: 非零圆角值
+        Page->>Page: RoundedCornerShape(design.cornerRadius.card)
+    end

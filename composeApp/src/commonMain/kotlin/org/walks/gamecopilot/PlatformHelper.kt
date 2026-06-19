@@ -20,3 +20,6 @@ expect class PlatformHelper {
     fun getAppVersionCode(): Int
 }
 
+// KMP 兼容的时间戳函数
+expect fun currentTimeMillis(): Long
+

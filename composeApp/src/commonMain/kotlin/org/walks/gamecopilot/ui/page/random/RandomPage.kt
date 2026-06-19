@@ -16,7 +16,6 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.FlowRow
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxHeight
@@ -41,7 +40,6 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
@@ -72,8 +70,6 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.compose.ui.window.Dialog
-import androidx.compose.ui.window.DialogProperties
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
@@ -82,6 +78,7 @@ import org.jetbrains.compose.resources.DrawableResource
 import org.jetbrains.compose.resources.painterResource
 import org.walks.gamecopilot.MainViewmodel
 import org.walks.gamecopilot.PlatformHelper
+import org.walks.gamecopilot.RANDOM_PAGE_CONFIG_CATE_ANSWER_BOOK
 import org.walks.gamecopilot.RANDOM_PAGE_CONFIG_CATE_CARD
 import org.walks.gamecopilot.RANDOM_PAGE_CONFIG_CATE_COIN
 import org.walks.gamecopilot.RANDOM_PAGE_CONFIG_CATE_DICE
@@ -95,6 +92,7 @@ import org.walks.gamecopilot.intent.RandomPageIntent
 import org.walks.gamecopilot.theme.LocalAppDesign
 import org.walks.gamecopilot.ui.animation.DiceAnimation
 import org.walks.gamecopilot.ui.animation.RollCoinAnimation
+import org.walks.gamecopilot.ui.components.AppDialog
 import yigamecopilotx.composeapp.generated.resources.Res
 import yigamecopilotx.composeapp.generated.resources.icon_edit
 import kotlin.math.ceil
@@ -204,7 +202,8 @@ fun RandomPage(viewmodel: MainViewmodel) {
                     isEditMode = false
                 },
                 isSystemDefault = { label ->
-                    label.startsWith(RANDOM_PAGE_CONFIG_CATE_FINGER)
+                    label.startsWith(RANDOM_PAGE_CONFIG_CATE_FINGER) ||
+                            label.startsWith(RANDOM_PAGE_CONFIG_CATE_ANSWER_BOOK)
                 }
             )
         }
@@ -235,6 +234,12 @@ fun RandomPage(viewmodel: MainViewmodel) {
                         modifier = Modifier
                             .fillMaxSize()
                             .padding(design.spacing.md)
+                    )
+                } else if (currentType == RandomCate.AnswerBook) {
+                    AnswerBookPage(
+                        viewmodel = viewmodel,
+                        modifier = Modifier
+                            .fillMaxSize()
                     )
                 } else if (currentType == RandomCate.Wheel) {
                     Box(
@@ -315,7 +320,7 @@ fun RandomPage(viewmodel: MainViewmodel) {
                             MaterialTheme.colorScheme.primaryContainer
                         else
                             MaterialTheme.colorScheme.primary,
-                        contentColor = Color.White
+                        contentColor = MaterialTheme.colorScheme.onPrimary
                     ),
                     shape = RoundedCornerShape(design.cornerRadius.button),
                     onClick = {
@@ -793,7 +798,7 @@ fun RandomConfigCircleItem(
                             CircleShape
                         )
                         .padding(2.dp),
-                    tint = Color.Red
+                    tint = MaterialTheme.colorScheme.error
                 )
 
                 // 编辑按钮（编辑模式下显示在左上角）
@@ -970,17 +975,6 @@ fun EditRandomDialog(
                 onShow()
             }
         }
-        Dialog(
-            onDismissRequest = onDismiss,
-            properties = DialogProperties(usePlatformDefaultWidth = false)
-        ) {
-            Surface(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .heightIn(max = 600.dp),
-                shape = RoundedCornerShape(design.cornerRadius.dialog),
-                color = MaterialTheme.colorScheme.surface
-            ) {
                 var randomName by remember { mutableStateOf("") }
                 var selectedCate by remember { mutableStateOf(RANDOM_PAGE_CONFIG_CATE_CARD) }
                 val cardListState = remember { SnapshotStateList<RandomItem>() }
@@ -1028,34 +1022,55 @@ fun EditRandomDialog(
                     }
                 }
 
-                Column(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .verticalScroll(scrollState)
-                        .padding(design.spacing.xl)
+        AppDialog(
+            title = "编辑随机配置",
+            subtitle = "调整配置名称、类型和随机内容。",
+            onDismiss = onDismiss,
+            actions = {
+                OutlinedButton(
+                    onClick = onDismiss,
+                    modifier = Modifier.weight(1f)
                 ) {
-                    // 顶部标题栏
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Text(
-                            text = "编辑随机配置",
-                            style = MaterialTheme.typography.headlineSmall,
-                            color = MaterialTheme.colorScheme.primary
-                        )
+                    Text("取消")
+                }
 
-                        IconButton(onClick = onDismiss) {
-                            Icon(
-                                imageVector = Icons.Default.Close,
-                                contentDescription = "关闭"
+                Spacer(modifier = Modifier.width(12.dp))
+
+                Button(
+                    onClick = {
+                        if (randomName.isNotBlank()) {
+                            // 对于转盘类型，保存前先校正权重
+                            if (selectedCate == RANDOM_PAGE_CONFIG_CATE_WHEEL) {
+                                validateAndCorrectWheelWeights(cardListState)
+                            }
+                            onSave(
+                                RandomListEntity(
+                                    name = selectedCate + randomName,
+                                    list = cardListState.toList()
+                                )
                             )
                         }
-                    }
-
-                    Spacer(modifier = Modifier.height(16.dp))
-
+                    },
+                    modifier = Modifier.weight(1f),
+                    enabled = randomName.isNotBlank()
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Check,
+                        contentDescription = null,
+                        modifier = Modifier.size(18.dp)
+                    )
+                    Spacer(modifier = Modifier.width(4.dp))
+                    Text("保存")
+                }
+            }
+        ) {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .heightIn(max = 430.dp)
+                        .verticalScroll(scrollState),
+                    verticalArrangement = Arrangement.spacedBy(16.dp)
+                ) {
                     // 配置名称输入
                     OutlinedTextField(
                         value = randomName,
@@ -1066,15 +1081,12 @@ fun EditRandomDialog(
                         shape = RoundedCornerShape(design.cornerRadius.input)
                     )
 
-                    Spacer(modifier = Modifier.height(16.dp))
-
                     // 类型选择栏
                     Text(
                         text = "选择类型",
                         style = MaterialTheme.typography.titleMedium,
                         color = MaterialTheme.colorScheme.secondary
                     )
-                    Spacer(modifier = Modifier.height(8.dp))
 
                     AddNewRandomCateActionBar(
                         select = selectedCate,
@@ -1084,8 +1096,6 @@ fun EditRandomDialog(
                             // 注意：编辑时不应该清空列表，而是保留原有数据
                         }
                     )
-
-                    Spacer(modifier = Modifier.height(16.dp))
 
                     // 内容编辑区域
                     when (selectedCate) {
@@ -1104,56 +1114,10 @@ fun EditRandomDialog(
                             )
                         }
                     }
-
-                    Spacer(modifier = Modifier.height(16.dp))
-
-                    // 底部操作按钮
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceEvenly
-                    ) {
-                        OutlinedButton(
-                            onClick = onDismiss,
-                            modifier = Modifier.weight(1f)
-                        ) {
-                            Text("取消")
-                        }
-
-                        Spacer(modifier = Modifier.width(16.dp))
-
-                        Button(
-                            onClick = {
-                                if (randomName.isNotBlank()) {
-                                    // 对于转盘类型，保存前先校正权重
-                                    if (selectedCate == RANDOM_PAGE_CONFIG_CATE_WHEEL) {
-                                        validateAndCorrectWheelWeights(cardListState)
-                                    }
-                                    onSave(
-                                        RandomListEntity(
-                                            name = selectedCate + randomName,
-                                            list = cardListState.toList()
-                                        )
-                                    )
-                                }
-                            },
-                            modifier = Modifier.weight(1f),
-                            enabled = randomName.isNotBlank()
-                        ) {
-                            Icon(
-                                imageVector = Icons.Default.Check,
-                                contentDescription = null,
-                                modifier = Modifier.size(18.dp)
-                            )
-                            Spacer(modifier = Modifier.width(4.dp))
-                            Text("保存")
-                        }
-                    }
                 }
-            }
         }
     }
 }
-
 
 
 

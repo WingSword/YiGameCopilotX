@@ -21,7 +21,6 @@ import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -36,11 +35,10 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.compose.ui.window.Dialog
-import androidx.compose.ui.window.DialogProperties
 import org.walks.gamecopilot.awalong.AwalongRole
 import org.walks.gamecopilot.awalong.BAD_PERSON
 import org.walks.gamecopilot.awalong.GOOD_PERSON
+import org.walks.gamecopilot.ui.components.AppDialog
 
 /**
  * 优化后的任务执行阶段组件
@@ -271,79 +269,64 @@ private fun TaskVoteDialogOptimized(
     onDismiss: () -> Unit,
     onVote: (Boolean) -> Unit
 ) {
-    Dialog(
-        onDismissRequest = onDismiss,
-        properties = DialogProperties(
-            usePlatformDefaultWidth = false,
-            dismissOnBackPress = false,
-        )
+    var hasVoted by remember { mutableStateOf(false) }
+
+    AppDialog(
+        title = "任务执行",
+        subtitle = "$playerName，请选择你的任务结果",
+        onDismiss = onDismiss,
+        widthFraction = 0.9f,
+        dismissOnBackPress = false,
+        dismissOnClickOutside = false,
+        showCloseButton = false
     ) {
-        var hasVoted by remember { mutableStateOf(false) }
-        Surface(
-            modifier = Modifier
-                .fillMaxWidth(0.9f)
-                .padding(16.dp),
-            shape = RectangleShape,
-            color = MaterialTheme.colorScheme.surface,
-            shadowElevation = 8.dp
+        Text(
+            text = "$playerName，请选择任务执行：",
+            fontSize = 16.sp,
+            fontWeight = FontWeight.Bold,
+            textAlign = TextAlign.Center,
+            modifier = Modifier.fillMaxWidth()
+        )
+
+        Row(
+            horizontalArrangement = Arrangement.spacedBy(16.dp),
+            modifier = Modifier.fillMaxWidth()
         ) {
-            Column(
-                modifier = Modifier.padding(20.dp),
-                horizontalAlignment = Alignment.CenterHorizontally
+            Button(
+                onClick = {
+                    if (playerRole.roleType == BAD_PERSON) {
+                        onVote(false)
+                    } else {
+                        hasVoted = true
+                    }
+                },
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = MaterialTheme.colorScheme.error
+                ),
+                modifier = Modifier.weight(1f)
             ) {
-                Text(
-                    text = "$playerName，请选择任务执行：",
-                    fontSize = 16.sp,
-                    fontWeight = FontWeight.Bold,
-                    textAlign = TextAlign.Center
-                )
-                
-                Spacer(modifier = Modifier.height(24.dp))
-                
-                Row(
-                    horizontalArrangement = Arrangement.spacedBy(16.dp),
-                    modifier = Modifier.fillMaxWidth()
-                ) {
-                    Button(
-                        onClick = {
-                            if (playerRole.roleType == BAD_PERSON) {
-                                onVote(false)
-                            } else {
-                                //显示Toast 作为好人 必须选择任务成功
-                                hasVoted = true
-                            }
-
-                        },
-
-                        colors = ButtonDefaults.buttonColors(
-                            containerColor = MaterialTheme.colorScheme.error
-                        ),
-                        modifier = Modifier.weight(1f)
-                    ) {
-                        Text("阻止任务")
-                    }
-                    
-                    Button(
-                        onClick = { onVote(true) },
-                        colors = ButtonDefaults.buttonColors(
-                            containerColor = MaterialTheme.colorScheme.primary
-                        ),
-                        modifier = Modifier.weight(1f)
-                    ) {
-                        Text("执行任务")
-                    }
-                }
-
-                if (playerRole.roleType == GOOD_PERSON && hasVoted) {
-                    Spacer(modifier = Modifier.height(12.dp))
-                    Text(
-                        text = "提示：作为好人阵营，你必须选择任务成功",
-                        fontSize = 12.sp,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        textAlign = TextAlign.Center
-                    )
-                }
+                Text("阻止任务")
             }
+
+            Button(
+                onClick = { onVote(true) },
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = MaterialTheme.colorScheme.primary
+                ),
+                modifier = Modifier.weight(1f)
+            ) {
+                Text("执行任务")
+            }
+        }
+
+        if (playerRole.roleType == GOOD_PERSON && hasVoted) {
+            Text(
+                text = "提示：作为好人阵营，你必须选择任务成功",
+                fontSize = 12.sp,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                textAlign = TextAlign.Center,
+                modifier = Modifier.fillMaxWidth()
+            )
         }
     }
 }

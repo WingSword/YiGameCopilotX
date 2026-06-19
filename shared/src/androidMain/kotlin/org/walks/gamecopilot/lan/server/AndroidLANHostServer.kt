@@ -1,21 +1,35 @@
 package org.walks.gamecopilot.lan.server
 
-import io.ktor.server.engine.*
-import io.ktor.server.netty.*
-import io.ktor.server.application.*
-import io.ktor.server.routing.*
-import io.ktor.server.websocket.*
-import io.ktor.websocket.*
-import kotlinx.coroutines.*
-import kotlinx.coroutines.flow.*
-import kotlinx.serialization.encodeToString
+import io.ktor.server.application.install
+import io.ktor.server.engine.EmbeddedServer
+import io.ktor.server.engine.embeddedServer
+import io.ktor.server.netty.Netty
+import io.ktor.server.netty.NettyApplicationEngine
+import io.ktor.server.routing.routing
+import io.ktor.server.websocket.WebSockets
+import io.ktor.server.websocket.webSocket
+import io.ktor.websocket.Frame
+import io.ktor.websocket.WebSocketSession
+import io.ktor.websocket.close
+import io.ktor.websocket.readText
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.MutableSharedFlow
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.asSharedFlow
+import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import kotlinx.serialization.json.Json
 import org.walks.gamecopilot.GameLogger
+import org.walks.gamecopilot.lan.data.LANConstants.CONNECTION_TIMEOUT
+import org.walks.gamecopilot.lan.data.LANConstants.HEARTBEAT_INTERVAL
 import org.walks.gamecopilot.lan.data.LANMessage
 import org.walks.gamecopilot.lan.data.LANMessageType
 import org.walks.gamecopilot.lan.data.LANPlayer
-import org.walks.gamecopilot.lan.data.LANConstants.HEARTBEAT_INTERVAL
-import org.walks.gamecopilot.lan.data.LANConstants.CONNECTION_TIMEOUT
 import java.net.Inet4Address
 import java.net.NetworkInterface
 import java.util.concurrent.ConcurrentHashMap
@@ -134,6 +148,8 @@ class AndroidLANHostServer : LANHostServer {
     }
     
     private suspend fun disconnectPlayer(playerId: String) {
+        val player = playerSessions[playerId]
+        if (player == null && !connections.containsKey(playerId)) return
         connections.remove(playerId)
         playerSessions.remove(playerId)
         lastHeartbeat.remove(playerId)
@@ -142,7 +158,8 @@ class AndroidLANHostServer : LANHostServer {
         
         val leaveMessage = LANMessage(
             type = LANMessageType.PLAYER_LEFT,
-            playerId = playerId
+            playerId = playerId,
+            payload = player?.let { json.encodeToString(it) } ?: ""
         )
         broadcast(leaveMessage)
         

@@ -69,3 +69,5 @@ actual class PlatformHelper private constructor(private val context: Context) {
         }
     }
 }
+
+actual fun currentTimeMillis(): Long = System.currentTimeMillis()

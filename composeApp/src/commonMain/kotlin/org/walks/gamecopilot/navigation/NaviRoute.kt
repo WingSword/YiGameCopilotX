@@ -3,6 +3,7 @@ package org.walks.gamecopilot.navigation
 enum class NaviRoute(val route: String, val label: String, val type: Int = 0) {
     HOME("start", "首页"),
     RANDOM("random", "随机工具"),
+    MULTIPLAYER("multiplayer", "联机"),
     STATS("stats", "信息"),
     SETTING("setting", "设置"),
     LOCAL_SPY("localSpy", "本地卧底", 1),

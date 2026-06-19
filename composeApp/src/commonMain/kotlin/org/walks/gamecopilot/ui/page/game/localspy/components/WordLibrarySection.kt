@@ -40,6 +40,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import org.jetbrains.compose.resources.painterResource
 import org.walks.gamecopilot.PlatformHelper
+import org.walks.gamecopilot.currentTimeMillis
 import org.walks.gamecopilot.data.WordImportEngine
 import org.walks.gamecopilot.data.entity.LocalSpyEntity
 import org.walks.gamecopilot.data.entity.WordGroup
@@ -152,7 +153,7 @@ fun WordLibrarySection(
             onImportSuccess = { text ->
                 val result = WordImportEngine.parseSpyPairs(text)
                 if (result is WordImportEngine.ImportResult.SpyPairs) {
-                    val groupId = "custom_spy_${System.currentTimeMillis()}"
+                    val groupId = "custom_spy_${currentTimeMillis()}"
                     val groupName = "自定义${WordGroupManager.getCustomGroups().size + 1}"
                     // 注册词组
                     WordGroupManager.addGroup(WordGroup(groupId, groupName, isBuiltIn = false))

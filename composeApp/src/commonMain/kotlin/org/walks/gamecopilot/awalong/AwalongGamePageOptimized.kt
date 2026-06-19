@@ -23,12 +23,14 @@ import androidx.compose.foundation.pager.PagerState
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Refresh
+import androidx.compose.material3.Button
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.IconButtonDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -59,6 +61,9 @@ import org.walks.gamecopilot.awalong.components.PageDayTaskOptimized
 import org.walks.gamecopilot.awalong.components.TaskProgressBar
 import org.walks.gamecopilot.awalong.data.AwalongGameDayEntity
 import org.walks.gamecopilot.awalong.data.AwalongGameState
+import org.walks.gamecopilot.intent.AiIntent
+import org.walks.gamecopilot.ui.components.AiMessageBubble
+import org.walks.gamecopilot.ui.components.AppDialog
 import org.walks.gamecopilot.ui.components.BackIcon
 import org.walks.gamecopilot.ui.components.CommonTopBar
 import org.walks.gamecopilot.ui.components.common.OfflinePassingGuideDialog
@@ -279,6 +284,33 @@ fun AwalongGamePageOptimized(navi: NavController, viewmodel: MainViewmodel) {
                 pages[page]()
             }
         }
+
+        // AI 顾问消息气泡
+        val aiMessage by viewmodel.aiMessage.collectAsState()
+        val isLoadingAi by viewmodel.isLoadingAi.collectAsState()
+        val aiConfig by viewmodel.aiConfig.collectAsState()
+
+        // 构建当前任务上下文
+        val currentDayEntity = gameState.dayList.getOrNull(pageState.currentPage - 1)
+        val aiContext = if (pageState.currentPage == 0) {
+            "阿瓦隆游戏第零日，${gameState.roleList.size}名玩家已就位，请给出开局鼓励和策略概览。"
+        } else if (currentDayEntity?.gamePhase == "TASK_RESULT") {
+            val result = if (currentDayEntity.taskResult == 1) "成功" else "失败"
+            "阿瓦隆第${pageState.currentPage}日任务结果：${result}。请点评此任务。"
+        } else if (gameEndResult != null) {
+            "阿瓦隆游戏结束，${gameEndResult?.winner}获胜（${gameEndResult?.reason}）。请总结这场对局。"
+        } else {
+            "阿瓦隆游戏正在进行第${pageState.currentPage}日，请给出策略提示。"
+        }
+
+        AiMessageBubble(
+            message = aiMessage,
+            isLoading = isLoadingAi,
+            onRefresh = {
+                viewmodel.handleAiIntent(AiIntent.SendMessage("awalong", aiContext))
+            },
+            modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp)
+        )
 
         // 底部导航和进度条
         BottomNavigationWithProgress(
@@ -555,59 +587,17 @@ private fun AssassinationDialog(
 ) {
     var selectedTarget by remember { mutableStateOf<Int?>(null) }
 
-    androidx.compose.material3.AlertDialog(
-        onDismissRequest = { onAssassinationComplete(false) },
-        shape = RectangleShape,
-        containerColor = MaterialTheme.colorScheme.surface,
-        tonalElevation = 0.dp,
-        titleContentColor = MaterialTheme.colorScheme.primary,
-        textContentColor = MaterialTheme.colorScheme.onSurface,
-        title = { Text("刺客刺杀阶段") },
-        text = {
-            Column {
-                Text("蓝方已完成3个任务，刺客请选择刺杀目标。")
-                Text("刺杀梅林则红方胜利，否则蓝方胜利。", fontSize = 14.sp)
-
-                Spacer(modifier = Modifier.padding(8.dp))
-
-                Text("请选择刺杀目标：", fontWeight = FontWeight.Bold)
-
-                // 显示所有玩家供选择
-                gameState.nickNameList.forEachIndexed { index, name ->
-                    val isSelected = selectedTarget == index
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(vertical = 4.dp)
-                            .clickable { selectedTarget = index }
-                            .background(
-                                if (isSelected) MaterialTheme.colorScheme.primaryContainer
-                                else MaterialTheme.colorScheme.surface
-                            )
-                            .padding(8.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Box(
-                            modifier = Modifier
-                                .size(20.dp)
-                                .background(
-                                    if (isSelected) MaterialTheme.colorScheme.primary
-                                    else MaterialTheme.colorScheme.outline
-                                )
-                                .padding(2.dp)
-                        ) {
-                            if (isSelected) {
-                                Text("✓", color = Color.White, fontSize = 12.sp)
-                            }
-                        }
-                        Spacer(modifier = Modifier.width(8.dp))
-                        Text("${index + 1}号玩家：$name")
-                    }
-                }
+    AppDialog(
+        title = "刺客刺杀阶段",
+        subtitle = "刺杀梅林则红方胜利，否则蓝方胜利",
+        onDismiss = { onAssassinationComplete(false) },
+        actions = {
+            TextButton(
+                onClick = { onAssassinationComplete(false) }
+            ) {
+                Text("取消")
             }
-        },
-        confirmButton = {
-            androidx.compose.material3.TextButton(
+            Button(
                 onClick = {
                     selectedTarget?.let { target ->
                         val success = AwalongGameLogic.checkAssassinationSuccess(target, gameState)
@@ -618,15 +608,44 @@ private fun AssassinationDialog(
             ) {
                 Text("确认刺杀")
             }
-        },
-        dismissButton = {
-            androidx.compose.material3.TextButton(
-                onClick = { onAssassinationComplete(false) }
+        }
+    ) {
+        Text("蓝方已完成3个任务，刺客请选择刺杀目标。")
+
+        Text("请选择刺杀目标：", fontWeight = FontWeight.Bold)
+
+        gameState.nickNameList.forEachIndexed { index, name ->
+            val isSelected = selectedTarget == index
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(vertical = 4.dp)
+                    .clickable { selectedTarget = index }
+                    .background(
+                        if (isSelected) MaterialTheme.colorScheme.primaryContainer
+                        else MaterialTheme.colorScheme.surface
+                    )
+                    .padding(8.dp),
+                verticalAlignment = Alignment.CenterVertically
             ) {
-                Text("取消")
+                Box(
+                    modifier = Modifier
+                        .size(20.dp)
+                        .background(
+                            if (isSelected) MaterialTheme.colorScheme.primary
+                            else MaterialTheme.colorScheme.outline
+                        )
+                        .padding(2.dp)
+                ) {
+                    if (isSelected) {
+                        Text("✓", color = Color.White, fontSize = 12.sp)
+                    }
+                }
+                Spacer(modifier = Modifier.width(8.dp))
+                Text("${index + 1}号玩家：$name")
             }
         }
-    )
+    }
 }
 
 /**

@@ -4,15 +4,12 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.LocationOn
 import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.Person
@@ -23,9 +20,7 @@ import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -35,9 +30,8 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.compose.ui.window.Dialog
-import androidx.compose.ui.window.DialogProperties
 import org.walks.gamecopilot.awalong.AwalongConfig
+import org.walks.gamecopilot.ui.components.AppDialog
 
 /**
  * 游戏规则弹窗组件
@@ -49,74 +43,43 @@ fun GameRulesDialog(
     onDismiss: () -> Unit,
     gameConfig: AwalongConfig
 ) {
-    Dialog(
-        onDismissRequest = onDismiss,
-        properties = DialogProperties(usePlatformDefaultWidth = false)
-    ) {
-        Surface(
-            modifier = Modifier
-                .fillMaxWidth(0.95f)
-                .fillMaxHeight(0.8f)
-                .padding(16.dp),
-            shape = RectangleShape,
-            color = MaterialTheme.colorScheme.surface,
-            shadowElevation = 8.dp
-        ) {
-            Column(
-                modifier = Modifier.padding(20.dp)
+    AppDialog(
+        title = "阿瓦隆游戏规则",
+        subtitle = "目标、角色、流程与当前配置",
+        onDismiss = onDismiss,
+        widthFraction = 0.95f,
+        maxHeight = 720.dp,
+        scrollable = false,
+        actions = {
+            Button(
+                onClick = onDismiss,
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = MaterialTheme.colorScheme.primary
+                )
             ) {
-                // 标题栏
-                RulesHeader(onDismiss = onDismiss)
-                
-                Spacer(modifier = Modifier.height(16.dp))
-                
-                // 规则内容
-                RulesContent(gameConfig = gameConfig)
-                
-                Spacer(modifier = Modifier.height(20.dp))
-                
-                // 关闭按钮
-                RulesCloseButton(onDismiss = onDismiss)
+                Text(
+                    text = "知道了",
+                    fontSize = 16.sp,
+                    fontWeight = FontWeight.Medium,
+                    modifier = Modifier.padding(vertical = 4.dp)
+                )
             }
         }
-    }
-}
-
-/**
- * 规则弹窗标题栏
- */
-@Composable
-private fun RulesHeader(onDismiss: () -> Unit) {
-    Row(
-        modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.SpaceBetween,
-        verticalAlignment = Alignment.CenterVertically
     ) {
-        Text(
-            text = "阿瓦隆游戏规则",
-            fontSize = 20.sp,
-            fontWeight = FontWeight.Bold,
-            color = MaterialTheme.colorScheme.onSurface
+        RulesContent(
+            gameConfig = gameConfig,
+            modifier = Modifier.weight(1f)
         )
-        IconButton(
-            onClick = onDismiss,
-            modifier = Modifier.size(32.dp)
-        ) {
-            Icon(
-                imageVector = Icons.Default.Close,
-                contentDescription = "关闭",
-                tint = MaterialTheme.colorScheme.onSurface
-            )
-        }
     }
 }
 
-/**
- * 规则内容区域
- */
 @Composable
-private fun RulesContent(gameConfig: AwalongConfig) {
+private fun RulesContent(
+    gameConfig: AwalongConfig,
+    modifier: Modifier = Modifier
+) {
     LazyColumn(
+        modifier = modifier,
         verticalArrangement = Arrangement.spacedBy(12.dp)
     ) {
         item {
@@ -182,28 +145,6 @@ private fun RulesContent(gameConfig: AwalongConfig) {
                 """.trimIndent()
             )
         }
-    }
-}
-
-/**
- * 规则弹窗关闭按钮
- */
-@Composable
-private fun RulesCloseButton(onDismiss: () -> Unit) {
-    Button(
-        onClick = onDismiss,
-        modifier = Modifier.fillMaxWidth(),
-        shape = RectangleShape,
-        colors = ButtonDefaults.buttonColors(
-            containerColor = MaterialTheme.colorScheme.primary
-        )
-    ) {
-        Text(
-            text = "知道了",
-            fontSize = 16.sp,
-            fontWeight = FontWeight.Medium,
-            modifier = Modifier.padding(vertical = 4.dp)
-        )
     }
 }
 

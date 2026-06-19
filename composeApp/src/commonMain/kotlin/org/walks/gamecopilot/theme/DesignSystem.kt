@@ -107,21 +107,22 @@ data class AppSpacing(
  */
 data class AppCornerRadius(
     val none: Dp = 0.dp,
-    val xs: Dp = 0.dp,
-    val sm: Dp = 0.dp,
-    val md: Dp = 0.dp,
-    val lg: Dp = 0.dp,
-    val xl: Dp = 0.dp,
-    val xxl: Dp = 0.dp,
-    val xxxl: Dp = 0.dp,
+    val xs: Dp = 4.dp,
+    val sm: Dp = 6.dp,
+    val md: Dp = 8.dp,
+    val lg: Dp = 12.dp,
+    val xl: Dp = 16.dp,
+    val xxl: Dp = 20.dp,
+    val xxxl: Dp = 28.dp,
     val full: Dp = 9999.dp,
-    
-    val button: Dp = 0.dp,
-    val card: Dp = 0.dp,
-    val dialog: Dp = 0.dp,
-    val input: Dp = 0.dp,
-    val badge: Dp = 0.dp,
+
+    val button: Dp = 12.dp,
+    val card: Dp = 16.dp,
+    val dialog: Dp = 20.dp,
+    val input: Dp = 10.dp,
+    val badge: Dp = 8.dp,
     val iconButton: Dp = 9999.dp,
+    val chip: Dp = 8.dp,
 )
 
 /**

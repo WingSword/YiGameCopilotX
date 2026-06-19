@@ -30,6 +30,7 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
@@ -49,10 +50,12 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.compose.ui.window.Dialog
-import androidx.compose.ui.window.DialogProperties
+import org.walks.gamecopilot.MainViewmodel
 import org.walks.gamecopilot.PlatformHelper
 import org.walks.gamecopilot.data.DrawGuessWordLibrary
+import org.walks.gamecopilot.intent.AiIntent
+import org.walks.gamecopilot.ui.components.AiMessageBubble
+import org.walks.gamecopilot.ui.components.AppDialog
 import org.walks.gamecopilot.ui.components.CommonTopBar
 import org.walks.gamecopilot.ui.components.common.OfflinePassingGuideDialog
 
@@ -93,6 +96,7 @@ val backgroundColors = listOf(
 
 @Composable
 fun DrawBoardPage(
+    viewmodel: MainViewmodel,
     onBack: () -> Unit
 ) {
     var showGuideDialog by remember { mutableStateOf(true) }
@@ -108,6 +112,10 @@ fun DrawBoardPage(
     var isEraser by remember { mutableStateOf(false) }
     var canvasBackgroundColor by remember { mutableStateOf(Color.White) }
     var showMoreTools by remember { mutableStateOf(false) }
+
+    // AI 评论员状态
+    val aiMessage by viewmodel.aiMessage.collectAsState()
+    val isLoadingAi by viewmodel.isLoadingAi.collectAsState()
 
     Column(
         modifier = Modifier
@@ -140,7 +148,7 @@ fun DrawBoardPage(
                 .padding(8.dp)
                 .clip(RoundedCornerShape(8.dp))
                 .background(canvasBackgroundColor)
-                .border(1.dp, Color.LightGray, RoundedCornerShape(8.dp))
+                .border(1.dp, MaterialTheme.colorScheme.outlineVariant, RoundedCornerShape(8.dp))
         ) {
             DrawingCanvas(
                 paths = paths.toList(),
@@ -220,6 +228,17 @@ fun DrawBoardPage(
                 redoStack.addAll(paths.toList())
                 paths.clear()
             }
+        )
+
+        // AI 评论员消息气泡
+        AiMessageBubble(
+            message = aiMessage,
+            isLoading = isLoadingAi,
+            onRefresh = {
+                val context = "当前画板上的词汇是「$currentWord」，请作为AI评论员幽默地点评这幅画。"
+                viewmodel.handleAiIntent(AiIntent.SendMessage("drawguess", context))
+            },
+            modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
         )
     }
 
@@ -741,73 +760,53 @@ fun WordCardDialog(
     onDismiss: () -> Unit,
     onNextWord: () -> Unit
 ) {
-    Dialog(
-        onDismissRequest = onDismiss,
-        properties = DialogProperties(
-            usePlatformDefaultWidth = false
-        )
-    ) {
-        Surface(
-            modifier = Modifier
-                .fillMaxWidth(0.85f)
-                .padding(16.dp),
-            shape = RoundedCornerShape(24.dp),
-            color = MaterialTheme.colorScheme.primaryContainer,
-            shadowElevation = 8.dp
-        ) {
-            Column(
-                modifier = Modifier.padding(24.dp),
-                horizontalAlignment = Alignment.CenterHorizontally
+    AppDialog(
+        title = "词卡",
+        subtitle = "请画出这个词语",
+        onDismiss = onDismiss,
+        widthFraction = 0.86f,
+        actions = {
+            Button(
+                onClick = onDismiss,
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = MaterialTheme.colorScheme.surface
+                )
             ) {
                 Text(
-                    text = "请画出这个词语",
-                    fontSize = 16.sp,
-                    color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.7f),
-                    modifier = Modifier.padding(bottom = 16.dp)
+                    text = "关闭",
+                    color = MaterialTheme.colorScheme.onSurface
                 )
+            }
 
+            Button(
+                onClick = onNextWord,
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = MaterialTheme.colorScheme.primary
+                )
+            ) {
+                Text("换一个")
+            }
+        }
+    ) {
+        Surface(
+            modifier = Modifier.fillMaxWidth(),
+            shape = RoundedCornerShape(18.dp),
+            color = MaterialTheme.colorScheme.primaryContainer
+        ) {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(vertical = 32.dp, horizontal = 20.dp),
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
                 Text(
                     text = word,
                     fontSize = 48.sp,
                     fontWeight = FontWeight.Bold,
                     color = MaterialTheme.colorScheme.onPrimaryContainer,
                     textAlign = TextAlign.Center,
-                    modifier = Modifier.padding(vertical = 32.dp)
+                    modifier = Modifier.padding(vertical = 20.dp)
                 )
-
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(16.dp)
-                ) {
-                    Button(
-                        onClick = onDismiss,
-                        modifier = Modifier.weight(1f),
-                        colors = ButtonDefaults.buttonColors(
-                            containerColor = MaterialTheme.colorScheme.surface
-                        ),
-                        shape = RoundedCornerShape(12.dp)
-                    ) {
-                        Text(
-                            text = "关闭",
-                            color = MaterialTheme.colorScheme.onSurface,
-                            modifier = Modifier.padding(vertical = 4.dp)
-                        )
-                    }
-
-                    Button(
-                        onClick = onNextWord,
-                        modifier = Modifier.weight(1f),
-                        colors = ButtonDefaults.buttonColors(
-                            containerColor = MaterialTheme.colorScheme.primary
-                        ),
-                        shape = RoundedCornerShape(12.dp)
-                    ) {
-                        Text(
-                            text = "换一个",
-                            modifier = Modifier.padding(vertical = 4.dp)
-                        )
-                    }
-                }
             }
         }
     }

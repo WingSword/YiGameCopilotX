@@ -21,7 +21,6 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Clear
-import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.sharp.Clear
@@ -29,7 +28,7 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.Divider
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -49,11 +48,11 @@ import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.compose.ui.window.Dialog
-import androidx.compose.ui.window.DialogProperties
 import androidx.navigation.NavHostController
 import org.walks.gamecopilot.MainViewmodel
 import org.walks.gamecopilot.navigation.NaviRoute
+import org.walks.gamecopilot.ui.components.AppDialog
+import org.walks.gamecopilot.ui.components.AppScreen
 
 /**
  * 自定义阿瓦隆配置界面
@@ -67,10 +66,10 @@ fun AwalongCustomConfigScreen(
     var customConfig by remember { mutableStateOf(DefaultCustomConfig) }
     var showPredefinedConfigDialog by remember { mutableStateOf(false) }
 
-    Column(
-        modifier = modifier
-            .fillMaxSize()
-            .padding(16.dp),
+    AppScreen(
+        title = "自定义阿瓦隆",
+        subtitle = "配置角色阵营、扩展包和玩家人数",
+        modifier = modifier,
     ) {
         LazyColumn(
             modifier = Modifier.weight(1f),
@@ -92,7 +91,6 @@ fun AwalongCustomConfigScreen(
                         modifier = Modifier
                             .fillMaxWidth()
                             .height(48.dp),
-                        shape = RectangleShape
                     ) {
                         Icon(
                             imageVector = Icons.Default.Settings,
@@ -112,7 +110,6 @@ fun AwalongCustomConfigScreen(
             item {
                 Card(
                     modifier = Modifier.fillMaxWidth(),
-                    shape = RectangleShape,
                     colors = CardDefaults.cardColors(
                         containerColor = MaterialTheme.colorScheme.surface
                     )
@@ -199,7 +196,7 @@ fun AwalongCustomConfigScreen(
                         )
 
                         Spacer(modifier = Modifier.height(18.dp))
-                        Divider(modifier = Modifier.padding(vertical = 4.dp))
+                        HorizontalDivider(modifier = Modifier.padding(vertical = 4.dp))
                         Text(
                             text = "扩展包",
                             fontSize = 16.sp,
@@ -235,7 +232,7 @@ fun AwalongCustomConfigScreen(
         Spacer(modifier = Modifier.height(10.dp))
         Surface(
             modifier = Modifier.fillMaxWidth(),
-            shape = RectangleShape,
+            shape = androidx.compose.foundation.shape.RoundedCornerShape(8.dp),
             color = MaterialTheme.colorScheme.surface,
             tonalElevation = 0.dp,
             shadowElevation = 0.dp
@@ -266,7 +263,6 @@ fun AwalongCustomConfigScreen(
                         modifier = Modifier
                             .fillMaxWidth()
                             .height(48.dp),
-                        shape = RectangleShape,
                         colors = ButtonDefaults.buttonColors(
                             containerColor = MaterialTheme.colorScheme.primary
                         )
@@ -295,7 +291,6 @@ fun AwalongCustomConfigScreen(
                         modifier = Modifier
                             .fillMaxWidth()
                             .height(48.dp),
-                        shape = RectangleShape,
                         colors = ButtonDefaults.buttonColors(
                             containerColor = MaterialTheme.colorScheme.surfaceVariant
                         ),
@@ -611,174 +606,86 @@ private fun RoleDetailDialog(
     // 判断是否为梅林或莫甘娜
     val isSpecialRole = role == AwalongRole.MEILING || role == AwalongRole.MOGANNA
 
-    Dialog(
-        onDismissRequest = onDismiss,
-        properties = DialogProperties(
-            usePlatformDefaultWidth = false
-        )
-    ) {
-        Surface(
-            modifier = Modifier
-                .fillMaxWidth(0.9f)
-                .padding(16.dp),
-            shape = RectangleShape,
-            color = MaterialTheme.colorScheme.surface,
-            shadowElevation = 8.dp
-        ) {
-            Column(
-                modifier = Modifier.padding(20.dp)
-            ) {
-                // 标题栏
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Text(
-                        text = role.title,
-                        fontSize = 20.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = roleColor
+    AppDialog(
+        title = role.title,
+        subtitle = "阵营：${getRoleCamp(role)}",
+        onDismiss = onDismiss,
+        actions = {
+            OutlinedButton(onClick = onDismiss) {
+                Text("关闭")
+            }
+            if (!isSpecialRole) {
+                Button(
+                    onClick = {
+                        if (isSelected) {
+                            onRemove()
+                        } else {
+                            onAdd()
+                        }
+                        onDismiss()
+                    },
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = if (isSelected) {
+                            MaterialTheme.colorScheme.error
+                        } else {
+                            roleColor
+                        }
                     )
-
-                    // 选择计数
-                    if (selectedCount > 0) {
-                        Box(
-                            modifier = Modifier
-                                .size(28.dp)
-                                .background(
-                                    roleColor,
-                                    shape = RectangleShape
-                                ),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Text(
-                                text = "$selectedCount",
-                                fontSize = 14.sp,
-                                fontWeight = FontWeight.Bold,
-                                color = Color.White
-                            )
-                        }
-                    }
-                }
-
-                Spacer(modifier = Modifier.height(16.dp))
-
-                // 角色阵营
-                Text(
-                    text = "阵营：${getRoleCamp(role)}",
-                    fontSize = 14.sp,
-                    fontWeight = FontWeight.Medium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    modifier = Modifier.padding(bottom = 8.dp)
-                )
-
-                // 角色描述
-                Text(
-                    text = getRoleDescription(role),
-                    fontSize = 14.sp,
-                    color = MaterialTheme.colorScheme.onSurface,
-                    lineHeight = 20.sp
-                )
-
-                Spacer(modifier = Modifier.height(20.dp))
-
-                // 操作按钮区域
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
                 ) {
-                    // 关闭按钮
-                    Button(
-                        onClick = onDismiss,
-                        modifier = Modifier.weight(1f),
-                        shape = RectangleShape,
-                        colors = ButtonDefaults.buttonColors(
-                            containerColor = MaterialTheme.colorScheme.surfaceVariant
-                        )
-                    ) {
-                        Text(
-                            text = "关闭",
-                            fontSize = 14.sp,
-                            fontWeight = FontWeight.Medium
-                        )
-                    }
-
-                    Spacer(modifier = Modifier.width(12.dp))
-
-                    // 添加和移除按钮（梅林/莫甘娜不显示）
-                    if (!isSpecialRole) {
-                        androidx.compose.animation.AnimatedVisibility(
-                            visible = isSelected,
-                            enter = androidx.compose.animation.fadeIn() + androidx.compose.animation.scaleIn(),
-                            exit = androidx.compose.animation.fadeOut() + androidx.compose.animation.scaleOut()
-                        ) {
-                            Button(
-                                onClick = {
-                                    onRemove()
-                                    onDismiss()
-                                },
-                                modifier = Modifier.weight(1f),
-                                shape = RectangleShape,
-                                colors = ButtonDefaults.buttonColors(
-                                    containerColor = MaterialTheme.colorScheme.error
-                                )
-                            ) {
-                                Icon(
-                                    imageVector = Icons.Default.Clear,
-                                    contentDescription = "移除",
-                                    modifier = Modifier.size(16.dp)
-                                )
-                                Spacer(modifier = Modifier.width(4.dp))
-                                Text(
-                                    text = "移除",
-                                    fontSize = 14.sp,
-                                    fontWeight = FontWeight.Medium
-                                )
-                            }
-                        }
-
-                        androidx.compose.animation.AnimatedVisibility(
-                            visible = !isSelected,
-                            enter = androidx.compose.animation.fadeIn() + androidx.compose.animation.scaleIn(),
-                            exit = androidx.compose.animation.fadeOut() + androidx.compose.animation.scaleOut()
-                        ) {
-                            Button(
-                                onClick = {
-                                    onAdd()
-                                    onDismiss()
-                                },
-                                modifier = Modifier.weight(1f),
-                                shape = RectangleShape,
-                                colors = ButtonDefaults.buttonColors(
-                                    containerColor = roleColor
-                                )
-                            ) {
-                                Icon(
-                                    imageVector = Icons.Default.Add,
-                                    contentDescription = "添加",
-                                    modifier = Modifier.size(16.dp)
-                                )
-                                Spacer(modifier = Modifier.width(4.dp))
-                                Text(
-                                    text = "添加",
-                                    fontSize = 14.sp,
-                                    fontWeight = FontWeight.Medium
-                                )
-                            }
-                        }
-                    } else {
-                        // 梅林/莫甘娜显示特殊提示
-                        Text(
-                            text = "此角色为必选角色",
-                            fontSize = 12.sp,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            modifier = Modifier.weight(1f)
-                        )
-                    }
+                    Icon(
+                        imageVector = if (isSelected) Icons.Default.Clear else Icons.Default.Add,
+                        contentDescription = null,
+                        modifier = Modifier.size(16.dp)
+                    )
+                    Spacer(modifier = Modifier.width(4.dp))
+                    Text(if (isSelected) "移除" else "添加")
                 }
             }
+        }
+    ) {
+        if (selectedCount > 0) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Box(
+                    modifier = Modifier
+                        .size(28.dp)
+                        .background(
+                            roleColor,
+                            shape = androidx.compose.foundation.shape.RoundedCornerShape(6.dp)
+                        ),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text(
+                        text = "$selectedCount",
+                        fontSize = 14.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = Color.White
+                    )
+                }
+                Text(
+                    text = "当前配置中已选择该角色",
+                    fontSize = 13.sp,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+        }
+
+        Text(
+            text = getRoleDescription(role),
+            fontSize = 14.sp,
+            color = MaterialTheme.colorScheme.onSurface,
+            lineHeight = 20.sp
+        )
+
+        if (isSpecialRole) {
+            Text(
+                text = "此角色为必选角色，不能从配置中移除。",
+                fontSize = 12.sp,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
         }
     }
 }
@@ -829,138 +736,78 @@ private fun PredefinedConfigDialog(
     onDismiss: () -> Unit,
     onConfigSelected: (AwalongCustomConfig) -> Unit
 ) {
-    Dialog(
-        onDismissRequest = onDismiss,
-        properties = DialogProperties(
-            usePlatformDefaultWidth = false
-        )
+    AppDialog(
+        title = "选择预定义配置",
+        subtitle = "按玩家人数快速套用常用角色组合",
+        onDismiss = onDismiss,
+        actions = {
+            OutlinedButton(onClick = onDismiss) {
+                Text("关闭")
+            }
+        }
     ) {
-        Surface(
-            modifier = Modifier
-                .fillMaxWidth(0.95f)
-                .padding(16.dp),
-            shape = RectangleShape,
-            color = MaterialTheme.colorScheme.surface,
-            shadowElevation = 8.dp
+        Column(
+            verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
-            Column(
-                modifier = Modifier.padding(20.dp)
-            ) {
-                // 标题栏
-                Row(
+            PredefinedConfigs.forEach { config ->
+                Card(
                     modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
+                    colors = CardDefaults.cardColors(
+                        containerColor = MaterialTheme.colorScheme.surfaceVariant
+                    ),
+                    onClick = { onConfigSelected(config) }
                 ) {
-                    Text(
-                        text = "选择预定义配置",
-                        fontSize = 20.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = MaterialTheme.colorScheme.onSurface
-                    )
-                    IconButton(
-                        onClick = onDismiss,
-                        modifier = Modifier.size(32.dp)
+                    Column(
+                        modifier = Modifier.padding(16.dp)
                     ) {
-                        Icon(
-                            imageVector = Icons.Default.Close,
-                            contentDescription = "关闭",
-                            tint = MaterialTheme.colorScheme.onSurface
-                        )
-                    }
-                }
-
-                Spacer(modifier = Modifier.height(16.dp))
-
-                // 配置列表
-                Column(
-                    verticalArrangement = Arrangement.spacedBy(12.dp)
-                ) {
-                    PredefinedConfigs.forEach { config ->
-                        Card(
+                        Row(
                             modifier = Modifier.fillMaxWidth(),
-                            shape = RectangleShape,
-                            colors = CardDefaults.cardColors(
-                                containerColor = MaterialTheme.colorScheme.surfaceVariant
-                            ),
-                            onClick = { onConfigSelected(config) }
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
                         ) {
-                            Column(
-                                modifier = Modifier.padding(16.dp)
+                            Text(
+                                text = "${config.totalPlayers}人配置",
+                                fontSize = 16.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = MaterialTheme.colorScheme.onSurface
+                            )
+
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically
                             ) {
-                                Row(
-                                    modifier = Modifier.fillMaxWidth(),
-                                    horizontalArrangement = Arrangement.SpaceBetween,
-                                    verticalAlignment = Alignment.CenterVertically
-                                ) {
-                                    Text(
-                                        text = "${config.totalPlayers}人配置",
-                                        fontSize = 16.sp,
-                                        fontWeight = FontWeight.Bold,
-                                        color = MaterialTheme.colorScheme.onSurface
-                                    )
-
-                                    // 阵营标识
-                                    Row(
-                                        verticalAlignment = Alignment.CenterVertically
-                                    ) {
-                                        Text(
-                                            text = "蓝方${config.blueCount}人",
-                                            fontSize = 12.sp,
-                                            color = Color(0xFF2196F3),
-                                            fontWeight = FontWeight.Medium
-                                        )
-                                        Text(
-                                            text = " | ",
-                                            fontSize = 12.sp,
-                                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                                        )
-                                        Text(
-                                            text = "红方${config.redCount}人",
-                                            fontSize = 12.sp,
-                                            color = Color(0xFFF44336),
-                                            fontWeight = FontWeight.Medium
-                                        )
-                                    }
-                                }
-
-                                Spacer(modifier = Modifier.height(8.dp))
-
                                 Text(
-                                    text = config.getDescription(),
+                                    text = "蓝方${config.blueCount}人",
                                     fontSize = 12.sp,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                    maxLines = 2
+                                    color = Color(0xFF2196F3),
+                                    fontWeight = FontWeight.Medium
+                                )
+                                Text(
+                                    text = " | ",
+                                    fontSize = 12.sp,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                                Text(
+                                    text = "红方${config.redCount}人",
+                                    fontSize = 12.sp,
+                                    color = Color(0xFFF44336),
+                                    fontWeight = FontWeight.Medium
                                 )
                             }
                         }
+
+                        Spacer(modifier = Modifier.height(8.dp))
+
+                        Text(
+                            text = config.getDescription(),
+                            fontSize = 12.sp,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            maxLines = 2
+                        )
                     }
-                }
-
-                Spacer(modifier = Modifier.height(16.dp))
-
-                Divider(modifier = Modifier.fillMaxWidth())
-
-                Spacer(modifier = Modifier.height(16.dp))
-
-                // 关闭按钮
-                Button(
-                    onClick = onDismiss,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(48.dp),
-                    shape = RectangleShape,
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = MaterialTheme.colorScheme.surfaceVariant
-                    )
-                ) {
-                    Text(
-                        text = "关闭",
-                        fontSize = 16.sp,
-                        fontWeight = FontWeight.Medium
-                    )
                 }
             }
         }
+
+        HorizontalDivider(modifier = Modifier.fillMaxWidth())
     }
 }

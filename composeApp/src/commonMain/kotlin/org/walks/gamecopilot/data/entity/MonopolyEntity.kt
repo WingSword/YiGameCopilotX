@@ -1,6 +1,7 @@
 package org.walks.gamecopilot.data.entity
 
 import kotlinx.serialization.Serializable
+import org.walks.gamecopilot.currentTimeMillis
 
 @Serializable
 data class MonopolyPlayer(
@@ -31,7 +32,7 @@ data class MonopolyTransaction(
     val toPlayerId: String?,
     val amount: Long,
     val description: String,
-    val timestamp: Long = System.currentTimeMillis()
+    val timestamp: Long = currentTimeMillis()
 )
 
 @Serializable
