@@ -22,13 +22,15 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.ArrowForward
+import androidx.compose.material.icons.rounded.BarChart
 import androidx.compose.material.icons.rounded.Casino
 import androidx.compose.material.icons.rounded.DarkMode
 import androidx.compose.material.icons.rounded.Groups
 import androidx.compose.material.icons.rounded.LightMode
 import androidx.compose.material.icons.rounded.Menu
 import androidx.compose.material.icons.rounded.Settings
-import androidx.compose.material.icons.rounded.Wifi
+import androidx.compose.material.icons.rounded.SportsEsports
+import androidx.compose.material.icons.rounded.Timer
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -61,6 +63,7 @@ import androidx.compose.ui.window.PopupProperties
 import androidx.navigation.NavHostController
 import org.walks.gamecopilot.MainViewmodel
 import org.walks.gamecopilot.PlatformHelper
+import org.walks.gamecopilot.data.GameStatsManager
 import org.walks.gamecopilot.data.entity.GameMode
 import org.walks.gamecopilot.data.entity.OperationMode
 import org.walks.gamecopilot.intent.GameIntent
@@ -75,13 +78,6 @@ private data class GameCardMeta(
     val description: String,
     val players: String,
     val brush: Brush
-)
-
-private data class HomeMenuItem(
-    val title: String,
-    val subtitle: String,
-    val icon: ImageVector,
-    val onClick: () -> Unit
 )
 
 @Composable
@@ -191,25 +187,11 @@ fun HomePage(viewmodel: MainViewmodel, navi: NavHostController) {
                         )
                     }
                 }
-                HomeQuickMenu(
+                HomeStatsMenu(
                     expanded = menuExpanded,
                     themeMode = themeMode,
                     onDismiss = { menuExpanded = false },
-                    onThemeModeChange = viewmodel::setThemeMode,
-                    items = listOf(
-                        HomeMenuItem("随机工具", "骰子、转盘、答案之书", Icons.Rounded.Casino) {
-                            navi.navigate(NaviRoute.RANDOM.route)
-                        },
-                        HomeMenuItem("联机大厅", "创建或加入多人房间", Icons.Rounded.Groups) {
-                            navi.navigate(NaviRoute.MULTIPLAYER.route)
-                        },
-                        HomeMenuItem("局域网组局", "同 WiFi 快速发现房间", Icons.Rounded.Wifi) {
-                            navi.navigate(NaviRoute.LAN_DISCOVERY.route)
-                        },
-                        HomeMenuItem("应用设置", "昵称、AI 与偏好设置", Icons.Rounded.Settings) {
-                            navi.navigate(NaviRoute.SETTING.route)
-                        }
-                    )
+                    onThemeModeChange = viewmodel::setThemeMode
                 )
             }
         }
@@ -255,17 +237,41 @@ fun HomePage(viewmodel: MainViewmodel, navi: NavHostController) {
 }
 
 @Composable
-private fun HomeQuickMenu(
+private fun HomeStatsMenu(
     expanded: Boolean,
     themeMode: ThemeMode,
     onDismiss: () -> Unit,
-    onThemeModeChange: (ThemeMode) -> Unit,
-    items: List<HomeMenuItem>
+    onThemeModeChange: (ThemeMode) -> Unit
 ) {
     if (!expanded) return
 
     val design = LocalAppDesign.current
     val menuShape = RoundedCornerShape(design.cornerRadius.lg)
+
+    // 读取游戏对局统计数据
+    val totalGames = remember { GameStatsManager.totalGames() }
+    val totalPlayers = remember { GameStatsManager.totalPlayerParticipations() }
+    val modeCountMap = remember { GameStatsManager.countByGameMode() }
+    val favoriteGame = remember {
+        modeCountMap.maxByOrNull { it.value }?.key
+    }
+    val lastPlayedTime = remember { GameStatsManager.lastPlayedTime() }
+    val lastPlayedText = remember(lastPlayedTime) {
+        if (lastPlayedTime == 0L) {
+            "暂无记录"
+        } else {
+            val nowMillis = kotlin.time.Clock.System.now().toEpochMilliseconds()
+            val diffMillis = (nowMillis - lastPlayedTime).coerceAtLeast(0)
+            val diffMin = diffMillis / 60000
+            when {
+                diffMin < 1 -> "刚刚"
+                diffMin < 60 -> "${diffMin} 分钟前"
+                diffMin < 60 * 24 -> "${diffMin / 60} 小时前"
+                diffMin < 60 * 24 * 30 -> "${diffMin / (60 * 24)} 天前"
+                else -> "更早之前"
+            }
+        }
+    }
 
     Popup(
         alignment = Alignment.TopEnd,
@@ -285,22 +291,89 @@ private fun HomeQuickMenu(
                 modifier = Modifier.padding(8.dp),
                 verticalArrangement = Arrangement.spacedBy(4.dp)
             ) {
-                items.forEach { item ->
-                    HomeQuickMenuRow(
-                        title = item.title,
-                        subtitle = item.subtitle,
-                        icon = item.icon,
-                        iconTint = MaterialTheme.colorScheme.primary,
-                        onClick = {
-                            onDismiss()
-                            item.onClick()
-                        }
+                // 标题行
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 12.dp, vertical = 6.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Icon(
+                        imageVector = Icons.Rounded.BarChart,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier.size(18.dp)
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text(
+                        text = "游戏对局统计",
+                        style = MaterialTheme.typography.titleSmall,
+                        color = MaterialTheme.colorScheme.onSurface,
+                        fontWeight = FontWeight.SemiBold
                     )
                 }
+
+                // 概览三栏：总局数 / 总人次 / 最近游玩
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 8.dp, vertical = 4.dp),
+                    horizontalArrangement = Arrangement.SpaceEvenly
+                ) {
+                    HomeStatCell(
+                        value = totalGames.toString(),
+                        label = "总局数",
+                        icon = Icons.Rounded.SportsEsports,
+                        tint = MaterialTheme.colorScheme.primary
+                    )
+                    HomeStatCell(
+                        value = totalPlayers.toString(),
+                        label = "总人次",
+                        icon = Icons.Rounded.Groups,
+                        tint = MaterialTheme.colorScheme.secondary
+                    )
+                    HomeStatCell(
+                        value = lastPlayedText,
+                        label = "最近游玩",
+                        icon = Icons.Rounded.Timer,
+                        tint = MaterialTheme.colorScheme.tertiary,
+                        compactValue = true
+                    )
+                }
+
                 HorizontalDivider(
                     modifier = Modifier.padding(vertical = 4.dp),
                     color = MaterialTheme.colorScheme.outline.copy(alpha = 0.18f)
                 )
+
+                // 各游戏累计局数
+                GameMode.entries.forEach { mode ->
+                    val count = modeCountMap[mode] ?: 0
+                    HomeGameStatRow(
+                        title = mode.title,
+                        count = count,
+                        isFavorite = mode == favoriteGame && count > 0,
+                        accent = mode.gradientColors.start
+                    )
+                }
+
+                HorizontalDivider(
+                    modifier = Modifier.padding(vertical = 4.dp),
+                    color = MaterialTheme.colorScheme.outline.copy(alpha = 0.18f)
+                )
+
+                // 最常玩
+                if (favoriteGame != null && (modeCountMap[favoriteGame] ?: 0) > 0) {
+                    HomeQuickMenuRow(
+                        title = "最常玩",
+                        subtitle = "${favoriteGame.title} · ${modeCountMap[favoriteGame]} 局",
+                        icon = Icons.Rounded.Casino,
+                        iconTint = MaterialTheme.colorScheme.primary,
+                        onClick = {}
+                    )
+                }
+
+                // 主题切换
                 HomeQuickMenuRow(
                     title = when (themeMode) {
                         ThemeMode.DARK -> "切换浅色外观"
@@ -329,6 +402,86 @@ private fun HomeQuickMenu(
                     }
                 )
             }
+        }
+    }
+}
+
+@Composable
+private fun HomeStatCell(
+    value: String,
+    label: String,
+    icon: ImageVector,
+    tint: Color,
+    compactValue: Boolean = false
+) {
+    Column(
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.spacedBy(2.dp),
+        modifier = Modifier.padding(vertical = 4.dp)
+    ) {
+        Icon(
+            imageVector = icon,
+            contentDescription = null,
+            tint = tint,
+            modifier = Modifier.size(18.dp)
+        )
+        Text(
+            text = value,
+            style = if (compactValue) MaterialTheme.typography.labelMedium else MaterialTheme.typography.titleMedium,
+            color = tint,
+            fontWeight = FontWeight.Bold,
+            maxLines = 1
+        )
+        Text(
+            text = label,
+            style = MaterialTheme.typography.labelSmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
+        )
+    }
+}
+
+@Composable
+private fun HomeGameStatRow(
+    title: String,
+    count: Int,
+    isFavorite: Boolean,
+    accent: Color
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(8.dp))
+            .padding(horizontal = 12.dp, vertical = 6.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Box(
+            modifier = Modifier
+                .size(width = 4.dp, height = 16.dp)
+                .background(accent, RoundedCornerShape(2.dp))
+        )
+        Spacer(modifier = Modifier.width(8.dp))
+        Text(
+            text = title,
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurface,
+            modifier = Modifier.weight(1f),
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis
+        )
+        Text(
+            text = "${count} 局",
+            style = MaterialTheme.typography.labelSmall,
+            color = if (count > 0) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
+            fontWeight = if (isFavorite) FontWeight.Bold else FontWeight.Medium
+        )
+        if (isFavorite) {
+            Spacer(modifier = Modifier.width(4.dp))
+            Text(
+                text = "最爱",
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.primary,
+                fontWeight = FontWeight.Bold
+            )
         }
     }
 }
@@ -540,6 +693,13 @@ private fun navigateByMode(
     navi: NavHostController
 ) {
     viewmodel.handleGameIntent(GameIntent.SwitchGameMode(gameMode.ordinal))
+    // 仅统计单机对局数据
+    if (operationMode == OperationMode.LOCAL) {
+        runCatching {
+            val playerCount = viewmodel.gameEntity.value.currentGame.totalPlayerNumber
+            GameStatsManager.recordGameStart(gameMode, playerCount)
+        }
+    }
     when (operationMode) {
         OperationMode.LOCAL -> when (gameMode) {
             GameMode.SPY_MAIN -> navi.navigate(NaviRoute.LOCAL_SPY.route)

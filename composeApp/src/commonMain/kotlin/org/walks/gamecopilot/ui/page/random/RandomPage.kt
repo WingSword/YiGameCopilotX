@@ -119,14 +119,32 @@ fun RandomPage(viewmodel: MainViewmodel) {
     val scope = rememberCoroutineScope()
     viewmodel.handleRandomPageIntent(RandomPageIntent.OnChangeNewRandomLabel)
     val rawLabels = viewmodel.randomLabelsState.value.asReversed()
+    // 固定工具排序：答案之书第一、指转盘第二，其余保持原顺序
+    val ANSWER_BOOK_LABEL = RANDOM_PAGE_CONFIG_CATE_ANSWER_BOOK + "答案之书"
     val randomLabelsList = buildList {
+        if (rawLabels.contains(ANSWER_BOOK_LABEL)) {
+            add(ANSWER_BOOK_LABEL)
+        }
         if (rawLabels.contains(RANDOM_PAGE_SYSTEM_FINGER_SPINNER_NAME)) {
             add(RANDOM_PAGE_SYSTEM_FINGER_SPINNER_NAME)
         }
-        addAll(rawLabels.filter { it != RANDOM_PAGE_SYSTEM_FINGER_SPINNER_NAME })
+        addAll(
+            rawLabels.filter {
+                it != RANDOM_PAGE_SYSTEM_FINGER_SPINNER_NAME && it != ANSWER_BOOK_LABEL
+            }
+        )
     }
     var itemList = viewmodel.currentRandomContentState.collectAsState().value.list
     var currentSelectLabel = viewmodel.currentRandomContentState.collectAsState().value.name
+
+    // 首次进入随机工具页时，默认选中第一个工具（答案之书）
+    LaunchedEffect(randomLabelsList) {
+        if (currentSelectLabel.isEmpty() && randomLabelsList.isNotEmpty()) {
+            viewmodel.handleRandomPageIntent(
+                RandomPageIntent.OnSelectLabel(randomLabelsList.first())
+            )
+        }
+    }
 
     var randomContentDisplayState = remember {
         mutableIntStateOf(0)

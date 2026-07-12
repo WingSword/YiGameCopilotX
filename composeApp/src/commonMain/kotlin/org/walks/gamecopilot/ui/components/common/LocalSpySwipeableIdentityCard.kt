@@ -1,4 +1,4 @@
-package org.walks.gamecopilot.awalong.components
+package org.walks.gamecopilot.ui.components.common
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Column
@@ -7,8 +7,6 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.Visibility
 import androidx.compose.material3.Icon
@@ -18,56 +16,49 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.yi.yigamecopilot.android.theme.AiLv
-import com.yi.yigamecopilot.android.theme.Chi
-import org.walks.gamecopilot.awalong.AwalongRole
-import org.walks.gamecopilot.awalong.GOOD_PERSON
-import org.walks.gamecopilot.ui.components.common.IdentityCardColors
-import org.walks.gamecopilot.ui.components.common.SwipeableIdentityCardShell
-import org.walks.gamecopilot.ui.components.common.rememberIdentityCardColors
 
 @Composable
-fun AwalongIdentityCard(
+fun LocalSpySwipeableIdentityCard(
+    resetKey: Any,
     playerNumber: Int,
-    role: AwalongRole,
     nickname: String,
-    allRoles: List<AwalongRole>,
-    allNicknames: List<String>,
+    identity: String,
+    isSpy: Boolean,
     onClose: () -> Unit = {}
 ) {
-    val roleColor = if (role.roleType == GOOD_PERSON) AiLv else Chi
-    val colors = rememberIdentityCardColors().copy(accent = roleColor)
+    val accentColor = if (isSpy) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.primary
+    val colors = rememberIdentityCardColors().copy(accent = accentColor)
 
     SwipeableIdentityCardShell(
-        resetKey = "awalong-$playerNumber-${role.title}-$nickname",
+        resetKey = resetKey,
         cardWidth = 300.dp,
         cardHeight = 470.dp,
         onClose = onClose,
         colors = colors,
         hiddenContent = {
-            AwalongHiddenFace(
+            LocalSpyHiddenFace(
                 playerNumber = playerNumber,
                 nickname = nickname,
                 colors = colors
             )
         },
         visibleContent = {
-            AwalongRevealedFace(
-                role = role,
-                roleColor = roleColor,
-                allRoles = allRoles,
-                allNicknames = allNicknames
+            LocalSpyRevealedFace(
+                identity = identity,
+                roleLabel = if (isSpy) "卧底" else "平民",
+                accentColor = accentColor
             )
         }
     )
 }
 
 @Composable
-private fun AwalongHiddenFace(
+private fun LocalSpyHiddenFace(
     playerNumber: Int,
     nickname: String,
     colors: IdentityCardColors
@@ -104,11 +95,11 @@ private fun AwalongHiddenFace(
         Icon(
             imageVector = Icons.Rounded.Visibility,
             contentDescription = null,
-            tint = colors.accent,
+            tint = colors.accent
         )
         Spacer(modifier = Modifier.weight(1f))
         Text(
-            text = "身份已隐藏",
+            text = "身份词已隐藏",
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             fontSize = 18.sp
         )
@@ -116,11 +107,10 @@ private fun AwalongHiddenFace(
 }
 
 @Composable
-private fun AwalongRevealedFace(
-    role: AwalongRole,
-    roleColor: androidx.compose.ui.graphics.Color,
-    allRoles: List<AwalongRole>,
-    allNicknames: List<String>
+private fun LocalSpyRevealedFace(
+    identity: String,
+    roleLabel: String,
+    accentColor: Color
 ) {
     Column(
         modifier = Modifier
@@ -128,20 +118,20 @@ private fun AwalongRevealedFace(
             .padding(16.dp)
     ) {
         Text(
-            text = role.title,
+            text = roleLabel,
             fontWeight = FontWeight.Bold,
             modifier = Modifier.fillMaxWidth(),
             textAlign = TextAlign.Start,
             fontSize = 36.sp,
-            color = roleColor
+            color = accentColor
         )
         Surface(
-            color = roleColor.copy(alpha = 0.14f),
+            color = accentColor.copy(alpha = 0.14f),
             shape = androidx.compose.foundation.shape.RoundedCornerShape(6.dp)
         ) {
             Text(
-                text = if (role.roleType == GOOD_PERSON) "好人阵营" else "坏人阵营",
-                color = roleColor,
+                text = "谁是卧底",
+                color = accentColor,
                 fontSize = 13.sp,
                 fontWeight = FontWeight.Medium,
                 modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp)
@@ -152,48 +142,27 @@ private fun AwalongRevealedFace(
             modifier = Modifier
                 .fillMaxWidth()
                 .height(3.dp)
-                .background(roleColor)
+                .background(accentColor)
         )
-        Spacer(modifier = Modifier.height(10.dp))
+        Spacer(modifier = Modifier.weight(1f))
         Text(
-            text = role.description,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            fontSize = 15.sp,
-            lineHeight = 22.sp
+            text = identity,
+            textAlign = TextAlign.Center,
+            color = MaterialTheme.colorScheme.onSurface,
+            fontSize = 34.sp,
+            lineHeight = 42.sp,
+            fontWeight = FontWeight.Bold,
+            modifier = Modifier.fillMaxWidth()
         )
-
-        val checkList = role.checkSkills(allRoles)
-        if (checkList.isNotEmpty()) {
-            Spacer(modifier = Modifier.height(10.dp))
-            Text(
-                text = "你能看到的其他玩家：",
-                textAlign = TextAlign.Start,
-                color = roleColor,
-                fontSize = 14.sp,
-                fontWeight = FontWeight.Bold
-            )
-            LazyColumn(modifier = Modifier.height(150.dp)) {
-                items(checkList.keys.toList()) { playerIndex ->
-                    val targetNickname = allNicknames.getOrElse(playerIndex) { "" }
-                    val visibleRole = checkList[playerIndex]
-                    val roleText = if (role == AwalongRole.PAIXIWEIWEIER) {
-                        "可能是梅林"
-                    } else {
-                        visibleRole?.title.orEmpty()
-                    }
-                    Text(
-                        text = "[${playerIndex + 1}${if (targetNickname.isNotBlank()) " ($targetNickname)" else ""} 的身份 $roleText]",
-                        modifier = Modifier
-                            .padding(vertical = 3.dp)
-                            .fillMaxWidth(),
-                        color = if (role == AwalongRole.PAIXIWEIWEIER || visibleRole?.roleType == GOOD_PERSON) AiLv else Chi,
-                        textAlign = TextAlign.Start,
-                        fontSize = 13.sp
-                    )
-                }
-            }
-        }
-
+        Spacer(modifier = Modifier.height(12.dp))
+        Text(
+            text = "记住身份词，交还设备前滑回隐藏",
+            textAlign = TextAlign.Center,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            fontSize = 14.sp,
+            lineHeight = 20.sp,
+            modifier = Modifier.fillMaxWidth()
+        )
         Spacer(modifier = Modifier.weight(1f))
         Text(
             text = "左右滑动可隐藏身份",

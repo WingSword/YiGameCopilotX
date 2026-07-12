@@ -17,7 +17,7 @@ fun LocalSpyIdentitySelector(
 ) {
     val playerNum = gameState.totalPlayerNumber
     val identities = List(playerNum) { index ->
-        if (gameState.isSpy(index)) "卧底" else "平民"
+        gameState.optIdentity(index + 1)
     }
     // 确保昵称列表长度正确，如果没有昵称则使用默认的玩家编号
     // 使用remember确保昵称列表变化时组件会重新渲染
@@ -35,7 +35,16 @@ fun LocalSpyIdentitySelector(
         identities = identities,
         nicknames = nicknames,
         onNicknameChange = onNicknameChange,
-        onRefreshIdentities = onRefreshIdentities
-        // 使用默认身份卡片，不需要自定义
+        onRefreshIdentities = onRefreshIdentities,
+        customIdentityCard = { playerNumber, identity, nickname, onClose ->
+            LocalSpySwipeableIdentityCard(
+                resetKey = "local-spy-$key-$playerNumber-$identity",
+                playerNumber = playerNumber,
+                nickname = nickname,
+                identity = identity,
+                isSpy = gameState.isSpy(playerNumber),
+                onClose = onClose
+            )
+        }
     )
 }

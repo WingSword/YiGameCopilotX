@@ -9,6 +9,9 @@ const val MMKV_RANDOM_LABEL_NAME_KEY= "mmkv_random_cards_setting_name"
 const val MMKV_RANDOM_CARDS_SETTING_KEY = "mmkv_random_cards_setting_1"
 const val MMKV_RANDOM_CARDS_B_SETTING_KEY = "mmkv_random_cards_setting_2"
 
+// 游戏对局统计数据
+const val MMKV_GAME_STATS_KEY = "mmkv_game_stats_records"
+
 // AI 助手相关配置键
 const val MMKV_AI_PROVIDER_KEY = "ai_provider"
 const val MMKV_AI_API_KEY = "ai_api_key"

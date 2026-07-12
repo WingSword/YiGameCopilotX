@@ -258,7 +258,11 @@ fun AppView(viewmodel: MainViewmodel) {
     val snackState = remember { SnackbarHostState() }
     val navi = rememberNavController()
     var currentRoute by remember { mutableStateOf("") }
-    val floatButtonShow = currentRoute == NaviRoute.RANDOM.route
+    // 订阅当前随机配置名，判断是否为固定工具（指转盘/答案之书）
+    val latestRandomConfig by viewmodel.currentRandomContentState.collectAsState()
+    val isFixedTool = latestRandomConfig.name.startsWith(RANDOM_PAGE_CONFIG_CATE_FINGER) ||
+            latestRandomConfig.name.startsWith(RANDOM_PAGE_CONFIG_CATE_ANSWER_BOOK)
+    val floatButtonShow = currentRoute == NaviRoute.RANDOM.route && !isFixedTool
     LaunchedEffect(navi) {
         navi.currentBackStackEntryFlow.collect { entry ->
             currentRoute = entry.destination.route ?: ""

@@ -86,6 +86,16 @@ fun FingerSpinnerComponent(modifier: Modifier = Modifier) {
         ),
         label = "pulseProgress"
     )
+    // 公布结果时使用更快的波纹频率，让结果更醒目
+    val fastWaveProgress by infiniteTransition.animateFloat(
+        initialValue = 0f,
+        targetValue = 1f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(durationMillis = 550, easing = LinearEasing),
+            repeatMode = RepeatMode.Restart
+        ),
+        label = "fastWaveProgress"
+    )
 
     LaunchedEffect(participantRevision, activeCount, lockToWinner) {
         if (runningProcess || lockToWinner || activeCount < 2) {
@@ -225,6 +235,8 @@ fun FingerSpinnerComponent(modifier: Modifier = Modifier) {
         Canvas(modifier = Modifier.fillMaxSize()) {
             ripples.values.forEach { ripple ->
                 val highlighted = ripple.id == jumpingPointerId
+                // 公布结果/选中状态使用更快的波纹频率
+                val effectiveWave = if (ripple.isWinner) fastWaveProgress else waveProgress
                 drawFingerRipple(
                     center = ripple.position,
                     baseColor = ripple.color,
@@ -232,7 +244,7 @@ fun FingerSpinnerComponent(modifier: Modifier = Modifier) {
                     highlighted = highlighted,
                     selected = ripple.isWinner,
                     fadingOut = ripple.isFadingOut,
-                    waveProgress = waveProgress,
+                    waveProgress = effectiveWave,
                     pulseProgress = pulseProgress
                 )
             }
@@ -279,49 +291,58 @@ private fun androidx.compose.ui.graphics.drawscope.DrawScope.drawFingerRipple(
 
     val alpha = when {
         fadingOut -> 0.2f
-        selected -> 0.95f
-        highlighted -> 0.9f
-        else -> 0.75f
+        selected -> 1f
+        highlighted -> 0.92f
+        else -> 0.85f
     }
     val scale = when {
-        selected -> 1.28f
-        highlighted -> 1.18f
-        else -> 1f
+        selected -> 1.45f
+        highlighted -> 1.2f
+        else -> 1.1f
     } * pulseScale
 
-    val minRadius = 28f * scale
-    val maxRadius = 170f * scale
+    // 统一使用大半径范围，避免正常状态下水波纹太小看不见
+    val minRadius = 40f * scale
+    val maxRadius = 280f * scale
 
+    // 实心核心圆
     drawCircle(
-        color = baseColor.copy(alpha = 0.42f * alpha),
+        color = baseColor.copy(alpha = if (selected) 0.68f else 0.55f * alpha),
         radius = minRadius,
         center = center
     )
     // 中心高亮，避免被手指完全遮挡时“看不见”
     drawCircle(
-        color = Color.White.copy(alpha = 0.82f * alpha),
-        radius = 8f * scale,
+        color = Color.White.copy(alpha = 0.85f * alpha),
+        radius = (if (selected) 12f else 10f) * scale,
         center = center
     )
-    if (highlighted) {
+    if (highlighted || selected) {
+        // 外圈描边，公布结果时更粗更大
         drawCircle(
             color = Color.White.copy(alpha = 0.95f * alpha),
-            radius = maxRadius + 22f,
+            radius = maxRadius + if (selected) 40f else 28f,
             center = center,
-            style = Stroke(width = 9f)
+            style = Stroke(width = if (selected) 13f else 10f)
         )
     }
+    // 主波纹
     drawCircle(
-        color = baseColor.copy(alpha = (1f - mixedWave) * 0.82f * alpha),
+        color = baseColor.copy(
+            alpha = (if (selected) 1f else 0.9f) * (1f - mixedWave) * alpha
+        ),
         radius = minRadius + (maxRadius - minRadius) * mixedWave,
         center = center,
-        style = Stroke(width = 11f)
+        style = Stroke(width = if (selected) 16f else 13f)
     )
+    // 次波纹
     drawCircle(
-        color = baseColor.copy(alpha = (1f - secondWave) * 0.62f * alpha),
+        color = baseColor.copy(
+            alpha = (if (selected) 0.8f else 0.7f) * (1f - secondWave) * alpha
+        ),
         radius = minRadius + (maxRadius - minRadius) * secondWave,
         center = center,
-        style = Stroke(width = 8f)
+        style = Stroke(width = if (selected) 12f else 10f)
     )
 }
 

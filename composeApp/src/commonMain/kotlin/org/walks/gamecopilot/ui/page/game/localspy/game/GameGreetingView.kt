@@ -26,8 +26,8 @@ import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import org.walks.gamecopilot.PlatformHelper
 import org.walks.gamecopilot.data.entity.LocalSpyEntity
+import org.walks.gamecopilot.ui.components.common.LocalSpySwipeableIdentityCard
 import org.walks.gamecopilot.ui.page.game.localspy.game.components.LocalPlayerSelectArea
-import org.walks.gamecopilot.ui.page.home.LocalSpyIdentityCard
 
 /**
  * 游戏身份展示视图组件
@@ -130,9 +130,15 @@ fun GameGreetingView(
                 usePlatformDefaultWidth = false // 关键属性
             )
         ) {
-            LocalSpyIdentityCard(
-                gameState = gameState,
-                currentSelectPlayer = currentSelectPlayer,
+            LocalSpySwipeableIdentityCard(
+                resetKey = "$key-$currentSelectPlayer-${gameState.optIdentity(currentSelectPlayer)}",
+                playerNumber = currentSelectPlayer,
+                nickname = gameState.nicknames.getOrNull(currentSelectPlayer - 1)
+                    ?.takeIf { it.isNotBlank() }
+                    ?: "玩家$currentSelectPlayer",
+                identity = gameState.optIdentity(currentSelectPlayer),
+                isSpy = gameState.isSpy(currentSelectPlayer),
+                onClose = { identityDisPlayState.value = IDENTITY_DISMISS }
             )
         }
     }
