@@ -9,9 +9,9 @@ import androidx.compose.material3.Shapes
 fun AppCornerRadius.toMaterialShapes(): Shapes {
     return Shapes(
         extraSmall = RoundedCornerShape(xs),
-        small = RoundedCornerShape(sm),
-        medium = RoundedCornerShape(md),
-        large = RoundedCornerShape(lg),
-        extraLarge = RoundedCornerShape(xl)
+        small = RoundedCornerShape(button),
+        medium = RoundedCornerShape(card),
+        large = RoundedCornerShape(dialog),
+        extraLarge = RoundedCornerShape(xxxl)
     )
 }

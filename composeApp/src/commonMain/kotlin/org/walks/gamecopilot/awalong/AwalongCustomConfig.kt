@@ -178,12 +178,11 @@ val PredefinedConfigs = listOf(
             AwalongRole.PAIXIWEIWEIER,
             AwalongRole.ZHONGCHEN,
             AwalongRole.ZHONGCHEN,
-            AwalongRole.ZHONGCHEN,
             AwalongRole.ZHONGCHEN
         ),
-        blueCount = 6,
+        blueCount = 5,
         redRoles = listOf(AwalongRole.MOGANNA, AwalongRole.CISHA, AwalongRole.SHAPESHIFTER),
-        redCount = 2
+        redCount = 3
     ),
 
     // 9人配置（带多个扩展角色）

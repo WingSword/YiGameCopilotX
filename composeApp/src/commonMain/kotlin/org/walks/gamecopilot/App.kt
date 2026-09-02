@@ -26,6 +26,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.rounded.Groups
 import androidx.compose.material.icons.rounded.Home
+import androidx.compose.material.icons.rounded.Insights
 import androidx.compose.material.icons.rounded.PersonOutline
 import androidx.compose.material.icons.rounded.WorkOutline
 import androidx.compose.material.icons.sharp.Add
@@ -56,6 +57,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.rotate
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -103,8 +105,7 @@ fun App() {
 private data class HomeBottomNavItem(
     val id: String,
     val route: String?,
-    val label: String?,
-    val selectedLabel: String? = null,
+    val label: String,
     val icon: androidx.compose.ui.graphics.vector.ImageVector
 )
 
@@ -115,29 +116,31 @@ fun BottomNavigationBar(navi: NavHostController, currentRoute: String) {
         HomeBottomNavItem(
             id = "home",
             route = NaviRoute.HOME.route,
-            label = null,
-            selectedLabel = "首页",
+            label = "首页",
             icon = Icons.Rounded.Home
         ),
         HomeBottomNavItem(
             id = "bag",
             route = NaviRoute.RANDOM.route,
-            label = null,
-            selectedLabel = "工具",
+            label = "工具",
             icon = Icons.Rounded.WorkOutline
         ),
         HomeBottomNavItem(
             id = "multiplayer",
             route = NaviRoute.MULTIPLAYER.route,
-            label = null,
-            selectedLabel = "联机",
+            label = "联机",
             icon = Icons.Rounded.Groups
+        ),
+        HomeBottomNavItem(
+            id = "stats",
+            route = NaviRoute.STATS.route,
+            label = "统计",
+            icon = Icons.Rounded.Insights
         ),
         HomeBottomNavItem(
             id = "profile",
             route = NaviRoute.SETTING.route,
-            label = null,
-            selectedLabel = "设置",
+            label = "设置",
             icon = Icons.Rounded.PersonOutline
         )
     )
@@ -145,6 +148,7 @@ fun BottomNavigationBar(navi: NavHostController, currentRoute: String) {
         isStartRoute(currentRoute) || currentRoute == NaviRoute.HOME.route -> "home"
         currentRoute == NaviRoute.RANDOM.route -> "bag"
         currentRoute == NaviRoute.MULTIPLAYER.route -> "multiplayer"
+        currentRoute == NaviRoute.STATS.route -> "stats"
         currentRoute == NaviRoute.SETTING.route -> "profile"
         else -> null
     }
@@ -158,25 +162,23 @@ fun BottomNavigationBar(navi: NavHostController, currentRoute: String) {
                 vertical = design.spacing.lg
             )
     ) {
-        Box(
+        Surface(
             modifier = Modifier
                 .fillMaxWidth()
-                .height(64.dp)
-                .background(MaterialTheme.colorScheme.surface)
-                .border(1.dp, MaterialTheme.colorScheme.outline)
-        ) {
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(1.dp)
-                    .background(MaterialTheme.colorScheme.outline)
-                    .align(Alignment.TopCenter)
+                .height(64.dp),
+            shape = RoundedCornerShape(design.cornerRadius.xxl),
+            color = MaterialTheme.colorScheme.surface,
+            shadowElevation = design.elevation.dropdown,
+            border = androidx.compose.foundation.BorderStroke(
+                1.dp,
+                MaterialTheme.colorScheme.outline.copy(alpha = 0.72f)
             )
+        ) {
             Row(
                 modifier = Modifier
                     .fillMaxSize()
-                    .padding(horizontal = 6.dp),
-                horizontalArrangement = Arrangement.spacedBy(2.dp),
+                    .padding(4.dp),
+                horizontalArrangement = Arrangement.spacedBy(4.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 navItems.forEach { item ->
@@ -216,38 +218,29 @@ private fun BottomNavItem(
 ) {
     Column(
         modifier = modifier
-            .height(52.dp)
+            .fillMaxHeight()
+            .clip(RoundedCornerShape(LocalAppDesign.current.cornerRadius.xl))
+            .background(
+                if (isSelected) MaterialTheme.colorScheme.surfaceVariant else Color.Transparent
+            )
             .clickable { onClick() }
-            .padding(horizontal = 4.dp, vertical = 3.dp),
+            .padding(horizontal = 2.dp, vertical = 6.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center
     ) {
-        Row(
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.Center
-        ) {
-            Icon(
-                imageVector = item.icon,
-                contentDescription = item.selectedLabel ?: item.id,
-                modifier = Modifier.size(20.dp),
-                tint = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
-            )
-            if (isSelected && item.selectedLabel != null) {
-                Text(
-                    text = item.selectedLabel,
-                    color = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
-                    fontSize = 13.sp,
-                    fontWeight = if (isSelected) FontWeight.SemiBold else FontWeight.Medium,
-                    modifier = Modifier.padding(start = 5.dp)
-                )
-            }
-        }
-        Spacer(modifier = Modifier.height(6.dp))
-        Box(
-            modifier = Modifier
-                .fillMaxWidth(0.72f)
-                .height(if (isSelected) 3.dp else 1.dp)
-                .background(if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outline)
+        Icon(
+            imageVector = item.icon,
+            contentDescription = item.label,
+            modifier = Modifier.size(20.dp),
+            tint = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
+        )
+        Spacer(modifier = Modifier.height(3.dp))
+        Text(
+            text = item.label,
+            color = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
+            style = MaterialTheme.typography.labelSmall,
+            fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
+            maxLines = 1
         )
     }
 }
@@ -334,10 +327,9 @@ fun AppView(viewmodel: MainViewmodel) {
             // 主要内容区域 - 为所有页面添加底部边距，避免内容被导航栏遮挡
             Column(
                 modifier = Modifier
-                    .padding(horizontal = 12.dp)
                     .fillMaxWidth()
                     .fillMaxHeight()
-                    .padding(bottom = if (showBottomNavigation) 84.dp else 0.dp),
+                    .padding(bottom = if (showBottomNavigation) 88.dp else 0.dp),
                 horizontalAlignment = Alignment.CenterHorizontally,
                 verticalArrangement = Arrangement.Top
             ) {

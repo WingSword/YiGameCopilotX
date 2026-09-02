@@ -116,8 +116,7 @@ enum class WerewolfFaction(val displayName: String) {
  * 游戏阶段
  */
 enum class WerewolfGamePhase {
-    SETUP,           // 配置阶段
-    DEAL_CARDS,      // 发牌/查看身份（新增：每人传递设备查看自己的牌）
+    DEAL_CARDS,      // 发牌/查看身份（每人传递设备查看自己的牌）
     NIGHT_START,     // 夜晚开始（闭眼提示）
     NIGHT_ACTION,    // 夜间行动（各角色依次行动，隐私传递模式）
     DAY_DISCUSSION,  // 白天讨论
@@ -193,7 +192,7 @@ data class NightSwapAction(
  */
 @Serializable
 data class WerewolfGameState(
-    val phase: WerewolfGamePhase = WerewolfGamePhase.SETUP,
+    val phase: WerewolfGamePhase = WerewolfGamePhase.DEAL_CARDS,
     val playerCount: Int = 5,
     val players: List<WerewolfPlayer> = emptyList(),
     val centerCards: List<CenterCard> = emptyList(),

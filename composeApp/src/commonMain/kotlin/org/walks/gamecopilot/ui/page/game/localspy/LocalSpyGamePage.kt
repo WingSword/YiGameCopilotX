@@ -5,6 +5,8 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -66,7 +68,7 @@ fun LocalSpyGamePage(viewmodel: MainViewmodel, onBack: () -> Unit) {
     // 状态控制：所有玩家是否都已查看身份
     var allPlayersViewed by remember { mutableStateOf(false) }
 
-    var showGuideDialog by remember { mutableStateOf(true) }
+    var showGuideDialog by remember { mutableStateOf(false) }
     
     // 游戏开始后自动折叠词库区域
     LaunchedEffect(gameTimeState) {
@@ -99,13 +101,16 @@ fun LocalSpyGamePage(viewmodel: MainViewmodel, onBack: () -> Unit) {
             onBack = onBack,
             isWordLibraryExpanded = isWordLibraryExpanded,
             onToggleWordLibrary = { isWordLibraryExpanded = it },
-            onShowWordsDialog = { showWordsDialog = true }
+            onShowWordsDialog = { showWordsDialog = true },
+            onShowGuide = { showGuideDialog = true }
         )
 
         Column(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(horizontal = 16.dp)
+                .verticalScroll(rememberScrollState())
+                .padding(bottom = 24.dp)
         ) {
             Spacer(modifier = Modifier.height(8.dp))
 

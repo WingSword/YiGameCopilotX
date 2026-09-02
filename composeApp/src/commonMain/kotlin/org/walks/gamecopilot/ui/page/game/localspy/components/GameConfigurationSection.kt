@@ -1,23 +1,18 @@
 package org.walks.gamecopilot.ui.page.game.localspy.components
 
-import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import org.walks.gamecopilot.data.entity.LocalSpyEntity
 import org.walks.gamecopilot.intent.GameIntent
+import org.walks.gamecopilot.ui.components.AppCard
+import org.walks.gamecopilot.ui.components.AppSectionHeader
 import org.walks.gamecopilot.ui.components.common.GameConfigItem
 import org.walks.gamecopilot.ui.components.common.GameConfigSection
 
@@ -67,26 +62,17 @@ fun GameConfigurationSection(
     val spyNumber = currentGame.spyNum
     val blackNum = currentGame.blackNum
 
-    // 游戏配置区域 - 统一的卡片样式，包含词库选择
-    Card(
-        modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceVariant
-        ),
-        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
-    ) {
-        Column(
-            modifier = Modifier.padding(20.dp)
-        ) {
-            // 区域标题
-            Text(
-                text = "游戏配置",
-                style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.Bold,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.padding(bottom = 16.dp)
+    AppCard {
+        Column {
+            AppSectionHeader(
+                title = "游戏配置",
+                subtitle = if (gameTimeState == 0) {
+                    "选择词库与人数后开始传机"
+                } else {
+                    "本局配置已生效，可随时重新开始"
+                }
             )
+            Spacer(modifier = Modifier.height(16.dp))
 
             // 词库选择区域 - 可折叠
             WordLibrarySection(
@@ -97,16 +83,6 @@ fun GameConfigurationSection(
                 onWordsDialogChange = onWordsDialogChange,
                 onWordLibraryToggle = onWordLibraryToggle,
                 onGameIntent = onGameIntent
-            )
-
-            // 分割线
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(1.dp)
-                    .background(
-                        color = MaterialTheme.colorScheme.outline.copy(alpha = 0.3f)
-                    )
             )
 
             Spacer(modifier = Modifier.height(16.dp))

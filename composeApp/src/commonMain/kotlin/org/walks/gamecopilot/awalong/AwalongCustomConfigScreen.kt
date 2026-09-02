@@ -1,16 +1,13 @@
 package org.walks.gamecopilot.awalong
 
-import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.foundation.ExperimentalFoundationApi
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
-import androidx.compose.foundation.combinedClickable
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -21,13 +18,9 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Clear
-import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Settings
-import androidx.compose.material.icons.sharp.Clear
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -44,15 +37,20 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavHostController
 import org.walks.gamecopilot.MainViewmodel
 import org.walks.gamecopilot.navigation.NaviRoute
+import org.walks.gamecopilot.ui.components.AppCard
+import org.walks.gamecopilot.ui.components.AppChoiceRow
 import org.walks.gamecopilot.ui.components.AppDialog
-import org.walks.gamecopilot.ui.components.AppScreen
+import org.walks.gamecopilot.ui.components.AppDialogActions
+import org.walks.gamecopilot.ui.components.AppPrimaryAction
+import org.walks.gamecopilot.ui.components.AppSectionHeader
+import org.walks.gamecopilot.ui.components.common.GameSetupScreen
 
 /**
  * 自定义阿瓦隆配置界面
@@ -61,14 +59,18 @@ import org.walks.gamecopilot.ui.components.AppScreen
 fun AwalongCustomConfigScreen(
     viewmodel: MainViewmodel,
     navi: NavHostController,
+    onBack: () -> Unit,
+    onShowRules: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     var customConfig by remember { mutableStateOf(DefaultCustomConfig) }
     var showPredefinedConfigDialog by remember { mutableStateOf(false) }
 
-    AppScreen(
-        title = "自定义阿瓦隆",
-        subtitle = "配置角色阵营、扩展包和玩家人数",
+    GameSetupScreen(
+        title = "阿瓦隆",
+        subtitle = "5-10人 · 阵营推理 · 配置角色后传机发牌",
+        onBack = onBack,
+        onShowRules = onShowRules,
         modifier = modifier,
     ) {
         LazyColumn(
@@ -76,16 +78,11 @@ fun AwalongCustomConfigScreen(
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
             item {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Text(
-                        text = "角色配置",
-                        fontSize = 18.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = MaterialTheme.colorScheme.onSurface,
-                        modifier = Modifier.padding(bottom = 16.dp)
+                Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                    AppSectionHeader(
+                        title = "角色配置",
+                        subtitle = "从推荐预设开始，或按阵营增减角色"
                     )
-
-                    Spacer(modifier = Modifier.width(32.dp))
                     OutlinedButton(
                         onClick = { showPredefinedConfigDialog = true },
                         modifier = Modifier
@@ -94,31 +91,22 @@ fun AwalongCustomConfigScreen(
                     ) {
                         Icon(
                             imageVector = Icons.Default.Settings,
-                            contentDescription = "预定义配置",
+                            contentDescription = null,
                             modifier = Modifier.size(20.dp)
                         )
                         Spacer(modifier = Modifier.width(8.dp))
-                        Text(
-                            text = "选择预定义配置",
-                            fontSize = 14.sp,
-                            fontWeight = FontWeight.Medium
-                        )
+                        Text("选择推荐配置")
                     }
                 }
             }
 
             item {
-                Card(
-                    modifier = Modifier.fillMaxWidth(),
-                    colors = CardDefaults.cardColors(
-                        containerColor = MaterialTheme.colorScheme.surface
-                    )
-                ) {
-                    Column(modifier = Modifier.padding(vertical = 8.dp)) {
+                AppCard {
+                    Column {
                         RoleSelectionSection(
                             title = "蓝方阵营",
                             subtitle = "梅林必选",
-                            roleColor = Color(0xFF2196F3),
+                            roleColor = MaterialTheme.colorScheme.tertiary,
                             selectedRoles = customConfig.blueRoles,
                             availableRoles = getAvailableBlueRoles(),
                             onRoleAdded = { role ->
@@ -146,7 +134,7 @@ fun AwalongCustomConfigScreen(
                         RoleSelectionSection(
                             title = "红方阵营",
                             subtitle = "莫甘娜必选",
-                            roleColor = Color(0xFFF44336),
+                            roleColor = MaterialTheme.colorScheme.error,
                             selectedRoles = customConfig.redRoles,
                             availableRoles = getAvailableRedRoles(),
                             onRoleAdded = { role ->
@@ -174,7 +162,7 @@ fun AwalongCustomConfigScreen(
                         RoleSelectionSection(
                             title = "中立方阵营",
                             subtitle = "可选角色",
-                            roleColor = Color(0xFF9C27B0),
+                            roleColor = MaterialTheme.colorScheme.secondary,
                             selectedRoles = customConfig.neutralRoles,
                             availableRoles = getAvailableNeutralRoles(),
                             onRoleAdded = { role ->
@@ -197,12 +185,9 @@ fun AwalongCustomConfigScreen(
 
                         Spacer(modifier = Modifier.height(18.dp))
                         HorizontalDivider(modifier = Modifier.padding(vertical = 4.dp))
-                        Text(
-                            text = "扩展包",
-                            fontSize = 16.sp,
-                            fontWeight = FontWeight.Bold,
-                            color = MaterialTheme.colorScheme.onSurface,
-                            modifier = Modifier.padding(top = 8.dp, bottom = 8.dp)
+                        AppSectionHeader(
+                            title = "扩展规则",
+                            subtitle = "按本局需要启用额外头衔"
                         )
                         Row(
                             modifier = Modifier
@@ -212,8 +197,8 @@ fun AwalongCustomConfigScreen(
                             verticalAlignment = Alignment.CenterVertically
                         ) {
                             Text(
-                                text = "湖中仙女（头衔，不占角色位；第2任务结束后加入）",
-                                fontSize = 14.sp,
+                                text = "湖中仙女\n头衔，不占角色位；第 2 个任务结束后加入",
+                                style = MaterialTheme.typography.bodyMedium,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                                 modifier = Modifier.weight(1f)
                             )
@@ -230,17 +215,11 @@ fun AwalongCustomConfigScreen(
         }
 
         Spacer(modifier = Modifier.height(10.dp))
-        Surface(
-            modifier = Modifier.fillMaxWidth(),
-            shape = androidx.compose.foundation.shape.RoundedCornerShape(8.dp),
-            color = MaterialTheme.colorScheme.surface,
-            tonalElevation = 0.dp,
-            shadowElevation = 0.dp
-        ) {
-            Column(modifier = Modifier.padding(16.dp)) {
+        AppCard {
+            Column {
                 Text(
                     text = "配置摘要",
-                    fontSize = 16.sp,
+                    style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.Bold,
                     color = MaterialTheme.colorScheme.onSurface,
                     modifier = Modifier.padding(bottom = 8.dp)
@@ -253,55 +232,24 @@ fun AwalongCustomConfigScreen(
                 )
 
                 if (customConfig.isValid()) {
-                    Button(
+                    AppPrimaryAction(
+                        text = "开始传机发牌",
                         onClick = {
                             viewmodel.handleAwalongGameIntent(
                                 AwalongIntent.StartCustomGame(customConfig)
                             )
                             navi.navigate(NaviRoute.AWALONG_GAME.route)
                         },
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(48.dp),
-                        colors = ButtonDefaults.buttonColors(
-                            containerColor = MaterialTheme.colorScheme.primary
-                        )
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.PlayArrow,
-                            contentDescription = "开始游戏",
-                            modifier = Modifier.size(20.dp)
-                        )
-                        Spacer(modifier = Modifier.width(8.dp))
-                        Text(
-                            text = "开始游戏",
-                            fontSize = 16.sp,
-                            fontWeight = FontWeight.Medium
-                        )
-                    }
-                } else {
-                    Text(
-                        text = "配置无效：请确保包含梅林和莫甘娜，蓝方至少3人，红方至少2人，总人数5-10人",
-                        fontSize = 12.sp,
-                        color = MaterialTheme.colorScheme.error,
-                        modifier = Modifier.padding(vertical = 8.dp)
+                        supportingText = "玩家会按顺序查看身份，全部确认后进入组队阶段。"
                     )
-                    Button(
+                } else {
+                    AppPrimaryAction(
+                        text = "配置不完整",
                         onClick = {},
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(48.dp),
-                        colors = ButtonDefaults.buttonColors(
-                            containerColor = MaterialTheme.colorScheme.surfaceVariant
-                        ),
-                        enabled = false
-                    ) {
-                        Text(
-                            text = "配置不完整",
-                            fontSize = 16.sp,
-                            fontWeight = FontWeight.Medium
-                        )
-                    }
+                        enabled = false,
+                        supportingText = "需要梅林和莫甘娜；蓝方至少3人、红方至少2人，总人数5-10人。",
+                        icon = null
+                    )
                 }
             }
         }
@@ -332,69 +280,51 @@ private fun RoleSelectionSection(
     onRoleAdded: (AwalongRole) -> Unit,
     onRoleRemoved: (AwalongRole) -> Unit
 ) {
-    Column {
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Row(
-                modifier = Modifier.weight(1f),
-                verticalAlignment = Alignment.Bottom
-            ) {
-                Text(
-                    text = title,
-                    fontSize = 16.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = roleColor
-                )
-                Spacer(modifier = Modifier.width(8.dp))
-                Text(
-                    text = subtitle,
-                    fontSize = 12.sp,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
+    Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+        AppSectionHeader(
+            title = title,
+            subtitle = subtitle,
+            action = {
+                Surface(
+                    color = roleColor.copy(alpha = 0.14f),
+                    contentColor = roleColor,
+                    shape = MaterialTheme.shapes.small
+                ) {
+                    Text(
+                        text = "${selectedRoles.size} 人",
+                        style = MaterialTheme.typography.labelMedium,
+                        fontWeight = FontWeight.SemiBold,
+                        modifier = Modifier.padding(horizontal = 9.dp, vertical = 5.dp)
+                    )
+                }
             }
-
-            Text(
-                text = "${selectedRoles.size}人",
-                fontSize = 14.sp,
-                fontWeight = FontWeight.Medium,
-                color = roleColor
-            )
-        }
-
-        Spacer(modifier = Modifier.height(12.dp))
-
+        )
         Column(
             verticalArrangement = Arrangement.spacedBy(8.dp),
             modifier = Modifier.fillMaxWidth()
         ) {
-            availableRoles.chunked(4).forEach { rowRoles ->
+            availableRoles.chunked(2).forEach { rowRoles ->
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
                     rowRoles.forEach { role ->
-                        Box(modifier = Modifier.weight(1f)) {
-                            RoleSelectionCard(
-                                role = role,
-                                roleColor = roleColor,
-                                selectedCount = selectedRoles.count { it == role },
-                                isSelected = selectedRoles.contains(role),
-                                onAdd = { onRoleAdded(role) },
-                                onRemove = { onRoleRemoved(role) },
-                                canRemove = when (title) {
-                                    "蓝方阵营" -> role != AwalongRole.MEILING
-                                    "红方阵营" -> role != AwalongRole.MOGANNA
-                                    else -> true
-                                },
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .aspectRatio(3f / 4f)
-                            )
-                        }
+                        RoleSelectionCard(
+                            role = role,
+                            roleColor = roleColor,
+                            selectedCount = selectedRoles.count { it == role },
+                            isSelected = selectedRoles.contains(role),
+                            onAdd = { onRoleAdded(role) },
+                            onRemove = { onRoleRemoved(role) },
+                            canRemove = when (title) {
+                                "蓝方阵营" -> role != AwalongRole.MEILING
+                                "红方阵营" -> role != AwalongRole.MOGANNA
+                                else -> true
+                            },
+                            modifier = Modifier.weight(1f)
+                        )
                     }
-                    repeat(4 - rowRoles.size) {
+                    repeat(2 - rowRoles.size) {
                         Spacer(modifier = Modifier.weight(1f))
                     }
                 }
@@ -406,7 +336,6 @@ private fun RoleSelectionSection(
 /**
  * 角色选择卡片
  */
-@OptIn(ExperimentalFoundationApi::class)
 @Composable
 private fun RoleSelectionCard(
     role: AwalongRole,
@@ -419,125 +348,124 @@ private fun RoleSelectionCard(
     modifier: Modifier = Modifier
 ) {
     var showRoleDetailDialog by remember { mutableStateOf(false) }
-
-    // 判断是否为梅林或莫甘娜
     val isSpecialRole = role == AwalongRole.MEILING || role == AwalongRole.MOGANNA
 
-    Card(
-        modifier = modifier,
-        shape = RectangleShape,
-        colors = CardDefaults.cardColors(
-            containerColor = if (isSelected) {
-                roleColor.copy(alpha = 0.15f)
-            } else {
-                MaterialTheme.colorScheme.surfaceVariant
-            }
-        ),
-        border = if (isSelected) {
-            androidx.compose.foundation.BorderStroke(2.dp, roleColor.copy(alpha = 0.5f))
+    Surface(
+        modifier = modifier
+            .height(136.dp)
+            .clickable { showRoleDetailDialog = true },
+        shape = MaterialTheme.shapes.medium,
+        color = if (isSelected) {
+            roleColor.copy(alpha = 0.12f)
         } else {
-            null
-        }
+            MaterialTheme.colorScheme.surfaceVariant
+        },
+        border = BorderStroke(
+            width = 1.dp,
+            color = if (isSelected) {
+                roleColor.copy(alpha = 0.64f)
+            } else {
+                MaterialTheme.colorScheme.outline.copy(alpha = 0.62f)
+            }
+        )
     ) {
-        Box(
+        Column(
             modifier = Modifier
-                .fillMaxSize()
-                .combinedClickable(
-                    onClick = {
-                        if (!isSpecialRole)
-                            onAdd()
-                    },
-                    onLongClick = {
-                        showRoleDetailDialog = true
-                    }
-                )
-
+                .fillMaxWidth()
+                .padding(12.dp),
+            verticalArrangement = Arrangement.spacedBy(6.dp)
         ) {
-            Column(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(6.dp),
-                verticalArrangement = Arrangement.SpaceBetween,
-                horizontalAlignment = Alignment.CenterHorizontally
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.Top
             ) {
-                Row {
-                    Text(
-                        text = role.title,
-                        fontSize = 11.sp,
-                        fontWeight = FontWeight.Medium,
-                        color = if (isSelected) roleColor else MaterialTheme.colorScheme.onSurface,
-                        textAlign = androidx.compose.ui.text.style.TextAlign.Center,
-                        maxLines = 2
-                    )
-                    if (selectedCount > 1) {
-                        Box(
-                            modifier = Modifier
-                                .size(12.dp)
-                                .background(
-                                    roleColor,
-                                    shape = RectangleShape
-                                ),
-                            contentAlignment = Alignment.Center
+                Text(
+                    text = role.title,
+                    style = MaterialTheme.typography.titleSmall,
+                    fontWeight = FontWeight.SemiBold,
+                    color = if (isSelected) roleColor else MaterialTheme.colorScheme.onSurface,
+                    modifier = Modifier.weight(1f),
+                    maxLines = 2,
+                    overflow = TextOverflow.Ellipsis
+                )
+                if (selectedCount > 0) {
+                    Surface(
+                        color = roleColor,
+                        contentColor = Color.White,
+                        shape = MaterialTheme.shapes.small
+                    ) {
+                        Text(
+                            text = selectedCount.toString(),
+                            style = MaterialTheme.typography.labelSmall,
+                            fontWeight = FontWeight.Bold,
+                            modifier = Modifier.padding(horizontal = 7.dp, vertical = 3.dp)
+                        )
+                    }
+                }
+            }
+            Text(
+                text = getRoleDescription(role),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                maxLines = 2,
+                overflow = TextOverflow.Ellipsis
+            )
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = when {
+                        isSpecialRole -> "必选角色"
+                        selectedCount == 0 -> "未选择"
+                        else -> "已选 $selectedCount"
+                    },
+                    style = MaterialTheme.typography.labelMedium,
+                    color = if (isSelected) roleColor else MaterialTheme.colorScheme.onSurfaceVariant
+                )
+                if (!isSpecialRole) {
+                    Row(horizontalArrangement = Arrangement.spacedBy(2.dp)) {
+                        IconButton(
+                            onClick = onRemove,
+                            enabled = selectedCount > 0 && canRemove,
+                            modifier = Modifier.size(32.dp)
                         ) {
-                            Text(
-                                text = "$selectedCount",
-                                fontSize = 9.sp,
-                                fontWeight = FontWeight.Bold,
-                                color = Color.White
+                            Icon(
+                                imageVector = Icons.Default.Clear,
+                                contentDescription = "减少${role.title}",
+                                modifier = Modifier.size(18.dp)
+                            )
+                        }
+                        IconButton(
+                            onClick = onAdd,
+                            modifier = Modifier.size(32.dp)
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Add,
+                                contentDescription = "增加${role.title}",
+                                tint = roleColor,
+                                modifier = Modifier.size(18.dp)
                             )
                         }
                     }
-                }
-
-                Spacer(modifier = Modifier.weight(1f))
-
-                AnimatedVisibility(
-                    visible = !isSpecialRole,
-                ) {
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically
+                } else {
+                    Surface(
+                        color = roleColor.copy(alpha = 0.14f),
+                        shape = MaterialTheme.shapes.small
                     ) {
-                        AnimatedVisibility(
-                            visible = selectedCount > 0 && canRemove,
-                        ) {
-                            IconButton(
-                                onClick = onRemove,
-                                modifier = Modifier.size(16.dp)
-                                    .border(2.dp, Color.White, shape = RectangleShape),
-                            ) {
-                                Icon(
-                                    imageVector = Icons.Sharp.Clear,
-                                    contentDescription = "移除",
-                                    tint = roleColor,
-                                    modifier = Modifier.size(10.dp)
-                                )
-                            }
-                        }
-
-                        AnimatedVisibility(
-                            visible = false,
-                        ) {
-                            IconButton(
-                                onClick = onAdd,
-                                modifier = Modifier.size(16.dp)
-                            ) {
-                                Icon(
-                                    imageVector = Icons.Default.Add,
-                                    contentDescription = "添加",
-                                    tint = roleColor,
-                                    modifier = Modifier.size(10.dp)
-                                )
-                            }
-                        }
+                        Text(
+                            text = "已锁定",
+                            style = MaterialTheme.typography.labelSmall,
+                            color = roleColor,
+                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
+                        )
                     }
                 }
             }
         }
     }
 
-    // 角色详情弹窗
     if (showRoleDetailDialog) {
         RoleDetailDialog(
             role = role,
@@ -584,7 +512,6 @@ private fun getAvailableRedRoles(): List<AwalongRole> {
  */
 private fun getAvailableNeutralRoles(): List<AwalongRole> {
     return listOf(
-        AwalongRole.AOBOLUN,
         AwalongRole.LANCELOT
     )
 }
@@ -741,73 +668,23 @@ private fun PredefinedConfigDialog(
         subtitle = "按玩家人数快速套用常用角色组合",
         onDismiss = onDismiss,
         actions = {
-            OutlinedButton(onClick = onDismiss) {
-                Text("关闭")
-            }
+            AppDialogActions(
+                confirmText = "关闭",
+                onConfirm = onDismiss
+            )
         }
     ) {
         Column(
             verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
             PredefinedConfigs.forEach { config ->
-                Card(
-                    modifier = Modifier.fillMaxWidth(),
-                    colors = CardDefaults.cardColors(
-                        containerColor = MaterialTheme.colorScheme.surfaceVariant
-                    ),
+                AppChoiceRow(
+                    title = "${config.totalPlayers} 人推荐配置",
+                    description = "蓝方 ${config.blueCount} 人 · 红方 ${config.redCount} 人 · ${config.getDescription()}",
+                    selected = false,
                     onClick = { onConfigSelected(config) }
-                ) {
-                    Column(
-                        modifier = Modifier.padding(16.dp)
-                    ) {
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.SpaceBetween,
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Text(
-                                text = "${config.totalPlayers}人配置",
-                                fontSize = 16.sp,
-                                fontWeight = FontWeight.Bold,
-                                color = MaterialTheme.colorScheme.onSurface
-                            )
-
-                            Row(
-                                verticalAlignment = Alignment.CenterVertically
-                            ) {
-                                Text(
-                                    text = "蓝方${config.blueCount}人",
-                                    fontSize = 12.sp,
-                                    color = Color(0xFF2196F3),
-                                    fontWeight = FontWeight.Medium
-                                )
-                                Text(
-                                    text = " | ",
-                                    fontSize = 12.sp,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                                )
-                                Text(
-                                    text = "红方${config.redCount}人",
-                                    fontSize = 12.sp,
-                                    color = Color(0xFFF44336),
-                                    fontWeight = FontWeight.Medium
-                                )
-                            }
-                        }
-
-                        Spacer(modifier = Modifier.height(8.dp))
-
-                        Text(
-                            text = config.getDescription(),
-                            fontSize = 12.sp,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            maxLines = 2
-                        )
-                    }
-                }
+                )
             }
         }
-
-        HorizontalDivider(modifier = Modifier.fillMaxWidth())
     }
 }

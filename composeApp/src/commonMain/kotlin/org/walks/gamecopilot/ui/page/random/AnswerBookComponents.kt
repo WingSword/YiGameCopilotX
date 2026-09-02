@@ -77,7 +77,7 @@ fun BookCover(
                 fontSize = 28.sp,
                 fontWeight = FontWeight.Bold,
                 color = goldLightColor,
-                letterSpacing = 4.sp,
+                letterSpacing = 0.sp,
                 textAlign = TextAlign.Center,
                 modifier = Modifier.padding(horizontal = 12.dp)
             )

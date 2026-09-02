@@ -1,10 +1,10 @@
 package org.walks.gamecopilot.werewolf
 
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -14,13 +14,9 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.rounded.ArrowForward
-import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material.icons.rounded.PhoneAndroid
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
@@ -38,222 +34,122 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import androidx.navigation.NavHostController
-import org.jetbrains.compose.resources.painterResource
 import org.walks.gamecopilot.MainViewmodel
 import org.walks.gamecopilot.data.entity.GameMode
+import org.walks.gamecopilot.intent.GameIntent
 import org.walks.gamecopilot.navigation.NaviRoute
+import org.walks.gamecopilot.theme.LocalAppDesign
+import org.walks.gamecopilot.ui.components.AppChoiceRow
 import org.walks.gamecopilot.ui.components.AppDialog
+import org.walks.gamecopilot.ui.components.AppDialogActions
+import org.walks.gamecopilot.ui.components.AppPrimaryAction
+import org.walks.gamecopilot.ui.components.AppSectionHeader
+import org.walks.gamecopilot.ui.components.common.GameSetupScreen
 import org.walks.gamecopilot.ui.components.common.OfflinePassingGuideDialog
 import org.walks.gamecopilot.werewolf.data.WerewolfFaction
 import org.walks.gamecopilot.werewolf.data.WerewolfPreset
 import org.walks.gamecopilot.werewolf.data.WerewolfPresets
 import org.walks.gamecopilot.werewolf.data.WerewolfRole
-import yigamecopilotx.composeapp.generated.resources.Res
-import yigamecopilotx.composeapp.generated.resources.icon_info
 
-/**
- * 一夜终极狼人 - 入口配置页
- */
+/** 一夜终极狼人入口配置页。 */
 @Composable
 fun WerewolfEntrance(viewmodel: MainViewmodel, navi: NavHostController) {
     var showRulesDialog by remember { mutableStateOf(false) }
     var showGuideDialog by remember { mutableStateOf(false) }
     var playerCount by remember { mutableIntStateOf(5) }
-    val nicknames = remember { mutableStateListOf<String>().apply {
-        val preset = WerewolfPresets.getPresetForPlayerCount(5)
-        repeat(preset.playerCount) { add("玩家${it + 1}") }
-    }}
-
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(MaterialTheme.colorScheme.background)
-            .verticalScroll(rememberScrollState())
-    ) {
-        // 顶部标题
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 16.dp, vertical = 12.dp),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Column(modifier = Modifier.weight(1f)) {
-                Text(
-                    text = "一夜终极狼人",
-                    fontSize = 28.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = MaterialTheme.colorScheme.onSurface
-                )
-                Text(
-                    text = "标准版 · 3~10人 · 约10分钟",
-                    fontSize = 14.sp,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    modifier = Modifier.padding(top = 4.dp)
-                )
-            }
-            OutlinedButton(
-                onClick = { showRulesDialog = true },
-                shape = RoundedCornerShape(6.dp)
-            ) {
-                Icon(
-                    painter = painterResource(Res.drawable.icon_info),
-                    contentDescription = "规则",
-                    tint = Color.Unspecified,
-                    modifier = Modifier.size(18.dp)
-                )
-                Spacer(modifier = Modifier.width(6.dp))
-                Text("游戏规则", fontSize = 14.sp, fontWeight = FontWeight.Medium)
+    val nicknames = remember {
+        mutableStateListOf<String>().apply {
+            repeat(WerewolfPresets.getPresetForPlayerCount(5).playerCount) {
+                add("玩家${it + 1}")
             }
         }
+    }
+    val design = LocalAppDesign.current
+    val currentPreset = WerewolfPresets.getPresetForPlayerCount(playerCount)
 
-        Spacer(modifier = Modifier.height(8.dp))
-
-        // 人数选择标题
-        Text(
-            text = "选择人数",
-            fontSize = 16.sp,
-            fontWeight = FontWeight.SemiBold,
-            color = MaterialTheme.colorScheme.onSurface,
-            modifier = Modifier.padding(horizontal = 16.dp)
-        )
-        Spacer(modifier = Modifier.height(8.dp))
-
-        // 预设列表 — 使用普通 Column（仅8项，无需 Lazy）
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 16.dp),
-            verticalArrangement = Arrangement.spacedBy(8.dp)
+    GameSetupScreen(
+        title = "一夜终极狼人",
+        subtitle = "3-10人 · 一夜一白天 · 约10分钟",
+        onBack = { navi.navigateUp() },
+        onShowRules = { showRulesDialog = true }
+    ) {
+        LazyColumn(
+            modifier = Modifier.weight(1f),
+            contentPadding = PaddingValues(bottom = design.spacing.sm),
+            verticalArrangement = Arrangement.spacedBy(design.spacing.md)
         ) {
-            WerewolfPresets.presets.forEach { preset ->
+            item {
+                AppSectionHeader(
+                    title = "选择人数",
+                    subtitle = "预设会自动匹配玩家牌与三张中央底牌"
+                )
+            }
+            items(WerewolfPresets.presets.size) { index ->
+                val preset = WerewolfPresets.presets[index]
                 PresetCard(
                     preset = preset,
                     isSelected = playerCount == preset.playerCount,
                     onClick = {
                         playerCount = preset.playerCount
                         nicknames.clear()
-                        repeat(preset.playerCount) { i ->
-                            nicknames.add("玩家${i + 1}")
+                        repeat(preset.playerCount) { playerIndex ->
+                            nicknames.add("玩家${playerIndex + 1}")
                         }
                     }
                 )
             }
+            item {
+                Spacer(modifier = Modifier.height(design.spacing.sm))
+                AppSectionHeader(
+                    title = "本局角色",
+                    subtitle = "${currentPreset.roles.size} 张玩家牌 + 3 张中央底牌"
+                )
+            }
+            item {
+                RolePreview(preset = currentPreset)
+            }
         }
 
-        Spacer(modifier = Modifier.height(16.dp))
-
-        // 角色预览
-        val currentPreset = WerewolfPresets.getPresetForPlayerCount(playerCount)
-        Text(
-            text = "角色配置",
-            fontSize = 16.sp,
-            fontWeight = FontWeight.SemiBold,
-            color = MaterialTheme.colorScheme.onSurface,
-            modifier = Modifier.padding(horizontal = 16.dp)
+        AppPrimaryAction(
+            text = "开始传机发牌",
+            onClick = {
+                viewmodel.prepareOneNightWerewolfGame(playerCount, nicknames.toList())
+                viewmodel.handleGameIntent(
+                    GameIntent.SwitchGameMode(GameMode.ONE_NIGHT_WEREWOLF.ordinal)
+                )
+                navi.navigate(NaviRoute.ONE_NIGHT_WEREWOLF_GAME.route)
+            },
+            supportingText = "进入后直接从第 1 位玩家开始查看身份，不再重复配置人数。"
         )
-        Spacer(modifier = Modifier.height(8.dp))
 
-        // 角色标签 — 使用 FlowRow 风格手动换行
-        val roleGroups = currentPreset.roles.groupBy { it }
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 16.dp),
-            verticalArrangement = Arrangement.spacedBy(6.dp)
-        ) {
-            roleGroups.entries.chunked(4).forEach { rowItems ->
-                Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                    rowItems.forEach { (role, count) ->
-                        Surface(
-                            color = getRoleColor(role).copy(alpha = 0.15f),
-                            shape = RoundedCornerShape(4.dp)
-                        ) {
-                            Text(
-                                text = "${role.displayName}${if (count.size > 1) "×${count.size}" else ""}",
-                                fontSize = 13.sp,
-                                color = getRoleColor(role),
-                                fontWeight = FontWeight.Medium,
-                                modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
-                            )
-                        }
-                    }
-                }
-            }
-        }
-
-        Spacer(modifier = Modifier.height(24.dp))
-
-        // 开始按钮
-        Surface(
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(52.dp)
-                .padding(horizontal = 16.dp)
-                .clickable {
-                    viewmodel.prepareOneNightWerewolfGame(playerCount, nicknames.toList())
-                    viewmodel.handleGameIntent(
-                        org.walks.gamecopilot.intent.GameIntent.SwitchGameMode(GameMode.ONE_NIGHT_WEREWOLF.ordinal)
-                    )
-                    navi.navigate(NaviRoute.ONE_NIGHT_WEREWOLF_GAME.route)
-                },
-            color = MaterialTheme.colorScheme.primary,
-            shape = RoundedCornerShape(8.dp)
-        ) {
-            Row(
-                modifier = Modifier.fillMaxSize().padding(horizontal = 16.dp),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Text(
-                    text = "开始游戏",
-                    fontSize = 18.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = MaterialTheme.colorScheme.onPrimary
-                )
-                Icon(
-                    imageVector = Icons.AutoMirrored.Rounded.ArrowForward,
-                    contentDescription = null,
-                    tint = MaterialTheme.colorScheme.onPrimary,
-                    modifier = Modifier.size(20.dp)
-                )
-            }
-        }
-
-        Spacer(modifier = Modifier.height(8.dp))
-
-        // 传机说明按钮
         OutlinedButton(
             onClick = { showGuideDialog = true },
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 16.dp),
-            shape = RoundedCornerShape(8.dp),
-            colors = ButtonDefaults.outlinedButtonColors(contentColor = MaterialTheme.colorScheme.onSurfaceVariant)
+            modifier = Modifier.fillMaxWidth(),
+            shape = RoundedCornerShape(design.cornerRadius.button)
         ) {
-            Text("单机传机流程说明", fontSize = 14.sp)
+            Icon(
+                imageVector = Icons.Rounded.PhoneAndroid,
+                contentDescription = null,
+                modifier = Modifier.size(18.dp)
+            )
+            Spacer(modifier = Modifier.width(8.dp))
+            Text("查看单机传机流程")
         }
-
-        Spacer(modifier = Modifier.height(32.dp))
     }
 
-    // 规则弹窗
     if (showRulesDialog) {
         WerewolfRulesDialog(onDismiss = { showRulesDialog = false })
     }
 
-    // 单机传机引导弹窗
     OfflinePassingGuideDialog(
         show = showGuideDialog,
         gameTitle = "一夜终极狼人",
         steps = listOf(
-            "设备将作为主持人辅助工具，依次传递给每位玩家",
-            "发牌阶段：每位玩家翻开设备查看自己的身份牌",
-            "夜间阶段：设备按随机顺序传递，各角色执行夜间行动",
-            "白天阶段：自由讨论后进入投票",
-            "确保传递时其他人看不到屏幕内容"
+            "设备按玩家顺序传递，每位玩家翻开并记住自己的身份牌。",
+            "所有玩家看完后，设备按随机夜间顺序提示各角色行动。",
+            "夜间结束后自由讨论并投票，设备会协助判断胜负。",
+            "交接设备前滑回隐藏面，避免旁人看到身份。"
         ),
         onDismiss = { showGuideDialog = false }
     )
@@ -265,67 +161,80 @@ private fun PresetCard(
     isSelected: Boolean,
     onClick: () -> Unit
 ) {
-    val bgColor = MaterialTheme.colorScheme.surface
-
-    Surface(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clickable(onClick = onClick),
-        color = bgColor,
-        shape = RoundedCornerShape(8.dp)
-    ) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 14.dp, vertical = 12.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            // 人数标识
-            Box(
-                modifier = Modifier
-                    .size(40.dp)
-                    .background(
-                        if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.surfaceVariant,
-                        RoundedCornerShape(8.dp)
-                    ),
-                contentAlignment = Alignment.Center
+    AppChoiceRow(
+        title = preset.name,
+        description = preset.description,
+        selected = isSelected,
+        onClick = onClick,
+        leadingContent = {
+            Surface(
+                modifier = Modifier.size(42.dp),
+                shape = RoundedCornerShape(LocalAppDesign.current.cornerRadius.md),
+                color = if (isSelected) {
+                    MaterialTheme.colorScheme.primary
+                } else {
+                    MaterialTheme.colorScheme.surfaceVariant
+                }
             ) {
-                Text(
-                    text = "${preset.playerCount}",
-                    fontSize = 18.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = if (isSelected) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurfaceVariant
-                )
+                Box(contentAlignment = Alignment.Center) {
+                    Text(
+                        text = preset.playerCount.toString(),
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold,
+                        color = if (isSelected) {
+                            MaterialTheme.colorScheme.onPrimary
+                        } else {
+                            MaterialTheme.colorScheme.onSurfaceVariant
+                        }
+                    )
+                }
             }
-            Spacer(modifier = Modifier.width(12.dp))
-            Column(modifier = Modifier.weight(1f)) {
-                Text(
-                    text = preset.name,
-                    fontSize = 15.sp,
-                    fontWeight = FontWeight.SemiBold,
-                    color = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface
-                )
-                Text(
-                    text = preset.description,
-                    fontSize = 12.sp,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    modifier = Modifier.padding(top = 2.dp)
-                )
+        }
+    )
+}
+
+@Composable
+private fun RolePreview(preset: WerewolfPreset) {
+    val roleGroups = preset.roles.groupingBy { it }.eachCount().entries.toList()
+    Column(
+        modifier = Modifier.fillMaxWidth(),
+        verticalArrangement = Arrangement.spacedBy(8.dp)
+    ) {
+        roleGroups.chunked(3).forEach { rowItems ->
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                rowItems.forEach { (role, count) ->
+                    val roleColor = roleColor(role)
+                    Surface(
+                        modifier = Modifier.weight(1f),
+                        color = roleColor.copy(alpha = 0.12f),
+                        shape = RoundedCornerShape(LocalAppDesign.current.cornerRadius.sm)
+                    ) {
+                        Text(
+                            text = "${role.displayName}${if (count > 1) " ×$count" else ""}",
+                            style = MaterialTheme.typography.labelMedium,
+                            color = roleColor,
+                            fontWeight = FontWeight.SemiBold,
+                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 7.dp),
+                            maxLines = 1
+                        )
+                    }
+                }
+                repeat(3 - rowItems.size) {
+                    Spacer(modifier = Modifier.weight(1f))
+                }
             }
         }
     }
 }
 
-/**
- * 获取角色对应颜色
- * 狼人 → error，村民 → primary，独立 → tertiary
- */
-private fun getRoleColor(role: WerewolfRole): Color {
-    return when (role.faction) {
-        WerewolfFaction.WEREWOLF -> Color(0xFFE74C3C)
-        WerewolfFaction.VILLAGER -> Color(0xFF3498DB)
-        WerewolfFaction.INDEPENDENT -> Color(0xFFE67E22)
-    }
+@Composable
+private fun roleColor(role: WerewolfRole): Color = when (role.faction) {
+    WerewolfFaction.WEREWOLF -> MaterialTheme.colorScheme.error
+    WerewolfFaction.VILLAGER -> MaterialTheme.colorScheme.tertiary
+    WerewolfFaction.INDEPENDENT -> MaterialTheme.colorScheme.secondary
 }
 
 @Composable
@@ -335,62 +244,39 @@ private fun WerewolfRulesDialog(onDismiss: () -> Unit) {
         subtitle = "一夜一白天，无淘汰长流程，适合快速身份推理。",
         onDismiss = onDismiss,
         actions = {
-            Button(
-                onClick = onDismiss,
-                modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(8.dp),
-                colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
-            ) {
-                Text(
-                    "知道了",
-                    fontSize = 16.sp,
-                    fontWeight = FontWeight.Medium,
-                    color = MaterialTheme.colorScheme.onPrimary
-                )
-            }
+            AppDialogActions(
+                confirmText = "知道了",
+                onConfirm = onDismiss
+            )
         }
     ) {
         LazyColumn(
-            verticalArrangement = Arrangement.spacedBy(14.dp),
+            verticalArrangement = Arrangement.spacedBy(16.dp),
             modifier = Modifier.height(400.dp)
         ) {
             item {
                 RuleBlock(
-                    "基础信息", """
-人数：3~10人，无需淘汰，1夜+1白天，约10分钟
-总牌数 = 玩家数 + 3（3张中央底牌）
-阵营：村民阵营、狼人阵营、皮匠（独立）
-                        """.trimIndent())
+                    "基础信息",
+                    "人数：3-10人；总牌数为玩家数加三张中央底牌。阵营包括村民、狼人和独立阵营。"
+                )
             }
             item {
                 RuleBlock(
-                    "夜间行动（按顺序）", """
-①化身幽灵：查看1名玩家身份并复制
-②狼人：互认队友；独狼可看1张底牌
-③爪牙/守夜人：爪牙认狼，守夜人互认
-④预言家：验1人 或 查看2张底牌
-⑤强盗：交换身份并看新牌
-⑥捣蛋鬼：互换两人身份，不看牌
-⑦酒鬼：与底牌交换，不看新牌
-⑧失眠者：查看自己最终身份
-                        """.trimIndent())
+                    "夜间行动",
+                    "设备会按化身幽灵、狼人、爪牙/守夜人、预言家、强盗、捣蛋鬼、酒鬼、失眠者的顺序提示行动。"
+                )
             }
             item {
                 RuleBlock(
-                    "白天阶段", """
-• 自由讨论约5分钟，可撒谎，禁止亮牌
-• 倒数321同时投票，手指指向1名玩家
-• 最高票出局并亮明身份；平票全部出局
-• 全员互投（无人超1票）则无人出局
-                        """.trimIndent())
+                    "白天阶段",
+                    "自由讨论后同时投票。最高票玩家出局并亮明身份；平票时最高票玩家全部出局。"
+                )
             }
             item {
                 RuleBlock(
-                    "胜负判定", """
-皮匠胜利（最高优先级）：皮匠被投票出局
-村民胜利：至少1名狼人出局 或 场上无狼人且无人出局
-狼人胜利：所有狼人存活 且 有玩家出局
-                        """.trimIndent())
+                    "胜负判定",
+                    "皮匠被投出时独立获胜；至少一名狼人出局或场上无狼人且无人出局时村民获胜；其余情况狼人获胜。"
+                )
             }
         }
     }
@@ -401,15 +287,14 @@ private fun RuleBlock(title: String, content: String) {
     Column {
         Text(
             text = title,
-            fontSize = 16.sp,
-            fontWeight = FontWeight.Bold,
-            color = MaterialTheme.colorScheme.primary,
+            style = MaterialTheme.typography.titleMedium,
+            fontWeight = FontWeight.SemiBold,
+            color = MaterialTheme.colorScheme.onSurface,
             modifier = Modifier.padding(bottom = 6.dp)
         )
         Text(
             text = content,
-            fontSize = 13.sp,
-            lineHeight = 19.sp,
+            style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant
         )
     }

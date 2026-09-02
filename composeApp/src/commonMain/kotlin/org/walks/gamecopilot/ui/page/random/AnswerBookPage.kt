@@ -11,12 +11,9 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -33,6 +30,7 @@ import androidx.compose.ui.unit.sp
 import org.walks.gamecopilot.MainViewmodel
 import org.walks.gamecopilot.intent.AnswerBookIntent
 import org.walks.gamecopilot.theme.LocalAppDesign
+import org.walks.gamecopilot.ui.components.AppPrimaryAction
 
 @Composable
 fun AnswerBookPage(
@@ -145,7 +143,12 @@ fun AnswerBookPage(
                 )
                 Spacer(modifier = Modifier.height(52.dp))
             } else {
-                Button(
+                AppPrimaryAction(
+                    text = if (answerBookState.currentAnswer == null) {
+                        "翻开答案之书"
+                    } else {
+                        "再翻一次"
+                    },
                     onClick = {
                         viewmodel.handleAnswerBookIntent(
                             if (answerBookState.currentAnswer == null) {
@@ -155,34 +158,11 @@ fun AnswerBookPage(
                             }
                         )
                     },
-                    shape = RoundedCornerShape(design.cornerRadius.button),
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = MaterialTheme.colorScheme.primary,
-                        contentColor = MaterialTheme.colorScheme.onPrimary
-                    ),
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .heightIn(min = 52.dp)
-                ) {
-                    Text(
-                        text = if (answerBookState.currentAnswer == null) "翻开答案之书" else "再翻一次",
-                        fontWeight = FontWeight.SemiBold,
-                        fontSize = 16.sp,
-                        color = MaterialTheme.colorScheme.onPrimary,
-                        textAlign = TextAlign.Center
-                    )
-                }
-
-                Text(
-                    text = if (answerBookState.currentAnswer == null) {
+                    supportingText = if (answerBookState.currentAnswer == null) {
                         "心中默念问题，点击书本即可翻开。"
                     } else {
                         "点击书本可再翻一次，换个答案方向。"
-                    },
-                    fontSize = 12.sp,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    textAlign = TextAlign.Center,
-                    modifier = Modifier.fillMaxWidth()
+                    }
                 )
             }
         }

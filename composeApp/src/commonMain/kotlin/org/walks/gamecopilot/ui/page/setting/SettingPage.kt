@@ -1,5 +1,6 @@
 package org.walks.gamecopilot.ui.page.setting
 
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -48,6 +49,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
@@ -61,6 +63,7 @@ import org.walks.gamecopilot.service.ai.AiProvider
 import org.walks.gamecopilot.service.ai.AiStyle
 import org.walks.gamecopilot.theme.LocalAppDesign
 import org.walks.gamecopilot.theme.ThemeMode
+import org.walks.gamecopilot.ui.components.AppSegmentedControl
 
 
 /**
@@ -78,7 +81,7 @@ fun SettingPage(viewmodel: MainViewmodel) {
             .fillMaxSize()
             .padding(horizontal = design.spacing.xl)
             .verticalScroll(scrollState)
-            .padding(top = design.spacing.xl, bottom = 96.dp),
+            .padding(top = design.spacing.xl, bottom = design.spacing.xl),
         verticalArrangement = Arrangement.spacedBy(design.spacing.lg)
     ) {
         Box(
@@ -139,40 +142,15 @@ fun SettingPage(viewmodel: MainViewmodel) {
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier.padding(bottom = 6.dp)
                 )
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
-                    AiProvider.entries.forEach { provider ->
-                        val isSelected = aiConfig.provider == provider
-                        TextButton(
-                            onClick = {
-                                viewmodel.handleAiIntent(AiIntent.UpdateProvider(provider))
-                            },
-                            modifier = Modifier
-                                .weight(1f)
-                                .clip(RoundedCornerShape(10.dp))
-                                .background(
-                                    if (isSelected) MaterialTheme.colorScheme.primaryContainer
-                                    else MaterialTheme.colorScheme.surfaceVariant
-                                )
-                                .border(
-                                    width = if (isSelected) 1.5.dp else 0.dp,
-                                    color = if (isSelected) MaterialTheme.colorScheme.primary
-                                    else MaterialTheme.colorScheme.surfaceVariant,
-                                    shape = RoundedCornerShape(10.dp)
-                                )
-                        ) {
-                            Text(
-                                text = provider.displayName,
-                                fontSize = 14.sp,
-                                fontWeight = if (isSelected) FontWeight.SemiBold else FontWeight.Normal,
-                                color = if (isSelected) MaterialTheme.colorScheme.primary
-                                else MaterialTheme.colorScheme.onSurfaceVariant
-                            )
-                        }
+                AppSegmentedControl(
+                    options = AiProvider.entries.map { it.displayName },
+                    selectedIndex = AiProvider.entries.indexOf(aiConfig.provider),
+                    onSelected = { index ->
+                        viewmodel.handleAiIntent(
+                            AiIntent.UpdateProvider(AiProvider.entries[index])
+                        )
                     }
-                }
+                )
 
                 Spacer(modifier = Modifier.height(design.spacing.lg))
 
@@ -228,40 +206,15 @@ fun SettingPage(viewmodel: MainViewmodel) {
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier.padding(bottom = 6.dp)
                 )
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
-                    AiStyle.entries.forEach { style ->
-                        val isSelected = aiConfig.aiStyle == style
-                        TextButton(
-                            onClick = {
-                                viewmodel.handleAiIntent(AiIntent.UpdateStyle(style))
-                            },
-                            modifier = Modifier
-                                .weight(1f)
-                                .clip(RoundedCornerShape(10.dp))
-                                .background(
-                                    if (isSelected) MaterialTheme.colorScheme.primaryContainer
-                                    else MaterialTheme.colorScheme.surfaceVariant
-                                )
-                                .border(
-                                    width = if (isSelected) 1.5.dp else 0.dp,
-                                    color = if (isSelected) MaterialTheme.colorScheme.primary
-                                    else MaterialTheme.colorScheme.surfaceVariant,
-                                    shape = RoundedCornerShape(10.dp)
-                                )
-                        ) {
-                            Text(
-                                text = style.displayName,
-                                fontSize = 13.sp,
-                                fontWeight = if (isSelected) FontWeight.SemiBold else FontWeight.Normal,
-                                color = if (isSelected) MaterialTheme.colorScheme.primary
-                                else MaterialTheme.colorScheme.onSurfaceVariant
-                            )
-                        }
+                AppSegmentedControl(
+                    options = AiStyle.entries.map { it.displayName },
+                    selectedIndex = AiStyle.entries.indexOf(aiConfig.aiStyle),
+                    onSelected = { index ->
+                        viewmodel.handleAiIntent(
+                            AiIntent.UpdateStyle(AiStyle.entries[index])
+                        )
                     }
-                }
+                )
 
                 // 当前状态提示
                 if (aiConfig.isEnabled) {
@@ -325,13 +278,7 @@ fun SettingPage(viewmodel: MainViewmodel) {
                     .padding(design.spacing.xl)
             ) {
                 ThemeOptionRow(
-                    icon = {
-                        Icon(
-                            Icons.Rounded.SettingsBrightness,
-                            contentDescription = null,
-                            modifier = Modifier.size(20.dp)
-                        )
-                    },
+                    icon = Icons.Rounded.SettingsBrightness,
                     label = "跟随系统",
                     desc = "根据系统设置自动切换",
                     selected = currentTheme == ThemeMode.SYSTEM,
@@ -341,13 +288,7 @@ fun SettingPage(viewmodel: MainViewmodel) {
                 Spacer(modifier = Modifier.height(12.dp))
 
                 ThemeOptionRow(
-                    icon = {
-                        Icon(
-                            Icons.Rounded.LightMode,
-                            contentDescription = null,
-                            modifier = Modifier.size(20.dp)
-                        )
-                    },
+                    icon = Icons.Rounded.LightMode,
                     label = "浅色模式",
                     desc = "明亮清新的界面风格",
                     selected = currentTheme == ThemeMode.LIGHT,
@@ -357,13 +298,7 @@ fun SettingPage(viewmodel: MainViewmodel) {
                 Spacer(modifier = Modifier.height(12.dp))
 
                 ThemeOptionRow(
-                    icon = {
-                        Icon(
-                            Icons.Rounded.DarkMode,
-                            contentDescription = null,
-                            modifier = Modifier.size(20.dp)
-                        )
-                    },
+                    icon = Icons.Rounded.DarkMode,
                     label = "深色模式",
                     desc = "护眼沉浸的暗色风格",
                     selected = currentTheme == ThemeMode.DARK,
@@ -494,7 +429,11 @@ private fun SettingCard(
         modifier = Modifier.fillMaxWidth(),
         colors = colors,
         shape = RoundedCornerShape(design.cornerRadius.card),
-        elevation = CardDefaults.cardElevation(defaultElevation = design.elevation.card)
+        elevation = CardDefaults.cardElevation(defaultElevation = design.elevation.card),
+        border = BorderStroke(
+            width = 1.dp,
+            color = MaterialTheme.colorScheme.outline.copy(alpha = 0.72f)
+        )
     ) {
         Column(modifier = Modifier.fillMaxWidth()) {
             Text(
@@ -516,7 +455,7 @@ private fun SettingCard(
 
 @Composable
 private fun ThemeOptionRow(
-    icon: @Composable () -> Unit,
+    icon: ImageVector,
     label: String,
     desc: String,
     selected: Boolean,
@@ -550,7 +489,16 @@ private fun ThemeOptionRow(
                 ),
             contentAlignment = Alignment.Center
         ) {
-            icon()
+            Icon(
+                imageVector = icon,
+                contentDescription = null,
+                tint = if (selected) {
+                    MaterialTheme.colorScheme.onPrimary
+                } else {
+                    MaterialTheme.colorScheme.onSurfaceVariant
+                },
+                modifier = Modifier.size(20.dp)
+            )
         }
 
         Spacer(modifier = Modifier.size(12.dp))

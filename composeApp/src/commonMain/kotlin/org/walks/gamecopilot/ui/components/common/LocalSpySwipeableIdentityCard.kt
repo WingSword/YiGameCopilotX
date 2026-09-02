@@ -73,7 +73,7 @@ private fun LocalSpyHiddenFace(
             text = "PLAYER $playerNumber",
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             fontSize = 14.sp,
-            letterSpacing = 1.sp
+            letterSpacing = 0.sp
         )
         Spacer(modifier = Modifier.height(10.dp))
         Spacer(

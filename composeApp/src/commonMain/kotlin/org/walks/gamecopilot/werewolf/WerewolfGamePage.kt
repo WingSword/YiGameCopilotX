@@ -116,7 +116,6 @@ fun WerewolfGamePage(
         // 暗色顶部栏 - 保持沉浸感
         WerewolfTopBar(
             title = when (gameState.phase) {
-                WerewolfGamePhase.SETUP -> "一夜终极狼人"
                 WerewolfGamePhase.DEAL_CARDS -> "查看身份"
                 WerewolfGamePhase.NIGHT_START -> "夜幕降临"
                 WerewolfGamePhase.NIGHT_ACTION -> "夜间行动"
@@ -131,12 +130,6 @@ fun WerewolfGamePage(
 
         Box(modifier = Modifier.weight(1f)) {
             when (gameState.phase) {
-                WerewolfGamePhase.SETUP -> {
-                    LaunchedEffect(configuredPlayerCount, configuredNicknames) {
-                        gameState = createInitialGameState()
-                    }
-                }
-
                 WerewolfGamePhase.DEAL_CARDS -> {
                     DealCardsPhase(
                         gameState = gameState,
@@ -303,167 +296,6 @@ private fun advanceNightStep(gameState: WerewolfGameState, setState: (WerewolfGa
             nightSubStep = NightActionSubStep.HAND_OFF,
             nightActionResultText = ""
         ))
-    }
-}
-
-// ===== 配置阶段 =====
-@Composable
-private fun SetupPhase(
-    playerCount: Int,
-    onPlayerCountChange: (Int) -> Unit,
-    nicknames: List<String>,
-    onStart: () -> Unit
-) {
-    Column(
-        modifier = Modifier.fillMaxSize()
-    ) {
-        Column(
-            modifier = Modifier
-                .weight(1f)
-                .verticalScroll(rememberScrollState())
-                .padding(16.dp)
-        ) {
-            Text(
-                text = "游戏配置",
-                fontSize = 24.sp,
-                fontWeight = FontWeight.Bold,
-                color = WerewolfColors.onSurface
-            )
-            Spacer(modifier = Modifier.height(4.dp))
-            Text(
-                text = "选择人数后开始游戏，设备将作为主持人辅助",
-                fontSize = 14.sp,
-                color = WerewolfColors.onSurfaceVariant
-            )
-            Spacer(modifier = Modifier.height(20.dp))
-
-            Text(
-                text = "选择人数",
-                fontSize = 16.sp,
-                fontWeight = FontWeight.SemiBold,
-                color = WerewolfColors.onSurface
-            )
-            Spacer(modifier = Modifier.height(8.dp))
-
-            (3..10).chunked(4).forEach { row ->
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
-                    row.forEach { count ->
-                        val selected = playerCount == count
-                        Surface(
-                            modifier = Modifier
-                                .weight(1f)
-                                .height(48.dp)
-                                .clickable { onPlayerCountChange(count) },
-                            color = if (selected) WerewolfColors.primary else WerewolfColors.surfaceContainer,
-                            shape = RoundedCornerShape(8.dp)
-                        ) {
-                            Box(contentAlignment = Alignment.Center) {
-                                Text(
-                                    text = "${count}人",
-                                    fontSize = 16.sp,
-                                    fontWeight = FontWeight.SemiBold,
-                                    color = if (selected) WerewolfColors.onPrimary else WerewolfColors.onSurface
-                                )
-                            }
-                        }
-                    }
-                    repeat(4 - row.size) {
-                        Spacer(modifier = Modifier.weight(1f))
-                    }
-                }
-                Spacer(modifier = Modifier.height(8.dp))
-            }
-
-            Spacer(modifier = Modifier.height(16.dp))
-
-            val preset = WerewolfPresets.getPresetForPlayerCount(playerCount)
-            Text(
-                text = "角色配置 (${preset.name})",
-                fontSize = 16.sp,
-                fontWeight = FontWeight.SemiBold,
-                color = WerewolfColors.onSurface
-            )
-            Spacer(modifier = Modifier.height(8.dp))
-
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(6.dp)
-            ) {
-                preset.roles.groupBy { it }.forEach { (role, instances) ->
-                    Surface(
-                        color = getRoleColor(role).copy(alpha = 0.15f),
-                        shape = RoundedCornerShape(4.dp)
-                    ) {
-                        Text(
-                            text = "${role.displayName}${if (instances.size > 1) "×${instances.size}" else ""}",
-                            fontSize = 13.sp,
-                            color = getRoleColor(role),
-                            fontWeight = FontWeight.Medium,
-                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
-                        )
-                    }
-                }
-            }
-
-            Spacer(modifier = Modifier.height(20.dp))
-
-            Text(
-                text = "玩家列表",
-                fontSize = 16.sp,
-                fontWeight = FontWeight.SemiBold,
-                color = WerewolfColors.onSurface
-            )
-            Spacer(modifier = Modifier.height(8.dp))
-
-            nicknames.forEachIndexed { idx, name ->
-                Surface(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(bottom = 6.dp),
-                    color = WerewolfColors.surfaceContainerHigh,
-                    shape = RoundedCornerShape(6.dp)
-                ) {
-                    Row(
-                        modifier = Modifier.padding(horizontal = 12.dp, vertical = 10.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Box(
-                            modifier = Modifier
-                                .size(28.dp)
-                                .background(WerewolfColors.surfaceContainerHighest, CircleShape),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Text("${idx + 1}", fontSize = 13.sp, color = WerewolfColors.onSurfaceVariant)
-                        }
-                        Spacer(modifier = Modifier.width(10.dp))
-                        Text(text = name, fontSize = 15.sp, color = WerewolfColors.onSurface)
-                    }
-                }
-            }
-            Spacer(modifier = Modifier.height(16.dp))
-        }
-
-        Surface(
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(52.dp)
-                .padding(horizontal = 16.dp, vertical = 8.dp)
-                .clickable(onClick = onStart),
-            color = WerewolfColors.primary,
-            shape = RoundedCornerShape(8.dp)
-        ) {
-            Box(contentAlignment = Alignment.Center) {
-                Text(
-                    text = "开始游戏",
-                    fontSize = 18.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = WerewolfColors.onPrimary
-                )
-            }
-        }
     }
 }
 

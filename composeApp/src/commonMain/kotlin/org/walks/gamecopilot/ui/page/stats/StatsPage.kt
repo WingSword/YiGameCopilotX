@@ -50,7 +50,7 @@ fun StatsPage(viewmodel: MainViewmodel) {
             .fillMaxSize()
             .padding(horizontal = design.spacing.xl)
             .verticalScroll(scrollState)
-            .padding(top = design.spacing.xl, bottom = 96.dp),
+            .padding(top = design.spacing.xl, bottom = design.spacing.xl),
         verticalArrangement = Arrangement.spacedBy(design.spacing.lg)
     ) {
         // 页面标题

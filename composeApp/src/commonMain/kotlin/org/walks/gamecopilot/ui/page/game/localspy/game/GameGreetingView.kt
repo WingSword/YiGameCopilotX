@@ -9,7 +9,6 @@ import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.derivedStateOf
@@ -113,7 +112,6 @@ fun GameGreetingView(
 
     // 身份卡片动画显示逻辑
     AnimatedVisibility(
-        modifier = Modifier.fillMaxSize(),
         visible = identityDisPlayState.value == IDENTITY_SHOW,
         // 组合动画+物理效果
         enter = slideInVertically(

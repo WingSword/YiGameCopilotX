@@ -12,7 +12,6 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.Login
@@ -22,8 +21,6 @@ import androidx.compose.material.icons.rounded.Groups
 import androidx.compose.material.icons.rounded.Search
 import androidx.compose.material.icons.rounded.WifiTethering
 import androidx.compose.material3.Button
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
@@ -48,6 +45,8 @@ import org.walks.gamecopilot.getPlatform
 import org.walks.gamecopilot.intent.GameRoomIntent
 import org.walks.gamecopilot.navigation.NaviRoute
 import org.walks.gamecopilot.theme.LocalAppDesign
+import org.walks.gamecopilot.ui.components.AppCard
+import org.walks.gamecopilot.ui.components.AppSegmentedControl
 
 @Composable
 fun MultiplayerPage(viewmodel: MainViewmodel, navi: NavHostController) {
@@ -68,20 +67,11 @@ fun MultiplayerPage(viewmodel: MainViewmodel, navi: NavHostController) {
             fontWeight = FontWeight.SemiBold
         )
 
-        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            MultiplayerTab(
-                text = "局域网",
-                selected = selectedTab == 0,
-                onClick = { selectedTab = 0 },
-                modifier = Modifier.weight(1f)
-            )
-            MultiplayerTab(
-                text = "网络房间",
-                selected = selectedTab == 1,
-                onClick = { selectedTab = 1 },
-                modifier = Modifier.weight(1f)
-            )
-        }
+        AppSegmentedControl(
+            options = listOf("局域网", "网络房间"),
+            selectedIndex = selectedTab,
+            onSelected = { selectedTab = it }
+        )
 
         if (selectedTab == 0) {
             LanPanel(navi)
@@ -89,32 +79,6 @@ fun MultiplayerPage(viewmodel: MainViewmodel, navi: NavHostController) {
             OnlineRoomPanel(viewmodel)
         }
 
-        Spacer(modifier = Modifier.height(96.dp))
-    }
-}
-
-@Composable
-private fun MultiplayerTab(
-    text: String,
-    selected: Boolean,
-    onClick: () -> Unit,
-    modifier: Modifier = Modifier
-) {
-    Surface(
-        modifier = modifier
-            .height(42.dp)
-            .clickable(onClick = onClick),
-        shape = RoundedCornerShape(8.dp),
-        color = if (selected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.surfaceVariant
-    ) {
-        Box(contentAlignment = Alignment.Center) {
-            Text(
-                text = text,
-                color = if (selected) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurfaceVariant,
-                style = MaterialTheme.typography.labelLarge,
-                fontWeight = FontWeight.SemiBold
-            )
-        }
     }
 }
 
@@ -162,73 +126,64 @@ private fun OnlineRoomPanel(viewmodel: MainViewmodel) {
             onSecondaryClick = null
         )
 
-        Card(
-            modifier = Modifier.fillMaxWidth(),
-            shape = RoundedCornerShape(8.dp),
-            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
-        ) {
-            Column(
-                modifier = Modifier.padding(16.dp),
-                verticalArrangement = Arrangement.spacedBy(12.dp)
-            ) {
-                OutlinedTextField(
-                    value = roomId,
-                    onValueChange = { roomId = it.trim() },
-                    modifier = Modifier.fillMaxWidth(),
-                    singleLine = true,
-                    label = { Text("房间号") },
-                    leadingIcon = { Icon(Icons.Rounded.Groups, contentDescription = null) }
-                )
-                OutlinedTextField(
-                    value = roomKey,
-                    onValueChange = { roomKey = it },
-                    modifier = Modifier.fillMaxWidth(),
-                    singleLine = true,
-                    label = { Text("房间密钥") },
-                    visualTransformation = PasswordVisualTransformation()
-                )
+        AppCard {
+            OutlinedTextField(
+                value = roomId,
+                onValueChange = { roomId = it.trim() },
+                modifier = Modifier.fillMaxWidth(),
+                singleLine = true,
+                label = { Text("房间号") },
+                leadingIcon = { Icon(Icons.Rounded.Groups, contentDescription = null) }
+            )
+            OutlinedTextField(
+                value = roomKey,
+                onValueChange = { roomKey = it },
+                modifier = Modifier.fillMaxWidth(),
+                singleLine = true,
+                label = { Text("房间密钥") },
+                visualTransformation = PasswordVisualTransformation()
+            )
 
-                Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                    Button(
-                        onClick = {
-                            viewmodel.handleRoomIntent(
-                                GameRoomIntent.CreateAGameRoom(
-                                    roomId,
-                                    roomKey
-                                )
+            Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                Button(
+                    onClick = {
+                        viewmodel.handleRoomIntent(
+                            GameRoomIntent.CreateAGameRoom(
+                                roomId,
+                                roomKey
                             )
-                        },
-                        modifier = Modifier.weight(1f),
-                        enabled = canSubmit
-                    ) {
-                        Icon(
-                            Icons.Rounded.Add,
-                            contentDescription = null,
-                            modifier = Modifier.size(18.dp)
                         )
-                        Spacer(modifier = Modifier.size(8.dp))
-                        Text("创建")
-                    }
-                    OutlinedButton(
-                        onClick = {
-                            viewmodel.handleRoomIntent(
-                                GameRoomIntent.JoinToAGameRoom(
-                                    roomId,
-                                    roomKey
-                                )
+                    },
+                    modifier = Modifier.weight(1f),
+                    enabled = canSubmit
+                ) {
+                    Icon(
+                        Icons.Rounded.Add,
+                        contentDescription = null,
+                        modifier = Modifier.size(18.dp)
+                    )
+                    Spacer(modifier = Modifier.size(8.dp))
+                    Text("创建")
+                }
+                OutlinedButton(
+                    onClick = {
+                        viewmodel.handleRoomIntent(
+                            GameRoomIntent.JoinToAGameRoom(
+                                roomId,
+                                roomKey
                             )
-                        },
-                        modifier = Modifier.weight(1f),
-                        enabled = canSubmit
-                    ) {
-                        Icon(
-                            Icons.AutoMirrored.Rounded.Login,
-                            contentDescription = null,
-                            modifier = Modifier.size(18.dp)
                         )
-                        Spacer(modifier = Modifier.size(8.dp))
-                        Text("加入")
-                    }
+                    },
+                    modifier = Modifier.weight(1f),
+                    enabled = canSubmit
+                ) {
+                    Icon(
+                        Icons.AutoMirrored.Rounded.Login,
+                        contentDescription = null,
+                        modifier = Modifier.size(18.dp)
+                    )
+                    Spacer(modifier = Modifier.size(8.dp))
+                    Text("加入")
                 }
             }
         }
@@ -245,70 +200,64 @@ private fun MultiplayerActionCard(
     onPrimaryClick: (() -> Unit)?,
     onSecondaryClick: (() -> Unit)?
 ) {
-    Card(
-        modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(8.dp),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-        elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
-    ) {
-        Column(
-            modifier = Modifier.padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp)
-        ) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Surface(
-                    modifier = Modifier.size(44.dp),
-                    shape = RoundedCornerShape(8.dp),
-                    color = MaterialTheme.colorScheme.primaryContainer
-                ) {
-                    Box(contentAlignment = Alignment.Center) {
-                        Icon(
-                            icon,
-                            contentDescription = null,
-                            tint = MaterialTheme.colorScheme.onPrimaryContainer
-                        )
-                    }
-                }
-                Column(modifier = Modifier.padding(start = 12.dp)) {
-                    Text(
-                        title,
-                        style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.Bold
-                    )
-                    Text(
-                        description,
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
+    AppCard {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Surface(
+                modifier = Modifier.size(44.dp),
+                shape = MaterialTheme.shapes.small,
+                color = MaterialTheme.colorScheme.primaryContainer
+            ) {
+                Box(contentAlignment = Alignment.Center) {
+                    Icon(
+                        icon,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.onPrimaryContainer
                     )
                 }
             }
-            if (primaryText != null && onPrimaryClick != null) {
-                Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                    Button(
-                        onClick = onPrimaryClick,
+            Column(
+                modifier = Modifier
+                    .weight(1f)
+                    .padding(start = 12.dp)
+            ) {
+                Text(
+                    title,
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold
+                )
+                Text(
+                    description,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+        }
+        if (primaryText != null && onPrimaryClick != null) {
+            Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                Button(
+                    onClick = onPrimaryClick,
+                    modifier = Modifier.weight(1f)
+                ) {
+                    Icon(
+                        Icons.Rounded.Search,
+                        contentDescription = null,
+                        modifier = Modifier.size(18.dp)
+                    )
+                    Spacer(modifier = Modifier.size(8.dp))
+                    Text(primaryText)
+                }
+                if (secondaryText != null && onSecondaryClick != null) {
+                    OutlinedButton(
+                        onClick = onSecondaryClick,
                         modifier = Modifier.weight(1f)
                     ) {
                         Icon(
-                            Icons.Rounded.Search,
+                            Icons.Rounded.Add,
                             contentDescription = null,
                             modifier = Modifier.size(18.dp)
                         )
                         Spacer(modifier = Modifier.size(8.dp))
-                        Text(primaryText)
-                    }
-                    if (secondaryText != null && onSecondaryClick != null) {
-                        OutlinedButton(
-                            onClick = onSecondaryClick,
-                            modifier = Modifier.weight(1f)
-                        ) {
-                            Icon(
-                                Icons.Rounded.Add,
-                                contentDescription = null,
-                                modifier = Modifier.size(18.dp)
-                            )
-                            Spacer(modifier = Modifier.size(8.dp))
-                            Text(secondaryText)
-                        }
+                        Text(secondaryText)
                     }
                 }
             }

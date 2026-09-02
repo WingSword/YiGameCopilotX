@@ -2,40 +2,29 @@ package org.walks.gamecopilot.awalong
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.selection.SelectionContainer
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavHostController
-import org.jetbrains.compose.resources.painterResource
 import org.walks.gamecopilot.MainViewmodel
 import org.walks.gamecopilot.theme.LocalAppDesign
 import org.walks.gamecopilot.ui.components.AppDialog
-import yigamecopilotx.composeapp.generated.resources.Res
-import yigamecopilotx.composeapp.generated.resources.icon_info
 
 
 /**
@@ -47,69 +36,19 @@ import yigamecopilotx.composeapp.generated.resources.icon_info
 fun AwalongEntrance(viewmodel: MainViewmodel,navi: NavHostController) {
     var showRulesDialog by remember { mutableStateOf(false) }
     
-    Column(
+    AwalongCustomConfigScreen(
+        viewmodel = viewmodel,
+        navi = navi,
+        onBack = { navi.navigateUp() },
+        onShowRules = { showRulesDialog = true },
         modifier = Modifier.fillMaxSize()
-    ) {
-        // 顶部标题和规则按钮区域
-        TopHeaderSection(
-            onShowRules = { showRulesDialog = true }
-        )
-
-        // 自定义配置界面
-        AwalongCustomConfigScreen(
-            viewmodel = viewmodel,
-            navi = navi,
-            modifier = Modifier.weight(1f)
-        )
-    }
+    )
     
     // 规则弹窗
     if (showRulesDialog) {
         GameRulesDialog(
             onDismiss = { showRulesDialog = false }
         )
-    }
-}
-
-@Composable
-fun TopHeaderSection(onShowRules: () -> Unit) {
-    val design = LocalAppDesign.current
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(horizontal = 16.dp),
-        horizontalArrangement = Arrangement.SpaceBetween,
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        Column(
-            modifier = Modifier.weight(1f)
-        ) {
-            Text(
-                text = "阿瓦隆",
-                fontSize = 28.sp,
-                fontWeight = FontWeight.Bold,
-                color = MaterialTheme.colorScheme.primary
-            )
-        }
-        
-        OutlinedButton(
-            onClick = onShowRules,
-            modifier = Modifier.padding(start = 16.dp),
-            shape = RoundedCornerShape(design.cornerRadius.button)
-        ) {
-            Icon(
-                painter = painterResource(Res.drawable.icon_info),
-                contentDescription = "游戏规则",
-                tint =Color.Unspecified ,
-                modifier = Modifier.size(18.dp)
-            )
-            Spacer(modifier = Modifier.width(6.dp))
-            Text(
-                text = "游戏规则",
-                fontSize = 14.sp,
-                fontWeight = FontWeight.Medium
-            )
-        }
     }
 }
 
