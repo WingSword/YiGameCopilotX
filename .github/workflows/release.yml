@@ -23,9 +23,13 @@ jobs:
           java-version: '17'
           distribution: 'temurin'
 
-      - name: Patch Gradle distribution URL
+      - name: Use official repositories on the GitHub runner
         run: |
           sed -i 's|mirrors.huaweicloud.com/gradle|services.gradle.org/distributions|' gradle/wrapper/gradle-wrapper.properties
+          sed -i '\|maven.aliyun.com/repository/|d' settings.gradle.kts
+
+      - name: Test signature verifier compatibility
+        run: python3 scripts/test-ci-android-release.py
 
       - name: Prepare signing configuration
         env:
@@ -37,9 +41,11 @@ jobs:
 
       - name: Setup Gradle
         uses: gradle/actions/setup-gradle@v4
+        with:
+          cache-read-only: ${{ github.ref != format('refs/heads/{0}', github.event.repository.default_branch) && github.ref != 'refs/heads/开发分支' }}
 
       - name: Build Release APK
-        run: ./gradlew :composeApp:assembleRelease
+        run: ./gradlew :composeApp:assembleRelease --no-configuration-cache --console=plain
 
       - name: Verify release signature and manifest
         run: python3 scripts/ci-android-release.py verify

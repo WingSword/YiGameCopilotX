@@ -61,6 +61,26 @@ def command(arguments):
     return result.stdout
 
 
+def certificate_digest(signature):
+    """Read the verified signer, accepting legacy and scheme-labelled SDK output."""
+    if not re.search(r'^Verifies\s*$', signature, re.MULTILINE):
+        raise ValueError('APK verification did not report success.')
+    if not re.search(r'^Number of signers:\s*1\s*$', signature, re.MULTILINE):
+        raise ValueError('Expected exactly one APK signer.')
+    # Build-tools 37 labels certificates by scheme (e.g. "V2 Signer:").
+    # Exclude public-key fingerprints and source-stamp certificates. Multiple
+    # schemes may repeat one certificate, but different certificates must fail.
+    certificates = {
+        digest.lower() for digest in re.findall(
+            r'^(?:Signer #\d+|V\d+(?:\.\d+)? Signer(?: #\d+)?):? certificate SHA-256 digest: ([0-9a-fA-F]{64})\s*$',
+            signature, re.MULTILINE,
+        )
+    }
+    if len(certificates) != 1:
+        raise ValueError('Could not identify one consistent APK signing certificate.')
+    return certificates.pop()
+
+
 def verify(root):
     directory = root / 'composeApp/build/outputs/apk/release'
     metadata = json.loads((directory / 'output-metadata.json').read_text(encoding='utf-8'))
@@ -74,10 +94,9 @@ def verify(root):
     candidates = [path for path in (sdk / 'build-tools').iterdir() if re.fullmatch(r'\d+\.\d+\.\d+', path.name)]
     tools = max(candidates, key=lambda path: tuple(int(value) for value in path.name.split('.')))
     java = Path(os.environ['JAVA_HOME']) / 'bin/java'
+    print(f'Verifying release APK with Android build-tools {tools.name}.', flush=True)
     signature = command([java, '-jar', tools / 'lib/apksigner.jar', 'verify', '--verbose', '--print-certs', apk])
-    certificate = re.search(r'Signer #1 certificate SHA-256 digest: ([0-9a-fA-F]+)', signature)
-    if not certificate or 'Verifies' not in signature:
-        raise ValueError('Release APK signature was not verified.')
+    actual = certificate_digest(signature)
     manifest = command([tools / 'aapt2', 'dump', 'badging', apk])
     if 'application-debuggable' in manifest or "package: name='org.walks.gamecopilot'" not in manifest:
         raise ValueError('Expected a non-debuggable production package.')
@@ -98,7 +117,6 @@ class ReleaseCertificate {
 }
 ''', encoding='utf-8')
     expected = command([java, helper, root / 'local.properties']).strip().lower()
-    actual = certificate.group(1).lower()
     if actual != expected:
         raise ValueError('APK signer does not match the configured release key.')
     report = {'applicationId': metadata['applicationId'], 'versionCode': elements[0]['versionCode'],
