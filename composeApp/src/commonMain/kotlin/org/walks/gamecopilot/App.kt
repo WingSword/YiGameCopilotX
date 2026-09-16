@@ -1,38 +1,40 @@
 package org.walks.gamecopilot
 
-import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.LinearEasing
-import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.widthIn
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.material.icons.outlined.Home
+import androidx.compose.material.icons.outlined.Handyman
+import androidx.compose.material.icons.outlined.Groups
+import androidx.compose.material.icons.outlined.PersonOutline
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.wrapContentSize
-import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.rounded.Groups
 import androidx.compose.material.icons.rounded.Home
+import androidx.compose.material.icons.rounded.Insights
 import androidx.compose.material.icons.rounded.PersonOutline
 import androidx.compose.material.icons.rounded.WorkOutline
-import androidx.compose.material.icons.sharp.Add
-import androidx.compose.material3.Button
 import androidx.compose.material3.CenterAlignedTopAppBar
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.IconButtonDefaults
@@ -56,6 +58,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.rotate
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -103,8 +106,7 @@ fun App() {
 private data class HomeBottomNavItem(
     val id: String,
     val route: String?,
-    val label: String?,
-    val selectedLabel: String? = null,
+    val label: String,
     val icon: androidx.compose.ui.graphics.vector.ImageVector
 )
 
@@ -115,68 +117,51 @@ fun BottomNavigationBar(navi: NavHostController, currentRoute: String) {
         HomeBottomNavItem(
             id = "home",
             route = NaviRoute.HOME.route,
-            label = null,
-            selectedLabel = "首页",
-            icon = Icons.Rounded.Home
+            label = "首页",
+            icon = Icons.Outlined.Home
         ),
         HomeBottomNavItem(
             id = "bag",
             route = NaviRoute.RANDOM.route,
-            label = null,
-            selectedLabel = "工具",
-            icon = Icons.Rounded.WorkOutline
+            label = "工具",
+            icon = Icons.Outlined.Handyman
         ),
         HomeBottomNavItem(
             id = "multiplayer",
             route = NaviRoute.MULTIPLAYER.route,
-            label = null,
-            selectedLabel = "联机",
-            icon = Icons.Rounded.Groups
+            label = "联机",
+            icon = Icons.Outlined.Groups
         ),
         HomeBottomNavItem(
             id = "profile",
             route = NaviRoute.SETTING.route,
-            label = null,
-            selectedLabel = "设置",
-            icon = Icons.Rounded.PersonOutline
+            label = "我的",
+            icon = Icons.Outlined.PersonOutline
         )
     )
     val routeSelectedId = when {
         isStartRoute(currentRoute) || currentRoute == NaviRoute.HOME.route -> "home"
         currentRoute == NaviRoute.RANDOM.route -> "bag"
         currentRoute == NaviRoute.MULTIPLAYER.route -> "multiplayer"
+        currentRoute == NaviRoute.STATS.route -> "profile"
         currentRoute == NaviRoute.SETTING.route -> "profile"
         else -> null
     }
     val selectedItemId = routeSelectedId ?: "home"
 
-    Box(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(
-                horizontal = design.spacing.xl,
-                vertical = design.spacing.lg
-            )
-    ) {
-        Box(
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(64.dp)
-                .background(MaterialTheme.colorScheme.surface)
-                .border(1.dp, MaterialTheme.colorScheme.outline)
+    BoxWithConstraints(Modifier.fillMaxWidth().padding(bottom = 12.dp), contentAlignment = Alignment.Center) {
+        Surface(
+            modifier = Modifier.width(minOf(maxWidth * 0.92f, 440.dp)).height(64.dp),
+            shape = RoundedCornerShape(32.dp),
+            color = MaterialTheme.colorScheme.surface.copy(alpha = 0.90f),
+            shadowElevation = 12.dp,
+            border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.5f))
         ) {
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(1.dp)
-                    .background(MaterialTheme.colorScheme.outline)
-                    .align(Alignment.TopCenter)
-            )
             Row(
                 modifier = Modifier
                     .fillMaxSize()
-                    .padding(horizontal = 6.dp),
-                horizontalArrangement = Arrangement.spacedBy(2.dp),
+                    .padding(horizontal = 6.dp, vertical = 5.dp),
+                horizontalArrangement = Arrangement.spacedBy(4.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 navItems.forEach { item ->
@@ -214,43 +199,25 @@ private fun BottomNavItem(
     isSelected: Boolean,
     onClick: () -> Unit
 ) {
-    Column(
-        modifier = modifier
-            .height(52.dp)
-            .clickable { onClick() }
-            .padding(horizontal = 4.dp, vertical = 3.dp),
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.Center
+    Row(
+        modifier = modifier.height(46.dp).clip(RoundedCornerShape(23.dp))
+            .background(if (isSelected) MaterialTheme.colorScheme.onSurface.copy(alpha = 0.13f) else Color.Transparent)
+            .clickable(onClick = onClick).padding(horizontal = 8.dp),
+        horizontalArrangement = Arrangement.Center,
+        verticalAlignment = Alignment.CenterVertically
     ) {
-        Row(
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.Center
-        ) {
-            Icon(
-                imageVector = item.icon,
-                contentDescription = item.selectedLabel ?: item.id,
-                modifier = Modifier.size(20.dp),
-                tint = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
-            )
-            if (isSelected && item.selectedLabel != null) {
-                Text(
-                    text = item.selectedLabel,
-                    color = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
-                    fontSize = 13.sp,
-                    fontWeight = if (isSelected) FontWeight.SemiBold else FontWeight.Medium,
-                    modifier = Modifier.padding(start = 5.dp)
-                )
+        Icon(item.icon, contentDescription = item.label, modifier = Modifier.size(22.dp),
+            tint = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant)
+        AnimatedVisibility(isSelected) {
+            Row {
+                Spacer(Modifier.width(5.dp))
+                Text(item.label, color = MaterialTheme.colorScheme.primary,
+                    fontSize = 14.sp, fontWeight = FontWeight.Medium, maxLines = 1)
             }
         }
-        Spacer(modifier = Modifier.height(6.dp))
-        Box(
-            modifier = Modifier
-                .fillMaxWidth(0.72f)
-                .height(if (isSelected) 3.dp else 1.dp)
-                .background(if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outline)
-        )
     }
 }
+
 
 
 @Composable
@@ -258,11 +225,6 @@ fun AppView(viewmodel: MainViewmodel) {
     val snackState = remember { SnackbarHostState() }
     val navi = rememberNavController()
     var currentRoute by remember { mutableStateOf("") }
-    // 订阅当前随机配置名，判断是否为固定工具（指转盘/答案之书）
-    val latestRandomConfig by viewmodel.currentRandomContentState.collectAsState()
-    val isFixedTool = latestRandomConfig.name.startsWith(RANDOM_PAGE_CONFIG_CATE_FINGER) ||
-            latestRandomConfig.name.startsWith(RANDOM_PAGE_CONFIG_CATE_ANSWER_BOOK)
-    val floatButtonShow = currentRoute == NaviRoute.RANDOM.route && !isFixedTool
     LaunchedEffect(navi) {
         navi.currentBackStackEntryFlow.collect { entry ->
             currentRoute = entry.destination.route ?: ""
@@ -279,50 +241,6 @@ fun AppView(viewmodel: MainViewmodel) {
         snackbarHost = {
             SnackbarHost(hostState = snackState)
         },
-        floatingActionButton = {
-            var isOpen by remember { mutableStateOf(false) }
-            val rotation by animateFloatAsState(
-                targetValue = if (isOpen) -45f else 0f,
-                animationSpec = tween(durationMillis = 300)
-            )
-            if (floatButtonShow) {
-                // 菜单项垂直排列
-                LazyColumn(
-                    horizontalAlignment = Alignment.End,
-                    verticalArrangement = Arrangement.spacedBy(8.dp),
-
-                    modifier = Modifier.padding(bottom = 72.dp) // 给菜单按钮留出空间
-                ) {
-                    item {
-                        AnimatedVisibility(isOpen) {
-                            Button(
-                                onClick = {
-                                    viewmodel.handleRandomPageIntent(RandomPageIntent.OnAddNewRandomDialogShow)
-                                    isOpen = false
-                                },
-                                modifier = Modifier
-
-                            ) {
-                                Text("新增配置")
-                            }
-                        }
-                    }
-                    item {
-                        // 主按钮
-                        FloatingActionButton(
-                            onClick = { isOpen = !isOpen },
-                            modifier = Modifier
-                                .padding(20.dp)
-                                .wrapContentSize()
-                                .rotate(rotation)
-                                .clip(RoundedCornerShape(20.dp))
-                        ) {
-                            Icon(Icons.Sharp.Add, "展开菜单")
-                        }
-                    }
-                }
-            }
-        },
         ) { inp ->
         val showBottomNavigation = shouldShowBottomNavigation(currentRoute)
         Box(
@@ -334,10 +252,9 @@ fun AppView(viewmodel: MainViewmodel) {
             // 主要内容区域 - 为所有页面添加底部边距，避免内容被导航栏遮挡
             Column(
                 modifier = Modifier
-                    .padding(horizontal = 12.dp)
                     .fillMaxWidth()
                     .fillMaxHeight()
-                    .padding(bottom = if (showBottomNavigation) 84.dp else 0.dp),
+                    .padding(bottom = 0.dp),
                 horizontalAlignment = Alignment.CenterHorizontally,
                 verticalArrangement = Arrangement.Top
             ) {
@@ -371,13 +288,11 @@ private fun shouldShowBottomNavigation(route: String?): Boolean {
             route == NaviRoute.HOME.route ||
             route == NaviRoute.RANDOM.route ||
             route == NaviRoute.MULTIPLAYER.route ||
-            route == NaviRoute.STATS.route ||
             route == NaviRoute.SETTING.route
 }
 
 private fun shouldShowAppTopBar(route: String?): Boolean {
-    return route == NaviRoute.ROOM.route ||
-            route == NaviRoute.LAN_DISCOVERY.route ||
+    return route == NaviRoute.LAN_DISCOVERY.route ||
             route == NaviRoute.LAN_CREATE_ROOM.route ||
             route == NaviRoute.LAN_LOBBY.route
 }

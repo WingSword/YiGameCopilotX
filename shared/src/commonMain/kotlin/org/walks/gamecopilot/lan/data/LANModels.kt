@@ -26,7 +26,36 @@ enum class GameType(val displayName: String) {
     RANDOM_TOOLS("随机工具"),
     MONOPOLY("大富翁"),
     ONE_NIGHT_WEREWOLF("一夜终极狼人"),
-    ALL("全部")
+    ALL("全部");
+
+    val minimumPlayers: Int
+        get() = when (this) {
+            LOCAL_SPY, HUNT_TOWN -> 4
+            AWALONG -> 5
+            DRAW_GUESS, ONE_NIGHT_WEREWOLF -> 3
+            else -> 2
+        }
+
+    val maximumPlayers: Int
+        get() = when (this) {
+            LOCAL_SPY -> 16
+            AWALONG, DRAW_GUESS, ONE_NIGHT_WEREWOLF -> 10
+            HUNT_TOWN -> 12
+            else -> 10
+        }
+
+    val isLanSupported: Boolean
+        get() = this in lanSupportedTypes
+
+    companion object {
+        val lanSupportedTypes = listOf(
+            LOCAL_SPY,
+            AWALONG,
+            HUNT_TOWN,
+            DRAW_GUESS,
+            ONE_NIGHT_WEREWOLF
+        )
+    }
 }
 
 @Serializable
@@ -57,6 +86,12 @@ data class LANMessage(
     val playerName: String = "",
     val payload: String = "",
     val timestamp: Long = Clock.System.now().toEpochMilliseconds()
+)
+
+@Serializable
+data class LANReadyAction(
+    val action: String = "READY",
+    val ready: Boolean
 )
 
 @Serializable

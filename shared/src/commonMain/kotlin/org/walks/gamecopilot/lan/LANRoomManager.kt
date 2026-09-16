@@ -27,6 +27,7 @@ import org.walks.gamecopilot.lan.data.LANGameState
 import org.walks.gamecopilot.lan.data.LANMessage
 import org.walks.gamecopilot.lan.data.LANMessageType
 import org.walks.gamecopilot.lan.data.LANPlayer
+import org.walks.gamecopilot.lan.data.LANReadyAction
 import org.walks.gamecopilot.lan.data.LANRoomInfo
 import org.walks.gamecopilot.lan.data.LANRoomState
 import org.walks.gamecopilot.lan.discovery.ServiceDiscovery
@@ -37,7 +38,12 @@ import kotlin.time.Clock
 
 class LANRoomManager {
     
-    private val json = Json { ignoreUnknownKeys = true }
+    private val json = Json {
+        ignoreUnknownKeys = true
+        // READY 的 action 字段有默认值；跨端协议要求它仍然写入 JSON，
+        // 否则鸿蒙端会把 {"ready":true} 当作普通游戏动作。
+        encodeDefaults = true
+    }
     private val scope = CoroutineScope(Dispatchers.Default + SupervisorJob())
     
     private var discovery: ServiceDiscovery = createServiceDiscovery()
@@ -87,6 +93,9 @@ class LANRoomManager {
     fun startDiscovery(gameType: GameType = GameType.ALL) {
         scope.launch {
             if (_currentRoom.value != null) return@launch
+            val supportedFilter = gameType.takeIf {
+                it == GameType.ALL || it.isLanSupported
+            } ?: GameType.ALL
             _connectionState.value = LANConnectionState(ConnectionStatus.DISCOVERING)
             discoveryRoomsJob?.cancel()
             discoveryRoomsJob = discovery.discoveredRooms
@@ -104,7 +113,7 @@ class LANRoomManager {
                 }
                 .launchIn(scope)
 
-            discovery.startDiscovery(gameType.name)
+            discovery.startDiscovery(supportedFilter.name)
         }
     }
     
@@ -134,6 +143,30 @@ class LANRoomManager {
             GameLogger.warning("服务器已在运行")
             return false
         }
+        if (!gameType.isLanSupported) {
+            scope.launch {
+                _errors.emit(
+                    LANError(
+                        LANErrorCodes.NETWORK_ERROR,
+                        "当前版本不支持${gameType.displayName}局域网房间",
+                        true
+                    )
+                )
+            }
+            return false
+        }
+        if (maxPlayers !in gameType.minimumPlayers..gameType.maximumPlayers) {
+            scope.launch {
+                _errors.emit(
+                    LANError(
+                        LANErrorCodes.NETWORK_ERROR,
+                        "${gameType.displayName}房间人数需为 ${gameType.minimumPlayers}-${gameType.maximumPlayers} 人",
+                        true
+                    )
+                )
+            }
+            return false
+        }
         
         scope.launch {
             _connectionState.value = LANConnectionState(ConnectionStatus.CONNECTING)
@@ -146,6 +179,13 @@ class LANRoomManager {
             }
             
             val localIp = hostServer.getLocalIpAddress()
+            if (localIp.isBlank() || localIp == "127.0.0.1") {
+                hostServer.stop()
+                val message = "未找到可用的局域网地址，请先连接 WiFi"
+                _errors.emit(LANError(LANErrorCodes.NETWORK_ERROR, message, true))
+                _connectionState.value = LANConnectionState(ConnectionStatus.ERROR, message)
+                return@launch
+            }
             val roomId = generateRoomId()
             
             val roomInfo = LANRoomInfo(
@@ -208,6 +248,12 @@ class LANRoomManager {
     fun joinRoom(roomInfo: LANRoomInfo, playerName: String, password: String = ""): Boolean {
         if (client.isConnected) {
             GameLogger.warning("已连接到其他房间")
+            return false
+        }
+        if (!roomInfo.gameType.isLanSupported) {
+            scope.launch {
+                _errors.emit(LANError(LANErrorCodes.ROOM_NOT_FOUND, "当前版本不支持该房间玩法", false))
+            }
             return false
         }
         
@@ -300,18 +346,50 @@ class LANRoomManager {
             }
             return
         }
-        
+
+        val room = _currentRoom.value ?: return
+        val minimumPlayers = room.roomInfo.gameType.minimumPlayers
+        if (room.players.size < minimumPlayers) {
+            scope.launch {
+                _errors.emit(
+                    LANError(
+                        LANErrorCodes.GAME_NOT_STARTED,
+                        "${room.roomInfo.gameType.displayName}至少需要 $minimumPlayers 名玩家",
+                        true
+                    )
+                )
+            }
+            return
+        }
+        val notReady = room.players.filter { !it.isHost && !it.isReady }
+        if (notReady.isNotEmpty()) {
+            scope.launch {
+                _errors.emit(
+                    LANError(
+                        LANErrorCodes.GAME_NOT_STARTED,
+                        notReady.joinToString("、") { it.name } + " 尚未准备",
+                        true
+                    )
+                )
+            }
+            return
+        }
+
         scope.launch {
+            val roundState = "round:${Clock.System.now().toEpochMilliseconds()}"
+            _currentRoom.value = room.copy(
+                gameState = roundState,
+                gameStarted = true,
+                updatedAt = Clock.System.now().toEpochMilliseconds()
+            )
+            discovery.stopBroadcasting()
             val message = LANMessage(
                 type = LANMessageType.START_GAME,
-                roomId = _currentRoom.value?.roomInfo?.roomId ?: ""
+                roomId = room.roomInfo.roomId,
+                payload = roundState
             )
             broadcastGameAction(message)
-            
-            _currentRoom.value?.let { state ->
-                _currentRoom.value = state.copy(gameStarted = true)
-                broadcastRoomState()
-            }
+            broadcastRoomState()
             
             GameLogger.info("游戏已开始")
         }
@@ -321,18 +399,51 @@ class LANRoomManager {
         if (!_isHost.value) return
         
         scope.launch {
+            val room = _currentRoom.value ?: return@launch
+            if (!room.gameStarted) return@launch
+            val resetPlayers = room.players.map { player ->
+                player.copy(isReady = player.isHost)
+            }
+            _players.value = resetPlayers
+            _currentRoom.value = room.copy(
+                players = resetPlayers,
+                gameState = "",
+                gameStarted = false,
+                updatedAt = Clock.System.now().toEpochMilliseconds()
+            )
             val message = LANMessage(
                 type = LANMessageType.END_GAME,
-                roomId = _currentRoom.value?.roomInfo?.roomId ?: ""
+                roomId = room.roomInfo.roomId
             )
             broadcastGameAction(message)
-            
-            _currentRoom.value?.let { state ->
-                _currentRoom.value = state.copy(gameStarted = false)
-                broadcastRoomState()
-            }
+            discovery.broadcastPresence(room.roomInfo.copy(currentPlayers = resetPlayers.size))
+            broadcastRoomState()
             
             GameLogger.info("游戏已结束")
+        }
+    }
+
+    /** 非房主在等待阶段切换准备状态。房主始终视为已准备。 */
+    fun toggleReady() {
+        if (_isHost.value) return
+        val room = _currentRoom.value ?: return
+        if (room.gameStarted) return
+        val playerId = currentPlayerId ?: return
+        val player = room.players.firstOrNull { it.id == playerId } ?: return
+        if (player.isHost) return
+        val ready = !player.isReady
+
+        applyReadyState(playerId, ready)
+        scope.launch {
+            client.sendMessage(
+                LANMessage(
+                    type = LANMessageType.GAME_ACTION,
+                    roomId = room.roomInfo.roomId,
+                    playerId = playerId,
+                    playerName = player.name,
+                    payload = json.encodeToString(LANReadyAction(ready = ready))
+                )
+            )
         }
     }
     
@@ -400,6 +511,14 @@ class LANRoomManager {
                         hostServer.kickPlayer(playerId, "房间不存在")
                     }
 
+                    message.roomId != room.roomInfo.roomId -> {
+                        hostServer.kickPlayer(playerId, "房间不存在")
+                    }
+
+                    room.gameStarted -> {
+                        hostServer.kickPlayer(playerId, "本局已经开始，请等待下一局")
+                    }
+
                     currentRoomPassword.isNotEmpty() && message.payload != currentRoomPassword -> {
                         hostServer.kickPlayer(playerId, "房间密码错误")
                     }
@@ -422,7 +541,13 @@ class LANRoomManager {
                 broadcastRoomState()
             }
             LANMessageType.GAME_ACTION -> {
-                broadcastGameAction(message.copy(playerId = playerId))
+                val readyAction = decodeReadyAction(message.payload)
+                if (readyAction != null) {
+                    applyReadyState(playerId, readyAction.ready)
+                    broadcastRoomState()
+                } else {
+                    broadcastGameAction(message.copy(playerId = playerId))
+                }
             }
             else -> {
                 GameLogger.debug("主机收到消息: ${message.type}")
@@ -441,12 +566,17 @@ class LANRoomManager {
                 }
             }
             LANMessageType.GAME_ACTION -> {
-                _gameStateUpdates.emit(
-                    LANGameState(
-                        gameType = GameType.ALL,
-                        rawData = message.payload
+                val readyAction = decodeReadyAction(message.payload)
+                if (readyAction != null && message.playerId.isNotBlank()) {
+                    applyReadyState(message.playerId, readyAction.ready)
+                } else {
+                    _gameStateUpdates.emit(
+                        LANGameState(
+                            gameType = GameType.ALL,
+                            rawData = message.payload
+                        )
                     )
-                )
+                }
             }
             LANMessageType.ROOM_STATE_SYNC -> {
                 try {
@@ -474,12 +604,23 @@ class LANRoomManager {
             }
             LANMessageType.START_GAME -> {
                 _currentRoom.value?.let { state ->
-                    _currentRoom.value = state.copy(gameStarted = true)
+                    _currentRoom.value = state.copy(
+                        gameState = message.payload.ifBlank { state.gameState },
+                        gameStarted = true,
+                        updatedAt = Clock.System.now().toEpochMilliseconds()
+                    )
                 }
             }
             LANMessageType.END_GAME -> {
                 _currentRoom.value?.let { state ->
-                    _currentRoom.value = state.copy(gameStarted = false)
+                    val resetPlayers = state.players.map { it.copy(isReady = it.isHost) }
+                    _players.value = resetPlayers
+                    _currentRoom.value = state.copy(
+                        players = resetPlayers,
+                        gameState = "",
+                        gameStarted = false,
+                        updatedAt = Clock.System.now().toEpochMilliseconds()
+                    )
                 }
             }
             LANMessageType.ROOM_CLOSED -> {
@@ -498,6 +639,7 @@ class LANRoomManager {
     private fun updatePlayerList(newPlayers: List<LANPlayer>) {
         latestServerPlayers = newPlayers
         acceptedPlayerIds.retainAll(newPlayers.map { it.id }.toSet() + setOfNotNull(hostPlayer?.id))
+        val currentPlayersById = _players.value.associateBy { it.id }
         val normalizedPlayers = buildList {
             hostPlayer?.let { add(it) }
             newPlayers
@@ -505,7 +647,12 @@ class LANRoomManager {
                 .filter { it.id in acceptedPlayerIds }
                 .sortedBy { it.connectedAt }
                 .forEachIndexed { index, player ->
-                    add(player.copy(playerIndex = index + 1))
+                    add(
+                        player.copy(
+                            isReady = currentPlayersById[player.id]?.isReady ?: false,
+                            playerIndex = index + 1
+                        )
+                    )
                 }
         }
         _players.value = normalizedPlayers
@@ -540,6 +687,25 @@ class LANRoomManager {
                 roomInfo = state.roomInfo.copy(currentPlayers = currentList.size)
             )
         }
+    }
+
+    private fun applyReadyState(playerId: String, ready: Boolean) {
+        val room = _currentRoom.value ?: return
+        if (room.gameStarted) return
+        val updatedPlayers = room.players.map { player ->
+            if (player.id == playerId && !player.isHost) player.copy(isReady = ready) else player
+        }
+        _players.value = updatedPlayers
+        _currentRoom.value = room.copy(
+            players = updatedPlayers,
+            updatedAt = Clock.System.now().toEpochMilliseconds()
+        )
+    }
+
+    private fun decodeReadyAction(payload: String): LANReadyAction? = try {
+        json.decodeFromString<LANReadyAction>(payload).takeIf { it.action == "READY" }
+    } catch (_: Exception) {
+        null
     }
     
     private fun generateRoomId(): String {

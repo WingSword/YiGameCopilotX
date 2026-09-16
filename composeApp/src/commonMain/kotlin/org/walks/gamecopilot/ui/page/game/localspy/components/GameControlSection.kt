@@ -9,7 +9,6 @@ import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -23,18 +22,19 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Create
+import androidx.compose.material.icons.rounded.PlayArrow
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import org.walks.gamecopilot.PlatformHelper
 import org.walks.gamecopilot.intent.GameIntent
+import org.walks.gamecopilot.ui.components.AppPrimaryAction
 
 /**
  * 游戏控制区域组件
@@ -67,11 +67,9 @@ fun GameControlSection(
     ) {
         // 开始游戏按钮 - 大尺寸
         val canStartGame = currentWords.isNotEmpty()
-        GameControlButton(
+        AppPrimaryAction(
             text = if (gameTimeState == 0) "开始游戏" else "重新开始",
             onClick = {
-                if (!canStartGame) return@GameControlButton
-                
                 if (gameTimeState == 0) {
                     onGameTimeStateChange(gameTimeState + 1)
                 }
@@ -82,9 +80,8 @@ fun GameControlSection(
                 // 重新开始时重置身份公布状态
                 onShowAllIdentities(false)
             },
-            color = if (!canStartGame) MaterialTheme.colorScheme.outline.copy(alpha = 0.5f) 
-                   else if (gameTimeState == 0) MaterialTheme.colorScheme.primary 
-                   else MaterialTheme.colorScheme.secondary
+            enabled = canStartGame,
+            icon = Icons.Rounded.PlayArrow
         )
 
         Spacer(modifier = Modifier.height(12.dp))
@@ -110,7 +107,6 @@ fun GameControlSection(
         )
     }
 }
-
 /**
  * 游戏状态显示组件
  * 根据不同游戏状态显示相应的提示信息
@@ -254,45 +250,6 @@ fun GameStatusDisplay(
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             textAlign = TextAlign.Center,
             fontWeight = FontWeight.Medium
-        )
-    }
-}
-
-/**
- * 游戏控制按钮组件
- * 大尺寸的主要操作按钮
- * 
- * @param text 按钮文字
- * @param onClick 点击回调
- * @param color 按钮颜色
- */
-@Composable
-fun GameControlButton(
-    text: String,
-    onClick: () -> Unit,
-    color: Color = MaterialTheme.colorScheme.primary
-) {
-    Box(
-        modifier = Modifier
-            .fillMaxWidth()
-            .height(80.dp)
-            .clickable { onClick() }
-            .background(
-                color = color,
-                shape = RoundedCornerShape(12.dp)
-            )
-            .border(
-                width = 2.dp,
-                color = color.copy(alpha = 0.3f),
-                shape = RoundedCornerShape(12.dp)
-            ),
-        contentAlignment = Alignment.Center
-    ) {
-        Text(
-            text = text,
-            style = MaterialTheme.typography.titleMedium,
-            color = MaterialTheme.colorScheme.onPrimary,
-            fontWeight = FontWeight.Bold
         )
     }
 }

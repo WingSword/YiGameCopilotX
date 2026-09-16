@@ -250,7 +250,7 @@ fun AllResultsDialog(
 private fun GameSummarySection(gameState: AwalongGameState) {
     val successCount = gameState.dayList.count { it.taskResult == 1 }
     val failureCount = gameState.dayList.count { it.taskResult == -1 }
-    val totalTasks = gameState.dayList.size
+    val totalTasks = successCount + failureCount
 
     // 检查是否有刺客刺杀成功的情况
     val hasAssassin = gameState.roleList.contains(AwalongRole.CISHA)
@@ -265,8 +265,6 @@ private fun GameSummarySection(gameState: AwalongGameState) {
         // 正常任务胜利条件
         failureCount >= 3 -> "坏人胜利"
         successCount >= 3 -> "好人胜利"
-        totalTasks >= 5 && successCount >= 3 -> "好人胜利"
-        totalTasks >= 5 && failureCount >= 2 -> "坏人胜利"
         else -> "游戏进行中"
     }
     
@@ -365,9 +363,11 @@ private fun GameSummarySection(gameState: AwalongGameState) {
             
             // 胜利条件说明
             Text(
-                text = when (gameResult) {
-                    "好人胜利" -> "好人完成了3次任务成功，获得胜利！"
-                    "坏人胜利" -> "坏人完成了3次任务失败，获得胜利！"
+                text = when {
+                    hasAssassin && assassinationResult == true -> "刺客成功刺杀梅林，坏人获得胜利！"
+                    hasAssassin && assassinationResult == false -> "刺客未能刺杀梅林，好人获得胜利！"
+                    gameResult == "好人胜利" -> "好人完成了3次任务成功，获得胜利！"
+                    gameResult == "坏人胜利" -> "坏人破坏了3次任务，获得胜利！"
                     else -> "游戏仍在进行中..."
                 },
                 fontSize = 14.sp,

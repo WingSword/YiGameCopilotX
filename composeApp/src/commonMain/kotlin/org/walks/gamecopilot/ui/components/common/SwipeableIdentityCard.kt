@@ -29,6 +29,7 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -98,6 +99,7 @@ fun SwipeableIdentityCardShell(
     rotateTarget: Float = 360f,
     snapOffset: Float = 300f,
     onClose: () -> Unit = {},
+    onRevealed: () -> Unit = {},
     showProgressBar: Boolean = true,
     showSideBorders: Boolean = true,
     hiddenContent: @Composable () -> Unit,
@@ -196,6 +198,7 @@ fun SwipeableIdentityCardShell(
                                         )
                                         PlatformHelper.getInstance().vibrateMethod()
                                         showIdentity = !showIdentity
+                                        if (showIdentity) onRevealed()
                                         hasSwitched = true
                                         cardSlide.snapTo(-direction * snapOffset)
                                         cardSlide.animateTo(
@@ -288,6 +291,12 @@ fun SwipeableIdentityCardShell(
                 }
             }
         }
+
+        TextButton(onClick = {
+            showIdentity = !showIdentity
+            hasSwitched = true
+            if (showIdentity) onRevealed()
+        }, enabled = !isSwitchAnimating) { Text(if (showIdentity) "隐藏身份" else "点击查看身份") }
 
         // 底部滑动提示
         if (!hasSwitched) {

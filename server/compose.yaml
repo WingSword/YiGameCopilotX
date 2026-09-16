@@ -1,0 +1,23 @@
+services:
+  rooms:
+    build: .
+    restart: unless-stopped
+    environment:
+      ADMIN_TOKEN: ${ADMIN_TOKEN:?Set ADMIN_TOKEN in .env}
+      WEB_ORIGINS: ${WEB_ORIGINS:-}
+      PUBLIC_WEB_URL: ${PUBLIC_WEB_URL:-}
+    ports:
+      - "${BIND_ADDRESS:-127.0.0.1}:8080:8080"
+    volumes:
+      - rooms-data:/app/data
+    read_only: true
+    tmpfs:
+      - /tmp
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    mem_limit: 384m
+    cpus: 1.0
+volumes:
+  rooms-data:

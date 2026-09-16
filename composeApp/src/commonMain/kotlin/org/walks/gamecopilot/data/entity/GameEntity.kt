@@ -27,10 +27,9 @@ data class LocalSpyEntity(
 
     // 基于洗牌法的安全实现
     private fun getUniqueRandomBatch() {
-        if (totalPlayerNumber / 3 < spyNum) {
-            spyNum = totalPlayerNumber / 3
-        }
-        require(totalPlayerNumber >= 0) { "区间至少需要2个数字" }
+        totalPlayerNumber = totalPlayerNumber.coerceIn(4, 16)
+        spyNum = spyNum.coerceIn(1, totalPlayerNumber / 3)
+        blackNum = blackNum.coerceIn(0, spyNum)
         spies = (1..totalPlayerNumber).shuffled().take(spyNum)
     }
 
@@ -59,11 +58,7 @@ data class LocalSpyEntity(
 
     fun optIdentity(currentSelectPlayer: Int): String {
         if (!spies.contains(currentSelectPlayer)) return gameWord
-        for (i in 0..<blackNum) {
-            if (spies[i] == currentSelectPlayer) {
-                return "[空白]"
-            }
-        }
+        if (currentSelectPlayer in spies.take(blackNum.coerceAtLeast(0))) return "[空白]"
         return spyWord
     }
 

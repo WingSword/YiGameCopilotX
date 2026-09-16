@@ -39,6 +39,15 @@ kotlin {
     iosArm64()
     iosSimulatorArm64()
 
+    // HarmonyOS target — 基于 linuxArm64 (鸿蒙内核是 Linux, ELF ABI 兼容)
+    linuxArm64("ohosArm64") {
+        binaries {
+            sharedLib {
+                baseName = "shared"
+            }
+        }
+    }
+
     sourceSets {
         commonMain.dependencies {
             implementation(libs.ktor.client.core)
@@ -48,12 +57,11 @@ kotlin {
             implementation(libs.kotlinx.coroutines.core)
             api(libs.jetbrains.serialization.kotlinx.json)
             implementation(libs.kotlinx.datetime)
-            implementation(libs.napier)
             implementation(libs.multiplatform.settings)
-            implementation(libs.multiplatform.settings.no.arg)
         }
 
         androidMain.dependencies {
+            implementation(libs.multiplatform.settings.no.arg)
             implementation(libs.androidx.room.ktx)
             implementation(libs.io.ktor.ktor.client.android11)
             implementation(libs.ktor.client.cio)
@@ -64,11 +72,25 @@ kotlin {
         }
 
         iosMain.dependencies {
+            implementation(libs.multiplatform.settings.no.arg)
             implementation(libs.ktor.client.darwin)
         }
 
         wasmJsMain.dependencies {
+            implementation(libs.multiplatform.settings.no.arg)
             implementation("io.ktor:ktor-client-js:3.3.3")
+        }
+
+        val ohosArm64Main by getting {
+            dependencies {
+                implementation(libs.ktor.client.core)
+                implementation(libs.ktor.client.content.negotiation)
+                implementation(libs.ktor.serialization.kotlinx.json)
+                implementation(libs.kotlinx.coroutines.core)
+                api(libs.jetbrains.serialization.kotlinx.json)
+                implementation(libs.multiplatform.settings)
+                implementation("io.ktor:ktor-client-curl:3.3.3")
+            }
         }
     }
 }

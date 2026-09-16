@@ -26,9 +26,9 @@ import androidx.compose.ui.unit.dp
  * 定义应用中使用的所有颜色，支持亮色和暗色模式
  */
 data class AppColors(
-    val primary: Color = Color(0xFF1FCB8A),
-    val primaryVariant: Color = Color(0xFF12A36D),
-    val primaryLight: Color = Color(0xFFE9FBF4),
+    val primary: Color = Color(0xFF43E889),
+    val primaryVariant: Color = Color(0xFF18B862),
+    val primaryLight: Color = Color(0xFFE0F8E9),
     
     val secondary: Color = Color(0xFF5B6678),
     val secondaryVariant: Color = Color(0xFF3B4554),
@@ -107,17 +107,17 @@ data class AppSpacing(
  */
 data class AppCornerRadius(
     val none: Dp = 0.dp,
-    val xs: Dp = 4.dp,
-    val sm: Dp = 6.dp,
-    val md: Dp = 8.dp,
-    val lg: Dp = 12.dp,
-    val xl: Dp = 16.dp,
+    val xs: Dp = 6.dp,
+    val sm: Dp = 8.dp,
+    val md: Dp = 10.dp,
+    val lg: Dp = 14.dp,
+    val xl: Dp = 20.dp,
     val xxl: Dp = 20.dp,
     val xxxl: Dp = 28.dp,
     val full: Dp = 9999.dp,
 
-    val button: Dp = 12.dp,
-    val card: Dp = 16.dp,
+    val button: Dp = 10.dp,
+    val card: Dp = 14.dp,
     val dialog: Dp = 20.dp,
     val input: Dp = 10.dp,
     val badge: Dp = 8.dp,
@@ -137,11 +137,11 @@ data class AppElevation(
     val lg: Dp = 14.dp,
     val xl: Dp = 22.dp,
     
-    val card: Dp = 6.dp,
-    val button: Dp = 4.dp,
-    val dialog: Dp = 16.dp,
-    val dropdown: Dp = 10.dp,
-    val appBar: Dp = 6.dp,
+    val card: Dp = 0.dp,
+    val button: Dp = 0.dp,
+    val dialog: Dp = 12.dp,
+    val dropdown: Dp = 8.dp,
+    val appBar: Dp = 0.dp,
 )
 
 /**

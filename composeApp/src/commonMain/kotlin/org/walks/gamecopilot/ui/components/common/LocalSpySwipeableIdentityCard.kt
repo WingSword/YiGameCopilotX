@@ -29,7 +29,8 @@ fun LocalSpySwipeableIdentityCard(
     nickname: String,
     identity: String,
     isSpy: Boolean,
-    onClose: () -> Unit = {}
+    onClose: () -> Unit = {},
+    onRevealed: () -> Unit = {}
 ) {
     val accentColor = if (isSpy) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.primary
     val colors = rememberIdentityCardColors().copy(accent = accentColor)
@@ -39,6 +40,7 @@ fun LocalSpySwipeableIdentityCard(
         cardWidth = 300.dp,
         cardHeight = 470.dp,
         onClose = onClose,
+        onRevealed = onRevealed,
         colors = colors,
         hiddenContent = {
             LocalSpyHiddenFace(
@@ -73,7 +75,7 @@ private fun LocalSpyHiddenFace(
             text = "PLAYER $playerNumber",
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             fontSize = 14.sp,
-            letterSpacing = 1.sp
+            letterSpacing = 0.sp
         )
         Spacer(modifier = Modifier.height(10.dp))
         Spacer(

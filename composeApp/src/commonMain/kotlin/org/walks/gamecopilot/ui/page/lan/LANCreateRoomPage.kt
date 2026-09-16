@@ -65,8 +65,7 @@ fun LANCreateRoomPage(
     var hostName by remember { mutableStateOf("") }
     var selectedGameType by remember(lanState.preferredGameType) {
         mutableStateOf(
-            if (lanState.preferredGameType == GameType.ALL) GameType.LOCAL_SPY
-            else lanState.preferredGameType
+            lanState.preferredGameType.takeIf { it.isLanSupported } ?: GameType.LOCAL_SPY
         )
     }
     var maxPlayers by remember { mutableStateOf("8") }
@@ -76,7 +75,10 @@ fun LANCreateRoomPage(
     var pendingCreate by remember { mutableStateOf(false) }
     var formError by remember { mutableStateOf<String?>(null) }
     
-    val isFormValid = roomName.isNotBlank() && hostName.isNotBlank() && maxPlayers.toIntOrNull()?.let { it in 2..20 } == true
+    val playerRange = selectedGameType.minimumPlayers..selectedGameType.maximumPlayers
+    val isFormValid = roomName.isNotBlank() &&
+            hostName.isNotBlank() &&
+            maxPlayers.toIntOrNull()?.let { it in playerRange } == true
     val canSubmit = isFormValid && !pendingCreate
 
     LaunchedEffect(
@@ -174,7 +176,10 @@ fun LANCreateRoomPage(
                     }
                 },
                 label = { Text("最大玩家数") },
-                placeholder = { Text("2-20") },
+                placeholder = { Text("${playerRange.first}-${playerRange.last}") },
+                supportingText = {
+                    Text("${selectedGameType.displayName}支持 ${playerRange.first}-${playerRange.last} 人")
+                },
                 singleLine = true,
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                 modifier = Modifier.fillMaxWidth(),
@@ -268,6 +273,9 @@ fun LANCreateRoomPage(
             onDismiss = { showGameTypeDialog = false },
             onConfirm = { type ->
                 selectedGameType = type
+                maxPlayers = (maxPlayers.toIntOrNull() ?: 8)
+                    .coerceIn(type.minimumPlayers, type.maximumPlayers)
+                    .toString()
                 showGameTypeDialog = false
             }
         )
@@ -303,7 +311,7 @@ private fun GameTypeSelectionDialog(
         }
     ) {
             Column {
-                GameType.values().filter { it != GameType.ALL }.forEach { type ->
+                GameType.lanSupportedTypes.forEach { type ->
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()

@@ -1,5 +1,8 @@
 package org.walks.gamecopilot.data
 
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.builtins.ListSerializer
 import kotlinx.serialization.json.Json
@@ -24,10 +27,8 @@ data class GameRecord(
 /**
  * 单机游戏数据统计管理器
  *
- * 设计说明（暂定方案）：
- * - 在 HomePage -> navigateByMode（单机入口）统一记录每局开始
- * - 不侵入各游戏内部状态机，保证改动面小、风险低
- * - 数据持久化到 MMKV，格式为 JSON 列表
+ * 仅在游戏真正开始后写入记录，并在对应游戏结束时补全结果与时长。
+ * 数据持久化到 MMKV，同时通过 [recordsFlow] 向界面发布最新快照。
  */
 object GameStatsManager {
 
@@ -36,24 +37,41 @@ object GameStatsManager {
         encodeDefaults = true
     }
     private val recordLimit = 200
+    private const val rapidStartGuardMillis = 1_500L
 
     private val records = mutableListOf<GameRecord>()
+    private val _recordsFlow = MutableStateFlow<List<GameRecord>>(emptyList())
 
     val allRecords: List<GameRecord> get() = records.toList()
+    val recordsFlow: StateFlow<List<GameRecord>> = _recordsFlow.asStateFlow()
 
     init {
         loadFromStorage()
     }
 
     /**
-     * 记录一局单机游戏开始（在进入游戏页时调用）
+     * 记录一局单机游戏开始。
+     *
+     * 相同玩法、相同人数的未结算记录在 1.5 秒内只保留一条，避免重复点击或
+     * Compose 重组导致重复计数。
      */
     fun recordGameStart(gameMode: GameMode, playerCount: Int) {
         val now = Clock.System.now().toEpochMilliseconds()
+        val safePlayerCount = playerCount.coerceAtLeast(0)
+        val lastRecord = records.lastOrNull()
+        if (
+            lastRecord != null &&
+            lastRecord.gameModeOrdinal == gameMode.ordinal &&
+            lastRecord.playerCount == safePlayerCount &&
+            lastRecord.winner.isEmpty() &&
+            now - lastRecord.startTime in 0 until rapidStartGuardMillis
+        ) {
+            return
+        }
         val record = GameRecord(
             gameModeOrdinal = gameMode.ordinal,
             gameModeName = gameMode.title,
-            playerCount = playerCount.coerceAtLeast(0),
+            playerCount = safePlayerCount,
             startTime = now,
             durationMillis = 0L,
             winner = ""
@@ -62,11 +80,12 @@ object GameStatsManager {
         if (records.size > recordLimit) {
             records.subList(0, records.size - recordLimit).clear()
         }
-        saveToStorage()
+        persistAndPublish()
     }
 
     /**
-     * 更新最近一局的结果（结束时调用，暂未在游戏内部埋点，留作后续扩展）
+     * 更新最后一条记录的结果。保留此接口以兼容已有调用；新代码应优先使用
+     * [completeLatestGame]，避免将结果误写到其他玩法。
      */
     fun updateLastRecordResult(winner: String, durationMillis: Long = 0L) {
         if (records.isEmpty()) return
@@ -75,7 +94,25 @@ object GameStatsManager {
             winner = winner,
             durationMillis = durationMillis
         )
-        saveToStorage()
+        persistAndPublish()
+    }
+
+    /**
+     * 完成最近一局尚未结算的指定游戏，并根据开局时间计算对局时长。
+     */
+    fun completeLatestGame(gameMode: GameMode, winner: String) {
+        val recordIndex = records.indexOfLast {
+            it.gameModeOrdinal == gameMode.ordinal && it.winner.isEmpty()
+        }
+        if (recordIndex < 0) return
+
+        val now = Clock.System.now().toEpochMilliseconds()
+        val record = records[recordIndex]
+        records[recordIndex] = record.copy(
+            winner = winner,
+            durationMillis = (now - record.startTime).coerceAtLeast(0L)
+        )
+        persistAndPublish()
     }
 
     /**
@@ -106,10 +143,16 @@ object GameStatsManager {
             val raw = MMKVUtils.getString(MMKV_GAME_STATS_KEY, "")
             if (raw.isNotEmpty()) {
                 records.clear()
-                records.addAll(json.decodeFromString(ListSerializer(GameRecord.serializer()), raw))
+                records.addAll(
+                    json.decodeFromString(ListSerializer(GameRecord.serializer()), raw)
+                        .takeLast(recordLimit)
+                )
             }
         } catch (_: Exception) {
             // 解析失败时保持空记录，不阻塞 UI
+            records.clear()
+        } finally {
+            publishRecords()
         }
     }
 
@@ -122,11 +165,20 @@ object GameStatsManager {
         }
     }
 
+    private fun persistAndPublish() {
+        saveToStorage()
+        publishRecords()
+    }
+
+    private fun publishRecords() {
+        _recordsFlow.value = records.toList()
+    }
+
     /**
      * 清空所有统计（用于设置页"清除数据"等场景）
      */
     fun clearAll() {
         records.clear()
-        saveToStorage()
+        persistAndPublish()
     }
 }

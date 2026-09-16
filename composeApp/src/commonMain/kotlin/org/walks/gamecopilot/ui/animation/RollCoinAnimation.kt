@@ -1,5 +1,7 @@
 package org.walks.gamecopilot.ui.animation
 
+import org.walks.gamecopilot.theme.RandomToolDesign as D
+
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.AnimationVector1D
 import androidx.compose.animation.core.FastOutSlowInEasing
@@ -16,7 +18,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.shadow
@@ -48,7 +50,8 @@ import kotlin.time.ExperimentalTime
 fun RollCoinAnimation(
     onFlipComplete: (Boolean) -> Unit,
     modifier: Modifier = Modifier,
-    isRolling: Boolean = false,
+    trigger: Long = 0L,
+    resultIsHeads: Boolean? = null,
     frontText: String = "正",
     backText: String = "反"
 ) {
@@ -56,52 +59,40 @@ fun RollCoinAnimation(
     val rotationY = remember { Animatable(0f) }
     val tiltX = remember { Animatable(0f) }
     val edgeGlow = remember { Animatable(0f) }
-    val jumpDistancePx = with(LocalDensity.current) { 34.dp.toPx() }
-    val scope = rememberCoroutineScope()
+    val jumpDistancePx = with(LocalDensity.current) { D.coinLift.dp.toPx() }
+    val latestOnFlipComplete = rememberUpdatedState(onFlipComplete)
 
-    LaunchedEffect(isRolling) {
-        if (isRolling) {
-            scope.launch {
-                val isHeads = Random.nextBoolean()
-                // 并行执行动画和震动
-                kotlinx.coroutines.coroutineScope {
-                    // 启动震动协程
-                    launch {
-                        val duration = 1000 // 动画总时长
-                        var lastVibrateTime = 0L
-                        val startTime = Clock.System.now().toEpochMilliseconds()
+    LaunchedEffect(trigger, resultIsHeads) {
+        if (trigger <= 0L || resultIsHeads == null) return@LaunchedEffect
 
-                        while (true) {
-                            val currentTime = Clock.System.now().toEpochMilliseconds()
-                            val elapsed = currentTime - startTime
+        val isHeads = resultIsHeads
+        // 新 trigger 会取消上一次翻转，不再依赖可能被抵消的 Boolean 开关。
+        kotlinx.coroutines.coroutineScope {
+            launch {
+                val duration = D.coinDuration.toInt()
+                var lastVibrateTime = 0L
+                val startTime = Clock.System.now().toEpochMilliseconds()
 
-                            if (elapsed >= duration) break
+                while (true) {
+                    val currentTime = Clock.System.now().toEpochMilliseconds()
+                    val elapsed = currentTime - startTime
+                    if (elapsed >= duration) break
 
-                            // 计算进度(0到1)
-                            val progress = elapsed.toFloat() / duration
-
-                            // 根据进度计算震动间隔，随时间线性增加
-                            // 开始时30ms，结束时300ms
-                            val vibrateInterval = (30 + progress * 270).toLong()
-
-                            // 检查是否应该震动
-                            if (currentTime - lastVibrateTime >= vibrateInterval) {
-                                PlatformHelper.getInstance().vibrateMethod()
-                                lastVibrateTime = currentTime
-                            }
-
-                            kotlinx.coroutines.delay(16)
-                        }
+                    val progress = elapsed.toFloat() / duration
+                    val vibrateInterval = (30 + progress * 270).toLong()
+                    if (currentTime - lastVibrateTime >= vibrateInterval) {
+                        PlatformHelper.getInstance().vibrateMethod()
+                        lastVibrateTime = currentTime
                     }
 
-                    // 执行翻转动画
-                    launch { flipCoinAnimation(rotationY, isHeads) }
-                    launch { tossJumpAnimation(jumpProgress, tiltX) }
-                    launch { edgeGlowAnimation(edgeGlow) }
+                    kotlinx.coroutines.delay(16)
                 }
-                onFlipComplete(isHeads)
             }
+            launch { flipCoinAnimation(rotationY, isHeads) }
+            launch { tossJumpAnimation(jumpProgress, tiltX) }
+            launch { edgeGlowAnimation(edgeGlow) }
         }
+        latestOnFlipComplete.value(isHeads)
     }
 
     Box(
@@ -135,7 +126,8 @@ fun RollCoinAnimation(
                     cameraDistance = 10f * density
                     translationY = -jumpDistancePx * jumpProgress.value
                     // 当旋转超过90度时隐藏正面
-                    alpha = if (rotationY.value <= 90f || rotationY.value >= 270f) 1f else 0f
+                    val normalizedRotation = rotationY.value.normalizedDegrees()
+                    alpha = if (normalizedRotation <= 90f || normalizedRotation >= 270f) 1f else 0f
                 }
         )
 
@@ -153,7 +145,8 @@ fun RollCoinAnimation(
                     cameraDistance = 10f * density
                     translationY = -jumpDistancePx * jumpProgress.value
                     // 当旋转在90-270度之间时显示反面
-                    alpha = if (rotationY.value > 90f && rotationY.value < 270f) 1f else 0f
+                    val normalizedRotation = rotationY.value.normalizedDegrees()
+                    alpha = if (normalizedRotation > 90f && normalizedRotation < 270f) 1f else 0f
                 }
         )
     }
@@ -166,21 +159,20 @@ private suspend fun flipCoinAnimation(
     rotationY: Animatable<Float, AnimationVector1D>,
     isHeads: Boolean
 ) {
-    // 快速翻转2-3圈
-    rotationY.animateTo(
-        targetValue = (720..1080).random().toFloat(),
-        animationSpec = tween(800, easing = FastOutSlowInEasing)
-    )
+    val finalAngle = if (isHeads) 0f else 180f
+    val currentAngle = rotationY.value.normalizedDegrees()
+    val clockwiseDelta = (finalAngle - currentAngle + 360f) % 360f
+    val targetAngle = rotationY.value + (4..6).random() * 360f + clockwiseDelta
 
-    // 按随机结果收敛到正面(0)或反面(180)
-    val targetAngle = if (isHeads) 0f else 180f
-
-    // 缓慢停止到最终位置
+    // 始终朝同一方向完成4-6圈，并精确停在本次随机结果上。
     rotationY.animateTo(
         targetValue = targetAngle,
-        animationSpec = tween(200)
+        animationSpec = tween(D.coinDuration.toInt(), easing = FastOutSlowInEasing)
     )
+    rotationY.snapTo(finalAngle)
 }
+
+private fun Float.normalizedDegrees(): Float = ((this % 360f) + 360f) % 360f
 
 private suspend fun tossJumpAnimation(
     jumpProgress: Animatable<Float, AnimationVector1D>,
@@ -224,8 +216,8 @@ fun CoinFace(
     edgeGlow: Float = 0f,
     modifier: Modifier = Modifier
 ) {
-    val faceBase = if (isHeads) Color(0xFFFFD26A) else Color(0xFFD6DBE3)
-    val faceDark = if (isHeads) Color(0xFFF1B938) else Color(0xFFAAB2BF)
+    val faceBase = if (isHeads) Color(D.coinFront) else Color(D.coinBack)
+    val faceDark = if (isHeads) Color(D.coinFrontEdge) else Color(D.coinBackEdge)
     val edgeBrush = Brush.sweepGradient(
         colors = listOf(
             Color.White.copy(alpha = 0.15f + edgeGlow * 0.35f),
@@ -255,7 +247,7 @@ fun CoinFace(
             text = text,
             fontSize = 24.sp,
             fontWeight = FontWeight.Bold,
-            color = if (isHeads) Color(0xFF8B4513) else Color(0xFF2F4F4F)
+            color = if (isHeads) Color(D.coinFrontInk) else Color(D.coinBackInk)
         )
     }
 }

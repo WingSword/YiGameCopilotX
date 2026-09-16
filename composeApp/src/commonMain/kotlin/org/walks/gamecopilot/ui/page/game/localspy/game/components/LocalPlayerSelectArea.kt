@@ -7,6 +7,8 @@ import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.grid.GridCells
@@ -56,9 +58,13 @@ fun LocalPlayerSelectArea(
     onClick: (Int) -> Unit,
     onLongClick: (Int) -> Unit
 ) {
-    // 创建4列的垂直网格布局
+    // The page owns vertical scrolling. Bound the grid to its finite rows so its
+    // lazy layout never receives an infinite height from the parent Scroll.
+    val rows = (playerNum + 3) / 4
     LazyVerticalGrid(
         GridCells.Fixed(4),
+        modifier = Modifier.fillMaxWidth().height((rows * 108 + (rows - 1).coerceAtLeast(0) * 8).dp),
+        userScrollEnabled = false,
         horizontalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(8.dp),
         verticalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(8.dp),
     ) {

@@ -112,13 +112,13 @@ data class AwalongCustomConfig(
  */
 private fun calculateProcess(totalPlayers: Int): List<Int> {
     return when (totalPlayers) {
-        5 -> listOf(2, 3, 2, 3) // 5人游戏：4轮任务
+        5 -> listOf(2, 3, 2, 3, 3) // 5人游戏：5轮任务
         6 -> listOf(2, 3, 4, 3, 4) // 6人游戏：5轮任务
         7 -> listOf(2, 3, 3, 4, 4) // 7人游戏：5轮任务
         8 -> listOf(3, 4, 4, 5, 5) // 8人游戏：5轮任务
         9 -> listOf(3, 4, 4, 5, 5) // 9人游戏：5轮任务
         10 -> listOf(3, 4, 4, 5, 5) // 10人游戏：5轮任务
-        else -> listOf(2, 3, 2, 3) // 默认5人配置
+        else -> listOf(2, 3, 2, 3, 3) // 默认5人配置
     }
 }
 
@@ -178,12 +178,11 @@ val PredefinedConfigs = listOf(
             AwalongRole.PAIXIWEIWEIER,
             AwalongRole.ZHONGCHEN,
             AwalongRole.ZHONGCHEN,
-            AwalongRole.ZHONGCHEN,
             AwalongRole.ZHONGCHEN
         ),
-        blueCount = 6,
+        blueCount = 5,
         redRoles = listOf(AwalongRole.MOGANNA, AwalongRole.CISHA, AwalongRole.SHAPESHIFTER),
-        redCount = 2
+        redCount = 3
     ),
 
     // 9人配置（带多个扩展角色）

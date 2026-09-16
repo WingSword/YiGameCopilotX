@@ -43,6 +43,8 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import org.walks.gamecopilot.PlatformHelper
+import org.walks.gamecopilot.data.GameStatsManager
+import org.walks.gamecopilot.data.entity.GameMode
 import org.walks.gamecopilot.intent.AiIntent
 import org.walks.gamecopilot.ui.components.AiMessageBubble
 import org.walks.gamecopilot.werewolf.components.WerewolfIdentityCard
@@ -89,6 +91,13 @@ fun WerewolfGamePage(
     val aiMessage by viewmodel.aiMessage.collectAsState()
     val isLoadingAi by viewmodel.isLoadingAi.collectAsState()
 
+    LaunchedEffect(gameState.phase, gameState.winner) {
+        if (gameState.phase == WerewolfGamePhase.GAME_OVER) {
+            val winnerText = WerewolfGameLogic.winnerText(gameState)
+            GameStatsManager.completeLatestGame(GameMode.ONE_NIGHT_WEREWOLF, winnerText)
+        }
+    }
+
     // 构建当前阶段的 AI 上下文
     val aiContext = when (gameState.phase) {
         WerewolfGamePhase.NIGHT_START -> "一夜终极狼人游戏：天黑了，所有玩家闭眼。请作为旁白播报氛围描述。"
@@ -116,7 +125,6 @@ fun WerewolfGamePage(
         // 暗色顶部栏 - 保持沉浸感
         WerewolfTopBar(
             title = when (gameState.phase) {
-                WerewolfGamePhase.SETUP -> "一夜终极狼人"
                 WerewolfGamePhase.DEAL_CARDS -> "查看身份"
                 WerewolfGamePhase.NIGHT_START -> "夜幕降临"
                 WerewolfGamePhase.NIGHT_ACTION -> "夜间行动"
@@ -131,12 +139,6 @@ fun WerewolfGamePage(
 
         Box(modifier = Modifier.weight(1f)) {
             when (gameState.phase) {
-                WerewolfGamePhase.SETUP -> {
-                    LaunchedEffect(configuredPlayerCount, configuredNicknames) {
-                        gameState = createInitialGameState()
-                    }
-                }
-
                 WerewolfGamePhase.DEAL_CARDS -> {
                     DealCardsPhase(
                         gameState = gameState,
@@ -187,13 +189,7 @@ fun WerewolfGamePage(
                         PlatformHelper.getInstance().vibrateMethod()
                     },
                     onResultConfirmed = {
-                        // 如果化身幽灵有待执行的额外行动，回到 ACTION 子步骤
-                        if (gameState.doppelgangerPendingAction) {
-                            gameState = WerewolfGameLogic.clearDoppelgangerPendingAction(gameState)
-                            gameState = gameState.copy(nightSubStep = NightActionSubStep.ACTION)
-                        } else {
-                            advanceNightStep(gameState) { newState -> gameState = newState }
-                        }
+                        advanceNightStep(WerewolfGameLogic.confirmNightResult(gameState)) { gameState = it }
                     },
                     onSkipAction = {
                         advanceNightStep(gameState) { newState -> gameState = newState }
@@ -219,6 +215,7 @@ fun WerewolfGamePage(
                     gameState = gameState,
                     votes = votes,
                     onVote = { voterId, targetId ->
+                        if (gameState.players.getOrNull(gameState.currentVoterIndex)?.id != voterId || votes.any { it.first == voterId }) return@VotingPhase
                         votes.add(voterId to targetId)
                         val nextVoter = gameState.currentVoterIndex + 1
                         if (nextVoter >= gameState.players.size) {
@@ -269,6 +266,10 @@ fun WerewolfGamePage(
                     onRestart = {
                         gameState = createInitialGameState()
                         votes.clear()
+                        GameStatsManager.recordGameStart(
+                            GameMode.ONE_NIGHT_WEREWOLF,
+                            configuredPlayerCount
+                        )
                     },
                     onBack = onBack
                 )
@@ -306,167 +307,6 @@ private fun advanceNightStep(gameState: WerewolfGameState, setState: (WerewolfGa
     }
 }
 
-// ===== 配置阶段 =====
-@Composable
-private fun SetupPhase(
-    playerCount: Int,
-    onPlayerCountChange: (Int) -> Unit,
-    nicknames: List<String>,
-    onStart: () -> Unit
-) {
-    Column(
-        modifier = Modifier.fillMaxSize()
-    ) {
-        Column(
-            modifier = Modifier
-                .weight(1f)
-                .verticalScroll(rememberScrollState())
-                .padding(16.dp)
-        ) {
-            Text(
-                text = "游戏配置",
-                fontSize = 24.sp,
-                fontWeight = FontWeight.Bold,
-                color = WerewolfColors.onSurface
-            )
-            Spacer(modifier = Modifier.height(4.dp))
-            Text(
-                text = "选择人数后开始游戏，设备将作为主持人辅助",
-                fontSize = 14.sp,
-                color = WerewolfColors.onSurfaceVariant
-            )
-            Spacer(modifier = Modifier.height(20.dp))
-
-            Text(
-                text = "选择人数",
-                fontSize = 16.sp,
-                fontWeight = FontWeight.SemiBold,
-                color = WerewolfColors.onSurface
-            )
-            Spacer(modifier = Modifier.height(8.dp))
-
-            (3..10).chunked(4).forEach { row ->
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
-                    row.forEach { count ->
-                        val selected = playerCount == count
-                        Surface(
-                            modifier = Modifier
-                                .weight(1f)
-                                .height(48.dp)
-                                .clickable { onPlayerCountChange(count) },
-                            color = if (selected) WerewolfColors.primary else WerewolfColors.surfaceContainer,
-                            shape = RoundedCornerShape(8.dp)
-                        ) {
-                            Box(contentAlignment = Alignment.Center) {
-                                Text(
-                                    text = "${count}人",
-                                    fontSize = 16.sp,
-                                    fontWeight = FontWeight.SemiBold,
-                                    color = if (selected) WerewolfColors.onPrimary else WerewolfColors.onSurface
-                                )
-                            }
-                        }
-                    }
-                    repeat(4 - row.size) {
-                        Spacer(modifier = Modifier.weight(1f))
-                    }
-                }
-                Spacer(modifier = Modifier.height(8.dp))
-            }
-
-            Spacer(modifier = Modifier.height(16.dp))
-
-            val preset = WerewolfPresets.getPresetForPlayerCount(playerCount)
-            Text(
-                text = "角色配置 (${preset.name})",
-                fontSize = 16.sp,
-                fontWeight = FontWeight.SemiBold,
-                color = WerewolfColors.onSurface
-            )
-            Spacer(modifier = Modifier.height(8.dp))
-
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(6.dp)
-            ) {
-                preset.roles.groupBy { it }.forEach { (role, instances) ->
-                    Surface(
-                        color = getRoleColor(role).copy(alpha = 0.15f),
-                        shape = RoundedCornerShape(4.dp)
-                    ) {
-                        Text(
-                            text = "${role.displayName}${if (instances.size > 1) "×${instances.size}" else ""}",
-                            fontSize = 13.sp,
-                            color = getRoleColor(role),
-                            fontWeight = FontWeight.Medium,
-                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
-                        )
-                    }
-                }
-            }
-
-            Spacer(modifier = Modifier.height(20.dp))
-
-            Text(
-                text = "玩家列表",
-                fontSize = 16.sp,
-                fontWeight = FontWeight.SemiBold,
-                color = WerewolfColors.onSurface
-            )
-            Spacer(modifier = Modifier.height(8.dp))
-
-            nicknames.forEachIndexed { idx, name ->
-                Surface(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(bottom = 6.dp),
-                    color = WerewolfColors.surfaceContainerHigh,
-                    shape = RoundedCornerShape(6.dp)
-                ) {
-                    Row(
-                        modifier = Modifier.padding(horizontal = 12.dp, vertical = 10.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Box(
-                            modifier = Modifier
-                                .size(28.dp)
-                                .background(WerewolfColors.surfaceContainerHighest, CircleShape),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Text("${idx + 1}", fontSize = 13.sp, color = WerewolfColors.onSurfaceVariant)
-                        }
-                        Spacer(modifier = Modifier.width(10.dp))
-                        Text(text = name, fontSize = 15.sp, color = WerewolfColors.onSurface)
-                    }
-                }
-            }
-            Spacer(modifier = Modifier.height(16.dp))
-        }
-
-        Surface(
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(52.dp)
-                .padding(horizontal = 16.dp, vertical = 8.dp)
-                .clickable(onClick = onStart),
-            color = WerewolfColors.primary,
-            shape = RoundedCornerShape(8.dp)
-        ) {
-            Box(contentAlignment = Alignment.Center) {
-                Text(
-                    text = "开始游戏",
-                    fontSize = 18.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = WerewolfColors.onPrimary
-                )
-            }
-        }
-    }
-}
-
 // ===== 发牌/查看身份阶段 =====
 @Composable
 private fun DealCardsPhase(
@@ -479,7 +319,7 @@ private fun DealCardsPhase(
 
     Box(
         modifier = Modifier
-            .fillMaxSize()
+            .fillMaxSize().verticalScroll(rememberScrollState())
             .padding(16.dp),
         contentAlignment = Alignment.Center
     ) {
@@ -592,7 +432,7 @@ private fun NightStartPhase(
 ) {
     Box(
         modifier = Modifier
-            .fillMaxSize()
+            .fillMaxSize().verticalScroll(rememberScrollState())
             .padding(16.dp),
         contentAlignment = Alignment.Center
     ) {
@@ -703,8 +543,7 @@ private fun NightActionPhase(
             NightActionSubStep.HAND_OFF -> {
                 NightHandOffScreen(
                     player = player,
-                    onReady = { onSubStepChange(NightActionSubStep.ACTION) },
-                    onSkip = onSkipAction
+                    onReady = { onSubStepChange(NightActionSubStep.ACTION) }
                 )
             }
             NightActionSubStep.ACTION -> {
@@ -733,12 +572,11 @@ private fun NightActionPhase(
 @Composable
 private fun NightHandOffScreen(
     player: WerewolfPlayer,
-    onReady: () -> Unit,
-    onSkip: () -> Unit
+    onReady: () -> Unit
 ) {
     Box(
         modifier = Modifier
-            .fillMaxSize()
+            .fillMaxSize().verticalScroll(rememberScrollState())
             .padding(16.dp),
         contentAlignment = Alignment.Center
     ) {
@@ -797,20 +635,6 @@ private fun NightHandOffScreen(
                 }
             }
 
-            Spacer(modifier = Modifier.height(12.dp))
-
-            Surface(
-                modifier = Modifier
-                    .fillMaxWidth(0.5f)
-                    .height(40.dp)
-                    .clickable(onClick = onSkip),
-                color = WerewolfColors.surfaceContainer,
-                shape = RoundedCornerShape(8.dp)
-            ) {
-                Box(contentAlignment = Alignment.Center) {
-                    Text("跳过", fontSize = 14.sp, color = WerewolfColors.onSurfaceVariant)
-                }
-            }
         }
     }
 }
@@ -874,7 +698,7 @@ private fun NightActionScreen(
             WerewolfRole.DOPPELGANGER -> {
                 // 如果化身幽灵已完成复制，且有待执行的额外行动
                 val copiedRole = gameState.doppelgangerCopiedRole
-                if (gameState.doppelgangerPendingAction && copiedRole != null) {
+                if (WerewolfGameLogic.isDoppelgangerFollowUp(gameState) && copiedRole != null) {
                     // 显示被复制角色的行动界面
                     DoppelgangerFollowUpAction(
                         copiedRole = copiedRole,
@@ -1140,8 +964,8 @@ private fun NightActionScreen(
         Spacer(modifier = Modifier.height(16.dp))
     }
 
-    // 底部跳过按钮
-    Surface(
+    // 复制和酒鬼换牌是必须执行的能力。
+    if (role !in listOf(WerewolfRole.DOPPELGANGER, WerewolfRole.DRUNK)) Surface(
         modifier = Modifier
             .fillMaxWidth()
             .padding(horizontal = 16.dp, vertical = 8.dp),
@@ -1173,7 +997,7 @@ private fun NightResultScreen(
 ) {
     Box(
         modifier = Modifier
-            .fillMaxSize()
+            .fillMaxSize().verticalScroll(rememberScrollState())
             .padding(16.dp),
         contentAlignment = Alignment.Center
     ) {
@@ -1251,7 +1075,7 @@ private fun DayDiscussionPhase(
         )
         Spacer(modifier = Modifier.height(4.dp))
         Text(
-            text = "点击查看自己的当前身份（传递设备）",
+            text = "可回顾初始身份；交换后的身份仅在结算时揭晓",
             fontSize = 14.sp,
             color = WerewolfColors.onSurfaceMedium
         )
@@ -1322,10 +1146,10 @@ private fun DayDiscussionPhase(
                     contentAlignment = Alignment.Center
                 ) {
                     WerewolfIdentityCard(
-                        resetKey = "day-${player.id}-${player.currentRole}",
+                        resetKey = "day-${player.id}-${player.initialRole}",
                         playerNumber = player.id + 1,
                         nickname = player.nickname,
-                        role = player.currentRole,
+                        role = player.initialRole,
                         showDescription = false,
                         onClose = { viewingPlayerId = -1 }
                     )
@@ -1507,12 +1331,7 @@ private fun GameOverPhase(
         ) {
             Spacer(modifier = Modifier.height(24.dp))
 
-            val winnerText = when (gameState.winner) {
-            WerewolfFaction.VILLAGER -> "村民阵营胜利"
-            WerewolfFaction.WEREWOLF -> "狼人阵营胜利"
-            WerewolfFaction.INDEPENDENT -> "皮匠胜利"
-                else -> "游戏结束"
-            }
+            val winnerText = WerewolfGameLogic.winnerText(gameState)
             val winnerColor = when (gameState.winner) {
                 WerewolfFaction.VILLAGER -> WerewolfColors.info
                 WerewolfFaction.WEREWOLF -> WerewolfColors.danger

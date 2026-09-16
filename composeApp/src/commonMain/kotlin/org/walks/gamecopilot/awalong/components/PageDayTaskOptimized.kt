@@ -77,7 +77,7 @@ fun PageDayTaskOptimized(
 
     var currentCaptain by remember(taskIndex, gameState.dayList) {
         val initial = when {
-            currentDayState?.currentCaptain != -1 -> currentDayState!!.currentCaptain
+            currentDayState != null && currentDayState.currentCaptain >= 0 -> currentDayState.currentCaptain
             taskIndex == 0 -> roleList.indices.random()
             else -> {
                 val prevCaptain = gameState.dayList.getOrNull(taskIndex - 1)?.captain ?: -1

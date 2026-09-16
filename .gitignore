@@ -82,6 +82,11 @@ kotlin-js-store/
 /sword/
 out/
 dist/
+/artifacts/
+
+# Local Python verification caches
+__pycache__/
+*.py[cod]
 
 # Secrets
 *.jks

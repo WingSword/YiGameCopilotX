@@ -1,5 +1,7 @@
 package org.walks.gamecopilot.ui.widget
 
+import org.walks.gamecopilot.theme.RandomToolDesign as D
+
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Box
@@ -29,66 +31,71 @@ import androidx.compose.ui.unit.sp
  */
 
 @Composable
-fun DiceFace(value: Int, background: Color = MaterialTheme.colorScheme.primary) {
+fun DiceFace(
+    value: Int,
+    background: Color = Color.White,
+    dotColor: Color = Color(D.diceInk)
+) {
+    val shape = RoundedCornerShape(D.diceRadius.dp)
     Box(
         modifier = Modifier
-            .height(100.dp)
+            .height(D.diceSize.dp)
             .aspectRatio(1f)
             .background(
                 brush = Brush.linearGradient(
                     colors = listOf(
-                        Color.White,
-                        Color(0xFFF4F4F4),
-                        Color(0xFFEAEAEA)
+                        background,
+                        Color(D.diceFaceMiddle),
+                        Color(D.diceFaceEnd)
                     )
                 ),
-                shape = RoundedCornerShape(16.dp)
+                shape = shape
             )
-            .border(2.dp, Color(0xFF2A2A2A), RoundedCornerShape(16.dp)),
+            .border(1.dp, dotColor.copy(alpha = 0.16f), shape),
         contentAlignment = Alignment.Center
     ) {
         when (value) {
-            1 -> Dot(offset = Offset(0f, 0f))
+            1 -> Dot(color = dotColor, offset = Offset(0f, 0f))
             2 -> {
-                Dot(offset = Offset(-0.3f, -0.3f))
-                Dot(offset = Offset(0.3f, 0.3f))
+                Dot(color = dotColor, offset = Offset(-0.3f, -0.3f))
+                Dot(color = dotColor, offset = Offset(0.3f, 0.3f))
             }
 
             3 -> {
-                Dot(offset = Offset(-0.3f, -0.3f))
-                Dot(offset = Offset(0f, 0f))
-                Dot(offset = Offset(0.3f, 0.3f))
+                Dot(color = dotColor, offset = Offset(-0.3f, -0.3f))
+                Dot(color = dotColor, offset = Offset(0f, 0f))
+                Dot(color = dotColor, offset = Offset(0.3f, 0.3f))
             }
 
             4 -> {
-                Dot(offset = Offset(-0.3f, -0.3f))
-                Dot(offset = Offset(0.3f, -0.3f))
-                Dot(offset = Offset(-0.3f, 0.3f))
-                Dot(offset = Offset(0.3f, 0.3f))
+                Dot(color = dotColor, offset = Offset(-0.3f, -0.3f))
+                Dot(color = dotColor, offset = Offset(0.3f, -0.3f))
+                Dot(color = dotColor, offset = Offset(-0.3f, 0.3f))
+                Dot(color = dotColor, offset = Offset(0.3f, 0.3f))
             }
 
             5 -> {
-                Dot(offset = Offset(-0.3f, -0.3f))
-                Dot(offset = Offset(0.3f, -0.3f))
-                Dot(offset = Offset(0f, 0f))
-                Dot(offset = Offset(-0.3f, 0.3f))
-                Dot(offset = Offset(0.3f, 0.3f))
+                Dot(color = dotColor, offset = Offset(-0.3f, -0.3f))
+                Dot(color = dotColor, offset = Offset(0.3f, -0.3f))
+                Dot(color = dotColor, offset = Offset(0f, 0f))
+                Dot(color = dotColor, offset = Offset(-0.3f, 0.3f))
+                Dot(color = dotColor, offset = Offset(0.3f, 0.3f))
             }
 
             6 -> {
-                Dot(offset = Offset(-0.3f, -0.3f))
-                Dot(offset = Offset(0.3f, -0.3f))
-                Dot(offset = Offset(-0.3f, 0f))
-                Dot(offset = Offset(0.3f, 0f))
-                Dot(offset = Offset(-0.3f, 0.3f))
-                Dot(offset = Offset(0.3f, 0.3f))
+                Dot(color = dotColor, offset = Offset(-0.3f, -0.3f))
+                Dot(color = dotColor, offset = Offset(0.3f, -0.3f))
+                Dot(color = dotColor, offset = Offset(-0.3f, 0f))
+                Dot(color = dotColor, offset = Offset(0.3f, 0f))
+                Dot(color = dotColor, offset = Offset(-0.3f, 0.3f))
+                Dot(color = dotColor, offset = Offset(0.3f, 0.3f))
             }
 
             else -> {
                 Text(
                     value.toString(),
                     fontWeight = FontWeight.W900,
-                    color = MaterialTheme.colorScheme.primary.copy(0.5f),
+                    color = dotColor,
                     textAlign = TextAlign.End,
                     fontSize = 50.sp
                 )
@@ -98,16 +105,15 @@ fun DiceFace(value: Int, background: Color = MaterialTheme.colorScheme.primary) 
 }
 
 @Composable
-private fun Dot(color: Color = MaterialTheme.colorScheme.primary, offset: Offset, size: Dp = 8.dp) {
+private fun Dot(color: Color, offset: Offset, size: Dp = D.diceDot.dp) {
     Box(
         modifier = Modifier
             .offset(
-                x = (offset.x * 45).dp,
-                y = (offset.y * 45).dp
+                x = (offset.x * (D.diceDotOffset / 0.3)).dp,
+                y = (offset.y * (D.diceDotOffset / 0.3)).dp
             )
             .size(size)
             .background(color, CircleShape)
     )
 }
-
 

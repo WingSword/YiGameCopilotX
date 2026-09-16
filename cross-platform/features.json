@@ -1,0 +1,147 @@
+{
+  "random-tools": {
+    "android": [
+      "composeApp/src/commonMain/kotlin/org/walks/gamecopilot/ui/page/random/**/*.kt",
+      "composeApp/src/commonMain/kotlin/org/walks/gamecopilot/ui/animation/Roll*Animation.kt",
+      "composeApp/src/commonMain/kotlin/org/walks/gamecopilot/ui/widget/DiceFace.kt",
+      "composeApp/src/commonMain/kotlin/org/walks/gamecopilot/MainViewmodel.kt",
+      "composeApp/src/commonMain/kotlin/org/walks/gamecopilot/data/entity/AnswerBookState.kt",
+      "composeApp/src/commonMain/kotlin/org/walks/gamecopilot/intent/AnswerBookIntent.kt",
+      "composeApp/src/commonMain/composeResources/drawable/answer_book_cover_icon.xml",
+      "cross-platform/random-tools.json"
+    ],
+    "harmony": [
+      "entry/src/main/ets/pages/random/**/*.ets",
+      "entry/src/main/ets/pages/RandomPage.ets",
+      "entry/src/main/ets/store/RandomStore.ets",
+      "entry/src/main/ets/components/RandomToolIcon.ets"
+    ]
+  },
+  "ledger": {
+    "android": [
+      "composeApp/src/commonMain/kotlin/org/walks/gamecopilot/ui/page/monopoly/**/*.kt",
+      "composeApp/src/commonMain/kotlin/org/walks/gamecopilot/data/entity/Monopoly*.kt"
+    ],
+    "harmony": [
+      "entry/src/main/ets/pages/monopoly/**/*.ets",
+      "entry/src/main/ets/model/entity/Monopoly*.ets",
+      "entry/src/main/resources/base/media/ledger_*.svg"
+    ]
+  },
+  "spy": {
+    "android": [
+      "composeApp/src/commonMain/kotlin/org/walks/gamecopilot/ui/page/game/localspy/**/*.kt",
+      "composeApp/src/commonMain/kotlin/org/walks/gamecopilot/data/entity/GameEntity.kt"
+    ],
+    "harmony": [
+      "entry/src/main/ets/pages/localspy/**/*.ets",
+      "entry/src/main/ets/model/entity/LocalSpyEntity.ets",
+      "entry/src/main/ets/store/LocalSpyStore.ets"
+    ]
+  },
+  "avalon": {
+    "android": [
+      "composeApp/src/commonMain/kotlin/org/walks/gamecopilot/awalong/**/*.kt"
+    ],
+    "harmony": [
+      "entry/src/main/ets/pages/awalong/**/*.ets",
+      "entry/src/main/ets/store/AwalongStore.ets",
+      "entry/src/main/ets/model/awalong/**/*.ets"
+    ]
+  },
+  "werewolf": {
+    "android": [
+      "composeApp/src/commonMain/kotlin/org/walks/gamecopilot/werewolf/**/*.kt",
+      "shared/src/commonMain/kotlin/org/walks/gamecopilot/werewolf/**/*.kt"
+    ],
+    "harmony": [
+      "entry/src/main/ets/pages/werewolf/**/*.ets",
+      "entry/src/main/ets/store/WerewolfStore.ets",
+      "entry/src/main/ets/model/werewolf/**/*.ets"
+    ]
+  },
+  "drawing": {
+    "android": [
+      "composeApp/src/commonMain/kotlin/org/walks/gamecopilot/ui/page/drawguess/**/*.kt"
+    ],
+    "harmony": [
+      "entry/src/main/ets/pages/drawguess/**/*.ets"
+    ]
+  },
+  "hunttown": {
+    "android": [
+      "composeApp/src/commonMain/kotlin/org/walks/gamecopilot/ui/page/hunttown/**/*.kt"
+    ],
+    "harmony": [
+      "entry/src/main/ets/pages/hunttown/**/*.ets",
+      "entry/src/main/ets/store/HuntTownStore.ets",
+      "entry/src/main/ets/model/hunttown/**/*.ets"
+    ]
+  },
+  "lan": {
+    "android": [
+      "composeApp/src/commonMain/kotlin/org/walks/gamecopilot/ui/page/lan/**/*.kt",
+      "shared/src/commonMain/kotlin/org/walks/gamecopilot/lan/**/*.kt"
+    ],
+    "harmony": [
+      "entry/src/main/ets/pages/lan/**/*.ets",
+      "entry/src/main/ets/model/lan/**/*.ets",
+      "entry/src/main/ets/network/LAN*.ets"
+    ]
+  },
+  "navigation-and-components": {
+    "android": [
+      "composeApp/src/commonMain/kotlin/org/walks/gamecopilot/App.kt",
+      "composeApp/src/commonMain/kotlin/org/walks/gamecopilot/ui/components/**/*.kt",
+      "composeApp/src/commonMain/kotlin/org/walks/gamecopilot/navigation/**/*.kt",
+      "composeApp/src/commonMain/kotlin/org/walks/gamecopilot/ui/page/home/**/*.kt"
+    ],
+    "harmony": [
+      "entry/src/main/ets/components/**/*.ets",
+      "entry/src/main/ets/model/enums/OperationMode.ets",
+      "entry/src/main/ets/pages/HomePage.ets",
+      "entry/src/main/ets/pages/Index.ets"
+    ]
+  },
+  "settings-and-stats": {
+    "android": [
+      "composeApp/src/commonMain/kotlin/org/walks/gamecopilot/data/GameStatsManager.kt",
+      "composeApp/src/commonMain/kotlin/org/walks/gamecopilot/ui/page/setting/**/*.kt",
+      "composeApp/src/commonMain/kotlin/org/walks/gamecopilot/ui/page/stats/**/*.kt"
+    ],
+    "harmony": [
+      "entry/src/main/ets/pages/SettingPage.ets",
+      "entry/src/main/ets/pages/StatsPage.ets",
+      "entry/src/main/ets/data/GameStatsManager.ets",
+      "entry/src/main/ets/store/StatsStore.ets"
+    ]
+  },
+  "web": {
+    "web": [
+      "composeApp/src/wasmJsMain/**/*",
+      "shared/src/wasmJsMain/**/*.kt",
+      "composeApp/src/commonMain/kotlin/org/walks/gamecopilot/theme/Theme.kt",
+      "composeApp/src/commonMain/kotlin/org/walks/gamecopilot/theme/Type.kt",
+      "composeApp/src/commonMain/composeResources/font/*.otf",
+      "composeApp/src/commonMain/composeResources/files/licenses/*.txt",
+      "composeApp/build.gradle.kts"
+    ]
+  },
+  "cloud-rooms": {
+    "android": [
+      "shared/src/commonMain/kotlin/org/walks/gamecopilot/online/**/*.kt",
+      "composeApp/src/commonMain/kotlin/org/walks/gamecopilot/online/**/*.kt",
+      "composeApp/src/commonMain/kotlin/org/walks/gamecopilot/ui/page/multiplayer/**/*.kt",
+      "server/src/main/java/org/walks/rooms/*.java",
+      "server/src/main/java/io/nayuki/qrcodegen/*.java",
+      "server/src/test/java/org/walks/rooms/*.java"
+    ],
+    "harmony": [
+      "entry/src/main/ets/model/online/CloudRoomModels.ets",
+      "entry/src/main/ets/store/CloudRoomStore.ets",
+      "entry/src/main/ets/pages/room/*.ets",
+      "entry/src/main/ets/pages/MultiplayerPage.ets",
+      "entry/src/main/ets/entryability/EntryAbility.ets"
+    ]
+  }
+}

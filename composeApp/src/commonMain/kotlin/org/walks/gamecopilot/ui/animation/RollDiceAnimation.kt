@@ -1,5 +1,7 @@
 package org.walks.gamecopilot.ui.animation
 
+import org.walks.gamecopilot.theme.RandomToolDesign as D
+
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.AnimationVector1D
 import androidx.compose.animation.core.FastOutSlowInEasing
@@ -21,6 +23,7 @@ import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -47,76 +50,70 @@ import kotlin.time.ExperimentalTime
  */
 @OptIn(ExperimentalTime::class)
 @Composable
-fun DiceAnimation(modifier: Modifier = Modifier, range: IntRange = 1..6,isRollingDice:Boolean) {
-    var isRolling by remember { mutableStateOf(false) }
-    var currentValue by remember { mutableIntStateOf(range.random()) }
-    var displayValue by remember { mutableIntStateOf(currentValue) }
+fun DiceAnimation(
+    modifier: Modifier = Modifier,
+    range: IntRange = 1..6,
+    trigger: Long = 0L,
+    result: Int? = null,
+    onRollComplete: (Int) -> Unit = {}
+) {
+    val safeRange = if (range.first <= range.last) range else range.last..range.first
+    var displayValue by remember(safeRange.first, safeRange.last) {
+        mutableIntStateOf(safeRange.random())
+    }
     val rotationX = remember { Animatable(0f) } // 改为 val
     val rotationY = remember { Animatable(0f) } // 改为 val
     val liftProgress = remember { Animatable(0f) }
-    val jumpDistancePx = with(LocalDensity.current) { 26.dp.toPx() }
-    val scope = rememberCoroutineScope()
+    val jumpDistancePx = with(LocalDensity.current) { D.diceLift.dp.toPx() }
+    val latestOnRollComplete by rememberUpdatedState(onRollComplete)
 
-    LaunchedEffect(isRollingDice){
-        if(isRollingDice)
-        currentValue = range.random()
-    }
-    LaunchedEffect(currentValue) {
-        scope.launch {
-            isRolling = true
-            // 并行执行动画和震动
-            coroutineScope {
-                // 启动震动协程
-                launch {
-                    val duration = 1200 // 动画总时长
-                    var lastVibrateTime = 0L
-                    val startTime = Clock.System.now().toEpochMilliseconds()
+    LaunchedEffect(trigger, result, safeRange.first, safeRange.last) {
+        if (trigger <= 0L || result == null) return@LaunchedEffect
 
-                    while (true) {
-                        val currentTime = Clock.System.now().toEpochMilliseconds()
-                        val elapsed = currentTime - startTime
+        val rollResult = result.coerceIn(safeRange.first, safeRange.last)
+        rotationX.snapTo(0f)
+        rotationY.snapTo(0f)
+        liftProgress.snapTo(0f)
 
-                        if (elapsed >= duration) break
+        // 一次 trigger 就是一次完整投掷。新 trigger 会取消旧动画并从头开始，
+        // 避免原来 Boolean 开关与延迟任务相互抵消。
+        coroutineScope {
+            launch {
+                val duration = D.diceDuration.toInt()
+                var lastVibrateTime = 0L
+                val startTime = Clock.System.now().toEpochMilliseconds()
 
-                        // 计算进度(0到1)
-                        val progress = elapsed.toFloat() / duration
+                while (true) {
+                    val currentTime = Clock.System.now().toEpochMilliseconds()
+                    val elapsed = currentTime - startTime
+                    if (elapsed >= duration) break
 
-                        // 根据进度计算震动间隔，随时间线性增加
-                        // 开始时30ms，结束时300ms
-                        val vibrateInterval = (30 + progress * 270).toLong()
-
-                        // 检查是否应该震动
-                        if (currentTime - lastVibrateTime >= vibrateInterval) {
-                            PlatformHelper.getInstance().vibrateMethod()
-                            lastVibrateTime = currentTime
-                        }
-
-                        delay(16)
+                    val progress = elapsed.toFloat() / duration
+                    val vibrateInterval = (30 + progress * 270).toLong()
+                    if (currentTime - lastVibrateTime >= vibrateInterval) {
+                        PlatformHelper.getInstance().vibrateMethod()
+                        lastVibrateTime = currentTime
                     }
+                    delay(16)
                 }
-
-                // 执行骰子动画
-                launch {
-                    // 滚动过程中快速切换点数，增强随机感
-                    repeat(10) {
-                        displayValue = range.random()
-                        delay(85)
-                    }
-                }
-                rollDiceAnimation(rotationX, rotationY, liftProgress)
             }
-            rotationX.snapTo(0f) // 重置旋转角度
-            rotationY.snapTo(0f)
-            liftProgress.snapTo(0f)
-            isRolling = false
-            displayValue = currentValue
+            launch {
+                repeat(10) {
+                    displayValue = safeRange.random()
+                    delay(85)
+                }
+            }
+            rollDiceAnimation(rotationX, rotationY, liftProgress)
         }
+
+        rotationX.snapTo(0f)
+        rotationY.snapTo(0f)
+        liftProgress.snapTo(0f)
+        displayValue = rollResult
+        latestOnRollComplete(rollResult)
     }
     Box(
         modifier = modifier
-            .clickableWithoutRipple {
-                currentValue = range.random()
-            }
     ) {
         Box(
             modifier = Modifier
@@ -171,7 +168,7 @@ fun DiceAnimationImage(modifier: Modifier = Modifier, range: IntRange = 1..6) {
             coroutineScope {
                 // 启动震动协程
                 launch {
-                    val duration = 1200 // 动画总时长
+                    val duration = D.diceDuration.toInt() // 动画总时长
                     var lastVibrateTime = 0L
                     val startTime = Clock.System.now().toEpochMilliseconds()
 
@@ -249,7 +246,7 @@ private suspend fun rollDiceAnimation(
                 targetValue = (360 * 4..360 * 6).random() // 4-6圈
                     .toFloat()
                     .avoidCriticalAngle(), // 应用角度修正
-                animationSpec = tween(1450, easing = FastOutSlowInEasing)
+                animationSpec = tween(D.diceDuration.toInt(), easing = FastOutSlowInEasing)
             )
         }
         launch {
@@ -257,7 +254,7 @@ private suspend fun rollDiceAnimation(
                 targetValue = (360 * 3..360 * 5).random() // 3-5圈
                     .toFloat()
                     .avoidCriticalAngle(),
-                animationSpec = tween(1120, easing = FastOutSlowInEasing)
+                animationSpec = tween(D.diceSecondaryDuration.toInt(), easing = FastOutSlowInEasing)
             )
         }
         launch {

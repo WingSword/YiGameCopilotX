@@ -1,5 +1,6 @@
 package org.walks.gamecopilot.ui.components
 
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -46,6 +47,7 @@ fun AppScreen(
     title: String,
     subtitle: String? = null,
     modifier: Modifier = Modifier,
+    onBack: (() -> Unit)? = null,
     actions: @Composable RowScope.() -> Unit = {},
     content: @Composable ColumnScope.() -> Unit
 ) {
@@ -60,9 +62,12 @@ fun AppScreen(
     ) {
         Row(
             modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
+            if (onBack != null) {
+                AppBackButton(onClick = onBack)
+                Spacer(modifier = Modifier.size(design.spacing.md))
+            }
             Column(modifier = Modifier.weight(1f)) {
                 Text(
                     text = title,
@@ -106,7 +111,11 @@ fun AppCard(
         modifier = modifier.fillMaxWidth(),
         shape = RoundedCornerShape(design.cornerRadius.card),
         colors = colors,
-        elevation = CardDefaults.cardElevation(defaultElevation = design.elevation.xs)
+        elevation = CardDefaults.cardElevation(defaultElevation = design.elevation.card),
+        border = BorderStroke(
+            width = 1.dp,
+            color = MaterialTheme.colorScheme.outline.copy(alpha = 0.72f)
+        )
     ) {
         Column(
             modifier = Modifier
@@ -149,7 +158,11 @@ fun AppDialog(
                 .heightIn(max = maxHeight),
             shape = RoundedCornerShape(design.cornerRadius.dialog),
             color = MaterialTheme.colorScheme.surface,
-            shadowElevation = design.elevation.dialog
+            shadowElevation = design.elevation.dialog,
+            border = BorderStroke(
+                width = 1.dp,
+                color = MaterialTheme.colorScheme.outline.copy(alpha = 0.72f)
+            )
         ) {
             Column(
                 modifier = Modifier.padding(design.spacing.xl),
@@ -235,12 +248,10 @@ fun AppDialogActions(
             ) {
                 Text(dismissText)
             }
-        } else {
-            Spacer(modifier = Modifier.weight(1f))
         }
         Button(
             onClick = onConfirm,
-            modifier = Modifier.weight(1f),
+            modifier = if (onDismiss != null) Modifier.weight(1f) else Modifier.fillMaxWidth(),
             enabled = confirmEnabled
         ) {
             if (confirmContent != null) {

@@ -1,0 +1,108 @@
+{
+  "schemaVersion": 1,
+  "dimensions": {
+    "stageWidth": 560,
+    "stageHeight": 286,
+    "stageMinHeight": 176,
+    "stageRadius": 26,
+    "stagePaddingX": 20,
+    "stagePaddingY": 18,
+    "tileWidth": 88,
+    "tileHeight": 60,
+    "tileRadius": 20,
+    "tileIcon": 24,
+    "dockRadius": 26,
+    "headerIcon": 26,
+    "headerIconBox": 44,
+    "diceSize": 112,
+    "diceRadius": 22,
+    "diceDot": 9,
+    "diceDotOffset": 13.5,
+    "diceLift": 26,
+    "coinSize": 116,
+    "coinLift": 34,
+    "actionHeight": 54,
+    "iconDarkInset": 2
+  },
+  "colors": {
+    "diceStart": "#13CE73",
+    "diceEnd": "#8AF0B8",
+    "diceInk": "#07130D",
+    "diceFace": "#FFFFFF",
+    "diceFaceMiddle": "#F4F4F4",
+    "diceFaceEnd": "#EAEAEA",
+    "coinStart": "#FFA51F",
+    "coinEnd": "#FFD17A",
+    "coinInk": "#1B1000",
+    "coinFront": "#FFD26A",
+    "coinFrontEdge": "#F1B938",
+    "coinFrontInk": "#8B4513",
+    "coinBack": "#D6DBE3",
+    "coinBackEdge": "#AAB2BF",
+    "coinBackInk": "#2F4F4F",
+    "iconDarkSurface": "#E5E5EB"
+  },
+  "timing": {
+    "diceDuration": 1450,
+    "coinDuration": 1000,
+    "diceSecondaryDuration": 1120
+  },
+  "rules": {
+    "diceMin": 1,
+    "diceMax": 100,
+    "firstFallback": 1,
+    "secondFallback": 6,
+    "primaryProbability": 0.5
+  },
+  "cases": [
+    {
+      "first": "1",
+      "second": "6",
+      "sample": 0,
+      "dice": 1,
+      "heads": true
+    },
+    {
+      "first": "6",
+      "second": "1",
+      "sample": 0.999999,
+      "dice": 6,
+      "heads": false
+    },
+    {
+      "first": "3",
+      "second": "3",
+      "sample": 0.8,
+      "dice": 3,
+      "heads": false
+    },
+    {
+      "first": "-5",
+      "second": "500",
+      "sample": 0.5,
+      "dice": 51,
+      "heads": false
+    },
+    {
+      "first": "oops",
+      "second": "",
+      "sample": 0.499999,
+      "dice": 3,
+      "heads": true
+    },
+    {
+      "first": "1.5",
+      "second": "Infinity",
+      "sample": 0.5,
+      "dice": 4,
+      "heads": false
+    },
+    {
+      "first": " 8 ",
+      "second": "2",
+      "sample": 0,
+      "dice": 2,
+      "heads": true
+    }
+  ]
+}

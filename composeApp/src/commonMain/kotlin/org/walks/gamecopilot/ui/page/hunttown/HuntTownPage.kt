@@ -2,6 +2,8 @@ package org.walks.gamecopilot.ui.page.hunttown
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -33,6 +35,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import org.walks.gamecopilot.PlatformHelper
+import org.walks.gamecopilot.data.GameStatsManager
+import org.walks.gamecopilot.data.entity.GameMode
 import org.walks.gamecopilot.ui.components.CommonTopBar
 import org.walks.gamecopilot.ui.components.common.OfflinePassingGuideDialog
 import kotlin.math.max
@@ -49,6 +53,7 @@ private data class HuntPlayer(
 
 private enum class HuntPhase(val label: String) {
     SETUP("配置阶段"),
+    DEAL_CARDS("传机查看身份"),
     NIGHT_CLOSE_EYES("夜晚：全体闭眼"),
     NIGHT_WITCH_OPEN("夜晚：女巫睁眼"),
     DAWN_ALERT("凌晨：持续提示睁眼"),
@@ -71,12 +76,21 @@ fun HuntTownPage(onBack: () -> Unit) {
     var selectedProtectTarget by remember { mutableStateOf<Int?>(null) }
     var lastNightDeath by remember { mutableStateOf<Int?>(null) }
     var winnerText by remember { mutableStateOf("") }
+    var dealIndex by remember { mutableStateOf(0) }
+    var dealRevealed by remember { mutableStateOf(false) }
+    var dayExiled by remember { mutableStateOf(false) }
 
     LaunchedEffect(phase) {
         if (phase == HuntPhase.DAWN_ALERT) {
             PlatformHelper.getInstance().startPersistentAlert()
         } else {
             PlatformHelper.getInstance().stopPersistentAlert()
+        }
+    }
+
+    LaunchedEffect(phase, winnerText) {
+        if (phase == HuntPhase.GAME_END && winnerText.isNotBlank()) {
+            GameStatsManager.completeLatestGame(GameMode.HUNT_TOWN, winnerText)
         }
     }
 
@@ -98,6 +112,7 @@ fun HuntTownPage(onBack: () -> Unit) {
         Column(
             modifier = Modifier
                 .fillMaxSize()
+                .verticalScroll(rememberScrollState())
                 .padding(horizontal = 16.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
@@ -144,10 +159,21 @@ fun HuntTownPage(onBack: () -> Unit) {
                             )
                         }
                         gameStarted = true
-                        phase = HuntPhase.NIGHT_CLOSE_EYES
+                        phase = HuntPhase.DEAL_CARDS
+                        dealIndex = 0; dealRevealed = false; dayExiled = false
+                        selectedMurderTarget = null; selectedProtectTarget = null; lastNightDeath = null
                         winnerText = ""
+                        GameStatsManager.recordGameStart(GameMode.HUNT_TOWN, playerCount)
                     }
                 )
+            } else if (phase == HuntPhase.DEAL_CARDS) {
+                val player = players[dealIndex]
+                Text("请将设备递给 ${player.nickname}（${dealIndex + 1}/${players.size}）", style = MaterialTheme.typography.titleLarge)
+                if (dealRevealed) {
+                    Text(when(player.role) { HuntRole.WITCH -> "女巫"; HuntRole.SHERIFF -> "警长"; HuntRole.VILLAGER -> "村民" }, style = MaterialTheme.typography.headlineLarge)
+                    if(player.role == HuntRole.WITCH) Text("女巫同伴：" + players.filter { it.role == HuntRole.WITCH && it.id != player.id }.joinToString("、") { it.nickname }.ifEmpty { "无" })
+                    Button(onClick = { dealRevealed = false; if(dealIndex == players.lastIndex) phase = HuntPhase.NIGHT_CLOSE_EYES else dealIndex++ }) { Text("隐藏并交给下一位") }
+                } else Button(onClick = { dealRevealed = true }) { Text("点击查看身份") }
             } else {
                 HuntPhasePanel(
                     phase = phase,
@@ -155,14 +181,18 @@ fun HuntTownPage(onBack: () -> Unit) {
                     selectedMurderTarget = selectedMurderTarget,
                     selectedProtectTarget = selectedProtectTarget,
                     lastNightDeath = lastNightDeath,
+                    dayExiled = dayExiled,
                     onSelectMurderTarget = { selectedMurderTarget = it },
-                    onSelectProtectTarget = { selectedProtectTarget = it },
+                    onSelectProtectTarget = { selectedProtectTarget = if (players.any { p -> p.alive && p.role == HuntRole.SHERIFF }) it else null },
                     onNext = {
                         PlatformHelper.getInstance().vibrateMethod()
                         when (phase) {
                             HuntPhase.NIGHT_CLOSE_EYES -> phase = HuntPhase.NIGHT_WITCH_OPEN
                             HuntPhase.NIGHT_WITCH_OPEN -> phase = HuntPhase.DAWN_ALERT
-                            HuntPhase.DAWN_ALERT -> phase = HuntPhase.NIGHT_SHERIFF_OPEN
+                            HuntPhase.DAWN_ALERT -> {
+                                selectedProtectTarget = null
+                                phase = HuntPhase.NIGHT_SHERIFF_OPEN
+                            }
                             HuntPhase.NIGHT_SHERIFF_OPEN -> {
                                 val murdered = selectedMurderTarget
                                 val protected = selectedProtectTarget
@@ -181,7 +211,15 @@ fun HuntTownPage(onBack: () -> Unit) {
                                 phase = HuntPhase.DAY_RESULT
                             }
 
-                            HuntPhase.DAY_RESULT -> phase = HuntPhase.DAY_DISCUSS
+                            HuntPhase.DAY_RESULT -> {
+                                dayExiled = false
+                                winnerText = when {
+                                    players.none { it.alive && it.role == HuntRole.WITCH } -> "村民阵营胜利：所有女巫都已被翻开。"
+                                    players.none { it.alive && it.role != HuntRole.WITCH } -> "女巫阵营胜利：所有村民均已出局。"
+                                    else -> ""
+                                }
+                                phase = if (winnerText.isEmpty()) HuntPhase.DAY_DISCUSS else HuntPhase.GAME_END
+                            }
                             HuntPhase.DAY_DISCUSS -> {
                                 val witchesAlive = players.count { it.alive && it.role == HuntRole.WITCH }
                                 val villagersAlive = players.count { it.alive && it.role != HuntRole.WITCH }
@@ -207,14 +245,15 @@ fun HuntTownPage(onBack: () -> Unit) {
                                 phase = HuntPhase.SETUP
                             }
 
-                            HuntPhase.SETUP -> Unit
+                            HuntPhase.SETUP, HuntPhase.DEAL_CARDS -> Unit
                         }
                     },
                     onRevealPlayer = { playerId ->
                         val idx = players.indexOfFirst { it.id == playerId }
-                        if (idx >= 0 && players[idx].alive) {
+                        if (idx >= 0 && players[idx].alive && !dayExiled) {
                             PlatformHelper.getInstance().vibrateMethod()
                             players[idx] = players[idx].copy(alive = false, revealed = true)
+                            dayExiled = true
                         }
                     }
                 )
@@ -289,6 +328,7 @@ private fun HuntPhasePanel(
     selectedMurderTarget: Int?,
     selectedProtectTarget: Int?,
     lastNightDeath: Int?,
+    dayExiled: Boolean,
     onSelectMurderTarget: (Int?) -> Unit,
     onSelectProtectTarget: (Int?) -> Unit,
     onNext: () -> Unit,
@@ -326,8 +366,8 @@ private fun HuntPhasePanel(
                 }
 
                 HuntPhase.NIGHT_SHERIFF_OPEN -> {
-                    Text("警长睁眼：请选择要守护的玩家（可守护任意存活玩家，不能同时阻止多目标）")
-                    alivePlayers.forEach { p ->
+                    Text(if (alivePlayers.any { it.role == HuntRole.SHERIFF }) "警长睁眼：请选择要守护的玩家" else "警长已出局，本夜无人守护。")
+                    if (alivePlayers.any { it.role == HuntRole.SHERIFF }) alivePlayers.forEach { p ->
                         SelectablePlayerRow(
                             text = "${p.nickname}",
                             selected = selectedProtectTarget == p.id,
@@ -351,10 +391,11 @@ private fun HuntPhasePanel(
                 }
 
                 HuntPhase.DAY_DISCUSS -> {
-                    Text("白天讨论与放逐：点击一名存活玩家翻开身份并出局。")
+                    Text(if (dayExiled) "本日已放逐一名玩家，请点击下一步。" else "白天讨论与放逐：点击一名存活玩家翻开身份并出局。")
                     alivePlayers.forEach { p ->
                         OutlinedButton(
                             onClick = { onRevealPlayer(p.id) },
+                            enabled = !dayExiled,
                             modifier = Modifier.fillMaxWidth()
                         ) {
                             Text("放逐并翻开：${p.nickname}")
@@ -366,7 +407,7 @@ private fun HuntPhasePanel(
                     Text("已结算胜负，点击“下一步”返回配置阶段。")
                 }
 
-                HuntPhase.SETUP -> Unit
+                HuntPhase.SETUP, HuntPhase.DEAL_CARDS -> Unit
             }
 
             Spacer(modifier = Modifier.height(8.dp))

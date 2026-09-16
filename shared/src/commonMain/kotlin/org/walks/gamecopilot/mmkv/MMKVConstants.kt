@@ -8,6 +8,11 @@ package org.walks.gamecopilot.mmkv
 const val MMKV_RANDOM_LABEL_NAME_KEY= "mmkv_random_cards_setting_name"
 const val MMKV_RANDOM_CARDS_SETTING_KEY = "mmkv_random_cards_setting_1"
 const val MMKV_RANDOM_CARDS_B_SETTING_KEY = "mmkv_random_cards_setting_2"
+const val MMKV_RANDOM_DEFAULTS_INITIALIZED_KEY = "mmkv_random_defaults_initialized"
+
+// 跨端一致的主题与本地记账配置
+const val MMKV_THEME_MODE_KEY = "mmkv_theme_mode"
+const val MMKV_MONOPOLY_LEDGER_KEY = "monopoly_local_state"
 
 // 游戏对局统计数据
 const val MMKV_GAME_STATS_KEY = "mmkv_game_stats_records"

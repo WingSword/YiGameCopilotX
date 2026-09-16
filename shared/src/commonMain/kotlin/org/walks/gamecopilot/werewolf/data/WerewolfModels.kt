@@ -72,7 +72,7 @@ enum class WerewolfRole(
     HUNTER(
         displayName = "猎人",
         faction = WerewolfFaction.VILLAGER,
-        description = "出局时必须带走1名玩家",
+        description = "出局时，自己投票指向的玩家也出局",
         hasNightAction = false,
         nightOrder = 0
     ),
@@ -116,8 +116,7 @@ enum class WerewolfFaction(val displayName: String) {
  * 游戏阶段
  */
 enum class WerewolfGamePhase {
-    SETUP,           // 配置阶段
-    DEAL_CARDS,      // 发牌/查看身份（新增：每人传递设备查看自己的牌）
+    DEAL_CARDS,      // 发牌/查看身份（每人传递设备查看自己的牌）
     NIGHT_START,     // 夜晚开始（闭眼提示）
     NIGHT_ACTION,    // 夜间行动（各角色依次行动，隐私传递模式）
     DAY_DISCUSSION,  // 白天讨论
@@ -193,14 +192,14 @@ data class NightSwapAction(
  */
 @Serializable
 data class WerewolfGameState(
-    val phase: WerewolfGamePhase = WerewolfGamePhase.SETUP,
+    val phase: WerewolfGamePhase = WerewolfGamePhase.DEAL_CARDS,
     val playerCount: Int = 5,
     val players: List<WerewolfPlayer> = emptyList(),
     val centerCards: List<CenterCard> = emptyList(),
 
     // === 夜间行动 ===
     val nightActions: List<NightActionRecord> = emptyList(),
-    val nightActionOrder: List<Int> = emptyList(), // 玩家ID列表，随机打乱，游戏开始时固定
+    val nightActionOrder: List<Int> = emptyList(), // 按规则行动的玩家ID列表，复制身份后可插入额外行动
     val nightSwapActions: List<NightSwapAction> = emptyList(), // 夜间交换记录，按nightOrder结算
     val currentNightStep: Int = 0,       // 当前夜间行动步骤索引
     val nightSubStep: NightActionSubStep = NightActionSubStep.HAND_OFF, // 夜间行动子步骤
@@ -225,6 +224,7 @@ data class WerewolfGameState(
     val doppelgangerTargetId: Int? = null,
     val doppelgangerCopiedRole: WerewolfRole? = null,   // 化身幽灵复制的角色类型
     val doppelgangerPendingAction: Boolean = false,      // 化身幽灵是否需要执行被复制角色的行动
+    val doppelgangerFollowUpStep: Int = -1,
     val robberTargetId: Int? = null,
     val troublemakerTarget1Id: Int? = null,
     val troublemakerTarget2Id: Int? = null,

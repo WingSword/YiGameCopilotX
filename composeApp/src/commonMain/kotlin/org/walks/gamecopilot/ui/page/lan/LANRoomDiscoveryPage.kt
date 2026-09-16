@@ -67,13 +67,20 @@ fun LANRoomDiscoveryPage(
     viewModel: MainViewmodel
 ) {
     val lanState by viewModel.lanState.collectAsState()
-    val discoveredRooms = lanState.discoveredRooms
     val connectionState = lanState.connectionState
 
     var selectedGameType by remember(lanState.preferredGameType) {
-        mutableStateOf(lanState.preferredGameType)
+        mutableStateOf(
+            lanState.preferredGameType.takeIf {
+                it == GameType.ALL || it.isLanSupported
+            } ?: GameType.ALL
+        )
     }
     var showGameTypeFilter by remember { mutableStateOf(false) }
+    val discoveredRooms = lanState.discoveredRooms.filter { room ->
+        room.gameType.isLanSupported &&
+                (selectedGameType == GameType.ALL || room.gameType == selectedGameType)
+    }
     
     val isDiscovering = connectionState.status == ConnectionStatus.DISCOVERING
     
@@ -311,7 +318,7 @@ private fun GameTypeFilterDialog(
         }
     ) {
             Column {
-                GameType.values().forEach { type ->
+                (listOf(GameType.ALL) + GameType.lanSupportedTypes).forEach { type ->
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()

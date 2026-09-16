@@ -14,7 +14,7 @@ enum class AwalongConfig(
         AwalongRole.MOGANNA,
         AwalongRole.CISHA,
     ),
-    val process: List<Int> = listOf(2, 3, 2, 3),
+    val process: List<Int> = listOf(2, 3, 2, 3, 3),
     val description: String = ""
 
 ) {
@@ -29,7 +29,7 @@ enum class AwalongConfig(
             AwalongRole.MOGANNA,
             AwalongRole.CISHA,
         ),
-        process = listOf(2, 3, 2, 3),
+        process = listOf(2, 3, 2, 3, 3),
         description = "" +
                 "1.角色特性：\n" +
                 "梅林(S)：可看到除 莫德雷德 外的所有坏人（即能识别莫甘娜、刺客、爪牙）。\n" +
@@ -41,7 +41,7 @@ enum class AwalongConfig(
                 "3.任务失败条件：每轮任务中 1 张坏票即失败；" +
                 "4.胜利条件：\n" +
                 "【S】：3 次任务成功且梅林未被刺杀\n" +
-                "【E】：2 次任务失败或刺杀梅林成功"
+                "【E】：3 次任务失败或刺杀梅林成功"
 
     ),
     Standard_6(

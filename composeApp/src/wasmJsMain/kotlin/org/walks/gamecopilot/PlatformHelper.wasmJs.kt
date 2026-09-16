@@ -1,7 +1,5 @@
 package org.walks.gamecopilot
 
-import kotlin.time.TimeSource
-
 // commonMain
 // commonMain/PlatformHelper.kt
 actual class PlatformHelper {
@@ -28,11 +26,11 @@ actual class PlatformHelper {
     actual fun stopPersistentAlert() {
     }
 
-    actual fun getAppVersionName(): String = "1.3"
-    actual fun getAppVersionCode(): Int = 4
+    actual fun getAppVersionName(): String = "1.5"
+    actual fun getAppVersionCode(): Int = 9
 }
 
-// Wasm 环境使用 Monotonic 时间源
-// 注意：这不是墙上时钟时间，但足够用于生成唯一 ID
-private val appStartTime = TimeSource.Monotonic.markNow()
-actual fun currentTimeMillis(): Long = appStartTime.elapsedNow().inWholeMilliseconds
+@OptIn(kotlin.js.ExperimentalWasmJsInterop::class)
+@JsFun("() => Date.now()")
+private external fun epochMillis(): Double
+actual fun currentTimeMillis(): Long = epochMillis().toLong()

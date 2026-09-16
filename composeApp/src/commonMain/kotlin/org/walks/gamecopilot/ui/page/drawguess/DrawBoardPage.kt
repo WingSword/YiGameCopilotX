@@ -30,6 +30,7 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateListOf
@@ -38,6 +39,8 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
@@ -53,6 +56,8 @@ import androidx.compose.ui.unit.sp
 import org.walks.gamecopilot.MainViewmodel
 import org.walks.gamecopilot.PlatformHelper
 import org.walks.gamecopilot.data.DrawGuessWordLibrary
+import org.walks.gamecopilot.data.GameStatsManager
+import org.walks.gamecopilot.data.entity.GameMode
 import org.walks.gamecopilot.intent.AiIntent
 import org.walks.gamecopilot.ui.components.AiMessageBubble
 import org.walks.gamecopilot.ui.components.AppDialog
@@ -101,6 +106,7 @@ fun DrawBoardPage(
 ) {
     var showGuideDialog by remember { mutableStateOf(true) }
     var showWordDialog by remember { mutableStateOf(false) }
+    var showEndConfirmation by remember { mutableStateOf(false) }
     var currentWord by remember { mutableStateOf(DrawGuessWordLibrary.getRandomWord()) }
     val paths = remember { mutableStateListOf<PathState>() }
     val redoStack = remember { mutableStateListOf<PathState>() }
@@ -117,6 +123,11 @@ fun DrawBoardPage(
     val aiMessage by viewmodel.aiMessage.collectAsState()
     val isLoadingAi by viewmodel.isLoadingAi.collectAsState()
 
+    LaunchedEffect(Unit) {
+        val playerCount = viewmodel.gameEntity.value.currentGame.totalPlayerNumber
+        GameStatsManager.recordGameStart(GameMode.DRAW_GUESS, playerCount)
+    }
+
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -128,15 +139,23 @@ fun DrawBoardPage(
             onBack = onBack,
             actions = emptyList(),
             customAction = {
-                TextButton(
-                    onClick = { showWordDialog = true }
-                ) {
-                    Text(
-                        text = "查看词汇",
-                        fontSize = 14.sp,
-                        fontWeight = FontWeight.Medium,
-                        color = MaterialTheme.colorScheme.primary
-                    )
+                Row {
+                    TextButton(onClick = { showWordDialog = true }) {
+                        Text(
+                            text = "查看词汇",
+                            fontSize = 14.sp,
+                            fontWeight = FontWeight.Medium,
+                            color = MaterialTheme.colorScheme.primary
+                        )
+                    }
+                    TextButton(onClick = { showEndConfirmation = true }) {
+                        Text(
+                            text = "结束",
+                            fontSize = 14.sp,
+                            fontWeight = FontWeight.Medium,
+                            color = MaterialTheme.colorScheme.error
+                        )
+                    }
                 }
             }
         )
@@ -214,13 +233,13 @@ fun DrawBoardPage(
             onUndo = {
                 if (paths.isNotEmpty()) {
                     PlatformHelper.getInstance().vibrateMethod()
-                    redoStack.add(paths.removeLast())
+                    redoStack.add(paths.removeAt(paths.lastIndex))
                 }
             },
             onRedo = {
                 if (redoStack.isNotEmpty()) {
                     PlatformHelper.getInstance().vibrateMethod()
-                    paths.add(redoStack.removeLast())
+                    paths.add(redoStack.removeAt(redoStack.lastIndex))
                 }
             },
             onClear = {
@@ -253,6 +272,40 @@ fun DrawBoardPage(
         )
     }
 
+    if (showEndConfirmation) {
+        AppDialog(
+            title = "结束本局？",
+            subtitle = "结束后会将本局计入已完成对局并返回上一页。",
+            onDismiss = { showEndConfirmation = false },
+            showCloseButton = false,
+            scrollable = false,
+            actions = {
+                TextButton(onClick = { showEndConfirmation = false }) {
+                    Text("继续作画")
+                }
+                Button(
+                    onClick = {
+                        GameStatsManager.completeLatestGame(GameMode.DRAW_GUESS, "已完成")
+                        showEndConfirmation = false
+                        onBack()
+                    },
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = MaterialTheme.colorScheme.error,
+                        contentColor = MaterialTheme.colorScheme.onError
+                    )
+                ) {
+                    Text("结束")
+                }
+            }
+        ) {
+            Text(
+                text = "直接返回会保留为未结算记录。",
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+        }
+    }
+
     OfflinePassingGuideDialog(
         show = showGuideDialog,
         gameTitle = "你画我猜",
@@ -279,6 +332,7 @@ fun DrawingCanvas(
     Canvas(
         modifier = Modifier
             .fillMaxSize()
+            .semantics { contentDescription = "绘画区域" }
             .pointerInput(currentColor, currentStrokeWidth, isEraser) {
                 detectDragGestures(
                     onDragStart = { offset ->
@@ -488,7 +542,8 @@ fun DrawingTools(
         ) {
             ToolButtonSmall(
                 isSelected = false,
-                onClick = onMoreToolsToggle
+                onClick = onMoreToolsToggle,
+                modifier = Modifier.semantics { contentDescription = "更多画笔工具" }
             ) { color ->
                 MoreIcon(color, showMoreTools)
             }
@@ -496,7 +551,8 @@ fun DrawingTools(
             ToolButtonSmall(
                 isSelected = canUndo,
                 onClick = onUndo,
-                enabled = canUndo
+                enabled = canUndo,
+                modifier = Modifier.semantics { contentDescription = "撤销" }
             ) { color ->
                 UndoIcon(color)
             }
@@ -504,7 +560,8 @@ fun DrawingTools(
             ToolButtonSmall(
                 isSelected = canRedo,
                 onClick = onRedo,
-                enabled = canRedo
+                enabled = canRedo,
+                modifier = Modifier.semantics { contentDescription = "重做" }
             ) { color ->
                 RedoIcon(color)
             }
@@ -512,7 +569,8 @@ fun DrawingTools(
             ColorButton(
                 color = currentColor,
                 isSelected = showColorPicker,
-                onClick = onColorPickerToggle
+                onClick = onColorPickerToggle,
+                modifier = Modifier.semantics { contentDescription = "画笔颜色" }
             )
 
             TextButtonSmall(

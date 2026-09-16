@@ -15,6 +15,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -61,6 +62,8 @@ import org.walks.gamecopilot.awalong.components.PageDayTaskOptimized
 import org.walks.gamecopilot.awalong.components.TaskProgressBar
 import org.walks.gamecopilot.awalong.data.AwalongGameDayEntity
 import org.walks.gamecopilot.awalong.data.AwalongGameState
+import org.walks.gamecopilot.data.GameStatsManager
+import org.walks.gamecopilot.data.entity.GameMode
 import org.walks.gamecopilot.intent.AiIntent
 import org.walks.gamecopilot.ui.components.AiMessageBubble
 import org.walks.gamecopilot.ui.components.AppDialog
@@ -78,9 +81,9 @@ import yigamecopilotx.composeapp.generated.resources.icon_info
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun AwalongGamePageOptimized(navi: NavController, viewmodel: MainViewmodel) {
-    val gameConfig = viewmodel.awalongConfigState.value
-    val customConfig = viewmodel.awalongCustomConfigState.value
-    val gameState = viewmodel.awalongGameState.value
+    val gameConfig by viewmodel.awalongConfigState.collectAsState()
+    val customConfig by viewmodel.awalongCustomConfigState.collectAsState()
+    val gameState by viewmodel.awalongGameState.collectAsState()
     var showRulesDialog by remember { mutableStateOf(false) }
     var showGuideDialog by remember { mutableStateOf(true) }
 
@@ -110,6 +113,12 @@ fun AwalongGamePageOptimized(navi: NavController, viewmodel: MainViewmodel) {
     var gameEndResult by remember { mutableStateOf<GameEndResult?>(null) }
     var showAssassinationDialog by remember { mutableStateOf(false) }
     var isGameLocked by remember { mutableStateOf(false) }
+
+    LaunchedEffect(gameEndResult?.winner, gameEndResult?.reason) {
+        gameEndResult?.let { result ->
+            GameStatsManager.completeLatestGame(GameMode.SPY_AWALONG, result.winner)
+        }
+    }
 
     // 构建页面列表，传递 pageState 和 scope
     // 使用 remember 来避免不必要的重新构建，但监听游戏状态变化
@@ -185,23 +194,10 @@ fun AwalongGamePageOptimized(navi: NavController, viewmodel: MainViewmodel) {
                 gameEndResult = result
                 isGameLocked = true
 
-                // 游戏结束后自动返回到第0页
-                scope.launch {
-                    delay(2000) // 延迟2秒后返回，给用户足够时间查看结果
-                    pageState.scrollToPage(0)
-                    // 重置游戏结束状态，以便下次游戏
-                    gameEndResult = null
-                    isGameLocked = false
-                }
             }
         }
     }
 
-    // 监听页面退出事件，重置游戏状态
-    LaunchedEffect(Unit) {
-        // 当页面被销毁时，重置游戏状态
-        // 使用DisposableEffect来监听页面生命周期
-    }
     
     Column {
         CommonTopBar(
@@ -373,12 +369,12 @@ fun AwalongGamePageOptimized(navi: NavController, viewmodel: MainViewmodel) {
             AllResultsDialog(
                 gameState = gameState,
                 onDismiss = {
-                    // 游戏结束后自动返回到第0页
                     scope.launch {
-                        delay(1000)
                         pageState.scrollToPage(0)
-                        gameEndResult = null
                         viewmodel.handleAwalongGameIntent(AwalongIntent.RestartGame)
+                        gameEndResult = null
+                        showAssassinationDialog = false
+                        isGameLocked = false
                     }
                 }
             )
@@ -431,8 +427,8 @@ private fun buildPages(
                 gameState = currentGameState,
                 viewmodel = viewmodel,
                 onCheck = { map, result, cap ->
-                    val completedTask = AwalongGameDayEntity(
-                        day = index,
+                    val completedTask = (viewmodel.awalongGameState.value.dayList.firstOrNull { it.day == index }
+                        ?: AwalongGameDayEntity(day = index)).copy(
                         mainTask = map,
                         taskResult = result,
                         murderTask = -1,
@@ -540,7 +536,7 @@ private fun BottomNavigationWithProgress(
             AnimatedVisibility(isNextEnabled && currentPage == 0 && !isGameLocked) {
                 Box(
                     modifier = Modifier
-                        .size(42.dp)
+                        .width(160.dp).height(48.dp)
                         .border(1.dp, MaterialTheme.colorScheme.outline, RectangleShape)
                         .background(MaterialTheme.colorScheme.surface, RectangleShape)
                         .clickable {
@@ -550,12 +546,7 @@ private fun BottomNavigationWithProgress(
                         },
                     contentAlignment = Alignment.Center
                 ) {
-                    BackIcon(
-                        color = MaterialTheme.colorScheme.primary,
-                        modifier = Modifier
-                            .size(20.dp)
-                            .rotate(180f)
-                    )
+                    Text("身份确认完毕，开始组队", color = MaterialTheme.colorScheme.primary)
                 }
             }
         }

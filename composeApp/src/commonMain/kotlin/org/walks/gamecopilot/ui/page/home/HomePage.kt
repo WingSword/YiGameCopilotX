@@ -1,6 +1,10 @@
 package org.walks.gamecopilot.ui.page.home
 
 import androidx.compose.animation.animateContentSize
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.tween
+import androidx.compose.foundation.layout.BoxWithConstraints
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
@@ -31,6 +35,7 @@ import androidx.compose.material.icons.rounded.Menu
 import androidx.compose.material.icons.rounded.Settings
 import androidx.compose.material.icons.rounded.SportsEsports
 import androidx.compose.material.icons.rounded.Timer
+import androidx.compose.material3.Button
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -54,6 +59,7 @@ import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.IntOffset
@@ -96,7 +102,7 @@ fun HomePage(viewmodel: MainViewmodel, navi: NavHostController) {
             GameCardMeta(
                 mode = GameMode.SPY_MAIN,
                 description = "主持人发牌后轮流发言与投票，找出卧底。",
-                players = "4-12 人",
+                players = "4-16 人",
                 brush = Brush.linearGradient(
                     listOf(
                         GameMode.SPY_MAIN.gradientColors.start,
@@ -117,7 +123,7 @@ fun HomePage(viewmodel: MainViewmodel, navi: NavHostController) {
             ),
             GameCardMeta(
                 mode = GameMode.DRAW_GUESS,
-                description = "轮流作画与猜词，轻松快速开局。",
+                description = "轮流作画与猜词，适合快速组局。",
                 players = "3-10 人",
                 brush = Brush.linearGradient(
                     listOf(
@@ -164,56 +170,28 @@ fun HomePage(viewmodel: MainViewmodel, navi: NavHostController) {
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Spacer(modifier = Modifier.size(40.dp))
             Text(
-                text = "游戏大厅",
-                style = MaterialTheme.typography.titleLarge,
+                text = "桌游助手",
+                style = MaterialTheme.typography.headlineMedium,
                 fontWeight = FontWeight.Bold,
                 color = MaterialTheme.colorScheme.onSurface
             )
-            Box {
-                Surface(
-                    modifier = Modifier
-                        .size(40.dp)
-                        .clickable { menuExpanded = true },
-                    shape = RoundedCornerShape(designSystem.cornerRadius.md),
-                    color = MaterialTheme.colorScheme.surfaceVariant
-                ) {
-                    Box(contentAlignment = Alignment.Center) {
-                        Icon(
-                            imageVector = Icons.Rounded.Menu,
-                            contentDescription = "打开快捷菜单",
-                            tint = MaterialTheme.colorScheme.primary
-                        )
-                    }
-                }
-                HomeStatsMenu(
-                    expanded = menuExpanded,
-                    themeMode = themeMode,
-                    onDismiss = { menuExpanded = false },
-                    onThemeModeChange = viewmodel::setThemeMode
-                )
-            }
+
         }
 
         Spacer(modifier = Modifier.height(14.dp))
-        Text(
-            text = "选择游戏",
-            style = MaterialTheme.typography.titleMedium,
-            fontWeight = FontWeight.SemiBold,
-            color = MaterialTheme.colorScheme.onSurface,
-        )
-        Text(
-            text = "点开卡片选择游玩方式，常用配置会在进入时自动带上。",
-            style = MaterialTheme.typography.bodySmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            modifier = Modifier.padding(top = 4.dp, bottom = 12.dp)
-        )
-        Column(
+        BoxWithConstraints(Modifier.fillMaxWidth()) {
+        val columns = if (maxWidth >= 600.dp) 2 else 1
+        // Keep two columns on one row when dp sizes round up to fractional physical pixels.
+        val cardWidth = (maxWidth - 11.dp * (columns - 1)) / columns
+        FlowRow(
             modifier = Modifier.fillMaxWidth(),
-            verticalArrangement = Arrangement.spacedBy(10.dp)
+            verticalArrangement = Arrangement.spacedBy(10.dp),
+            horizontalArrangement = Arrangement.spacedBy(10.dp),
+            maxItemsInEachRow = columns
         ) {
             cardList.forEach { card ->
+                Box(Modifier.width(cardWidth)) {
                 GameCard(
                     meta = card,
                     currentMode = operationMode,
@@ -229,7 +207,9 @@ fun HomePage(viewmodel: MainViewmodel, navi: NavHostController) {
                         navigateByMode(card.mode, mode, viewmodel, navi)
                     }
                 )
+                }
             }
+        }
         }
 
         Spacer(modifier = Modifier.height(110.dp))
@@ -248,14 +228,19 @@ private fun HomeStatsMenu(
     val design = LocalAppDesign.current
     val menuShape = RoundedCornerShape(design.cornerRadius.lg)
 
-    // 读取游戏对局统计数据
-    val totalGames = remember { GameStatsManager.totalGames() }
-    val totalPlayers = remember { GameStatsManager.totalPlayerParticipations() }
-    val modeCountMap = remember { GameStatsManager.countByGameMode() }
-    val favoriteGame = remember {
+    // 订阅真实对局数据，开局、结算或清空后菜单会立即刷新。
+    val gameRecords by GameStatsManager.recordsFlow.collectAsState()
+    val totalGames = gameRecords.size
+    val totalPlayers = remember(gameRecords) { gameRecords.sumOf { it.playerCount } }
+    val modeCountMap = remember(gameRecords) {
+        gameRecords.groupingBy {
+            GameMode.entries.getOrElse(it.gameModeOrdinal) { GameMode.SPY_MAIN }
+        }.eachCount()
+    }
+    val favoriteGame = remember(modeCountMap) {
         modeCountMap.maxByOrNull { it.value }?.key
     }
-    val lastPlayedTime = remember { GameStatsManager.lastPlayedTime() }
+    val lastPlayedTime = remember(gameRecords) { gameRecords.maxOfOrNull { it.startTime } ?: 0L }
     val lastPlayedText = remember(lastPlayedTime) {
         if (lastPlayedTime == 0L) {
             "暂无记录"
@@ -693,13 +678,6 @@ private fun navigateByMode(
     navi: NavHostController
 ) {
     viewmodel.handleGameIntent(GameIntent.SwitchGameMode(gameMode.ordinal))
-    // 仅统计单机对局数据
-    if (operationMode == OperationMode.LOCAL) {
-        runCatching {
-            val playerCount = viewmodel.gameEntity.value.currentGame.totalPlayerNumber
-            GameStatsManager.recordGameStart(gameMode, playerCount)
-        }
-    }
     when (operationMode) {
         OperationMode.LOCAL -> when (gameMode) {
             GameMode.SPY_MAIN -> navi.navigate(NaviRoute.LOCAL_SPY.route)
@@ -735,210 +713,51 @@ private fun GameCard(
     onQuickEnter: (OperationMode) -> Unit
 ) {
     val supportedModes = when (meta.mode) {
-        GameMode.HUNT_TOWN -> listOf(OperationMode.LAN, OperationMode.ONLINE)
-        else -> OperationMode.entries.toList()
-    }
+        GameMode.SPY_MAIN, GameMode.ONE_NIGHT_WEREWOLF, GameMode.HUNT_TOWN, GameMode.SPY_AWALONG, GameMode.DRAW_GUESS -> OperationMode.entries.toList()
+        else -> listOf(OperationMode.LOCAL, OperationMode.LAN)
+    }.filter { it != OperationMode.LAN || !org.walks.gamecopilot.getPlatform().name.startsWith("Web") }
     val effectiveMode = if (currentMode in supportedModes) currentMode else supportedModes.first()
-    val modeTitle = { mode: OperationMode ->
-        when (mode) {
-            OperationMode.LOCAL -> "单手机游玩"
-            OperationMode.LAN -> "同网络游玩"
-            OperationMode.ONLINE -> "跨网络游玩"
-        }
-    }
-    val modeDescription = { mode: OperationMode ->
-        when (mode) {
-            OperationMode.LOCAL -> "同设备本地游戏，适合朋友面对面快速开局。"
-            OperationMode.LAN -> "同一局域网联机，适合宿舍或聚会多人同步。"
-            OperationMode.ONLINE -> "跨网络远程联机，适合异地好友随时组局。"
-        }
-    }
-    val cardColor =
-        if (isExpanded) MaterialTheme.colorScheme.surface else MaterialTheme.colorScheme.surfaceVariant
-    val iconMask = if (isExpanded) 0.22f else 0.08f
-    val designSystem = LocalAppDesign.current
+    val expansion by animateFloatAsState(if (isExpanded) 1f else 0.35f, tween(260), label = "card expansion")
     Surface(
         modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(designSystem.cornerRadius.card),
-        color = cardColor,
-        tonalElevation = 0.dp,
-        shadowElevation = 0.dp
+        shape = RoundedCornerShape(26.dp),
+        color = MaterialTheme.colorScheme.surface,
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.35f))
     ) {
-        Column(modifier = Modifier.animateContentSize()) {
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .clickable(onClick = onExpandToggle)
-                    .padding(horizontal = 16.dp, vertical = 14.dp),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Column(modifier = Modifier.weight(1f)) {
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Box(
-                            modifier = Modifier
-                                .weight(0.4f)
-                                .height(1.dp)
-                                .background(MaterialTheme.colorScheme.outline)
-                        )
-                        Spacer(modifier = Modifier.width(8.dp))
-                        Box(
-                            modifier = Modifier
-                                .weight(0.25f)
-                                .height(1.dp)
-                                .background(MaterialTheme.colorScheme.outline)
-                        )
-                        Spacer(modifier = Modifier.weight(1f))
-                    }
-                    Text(
-                        text = meta.mode.title,
-                        style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.Bold,
-                        color = MaterialTheme.colorScheme.onSurface,
-                        maxLines = 1
-                    )
-                    Text(
-                        text = "${meta.players} · ${modeTitle(effectiveMode)}",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = if (isExpanded) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
-                        modifier = Modifier.padding(top = 4.dp),
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis
-                    )
-                }
-                Box(
-                    modifier = Modifier
-                        .size(52.dp)
-                        .background(
-                            MaterialTheme.colorScheme.surface,
-                            RoundedCornerShape(designSystem.cornerRadius.md)
-                        ),
-                    contentAlignment = Alignment.Center
-                ) {
-                    GameModeBadge(
-                        mode = meta.mode,
-                        brush = meta.brush,
-                        overlayAlpha = iconMask,
-                        modifier = Modifier
-                            .matchParentSize()
-                    )
+        Column(modifier = Modifier.animateContentSize(tween(260))) {
+            Row(Modifier.fillMaxWidth().clickable(onClick = onExpandToggle).padding(20.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(16.dp)) {
+                GameModeBadge(meta.mode, meta.brush, 0f, Modifier.size(62.dp))
+                Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                    Text(meta.mode.title, style = MaterialTheme.typography.titleLarge,
+                        fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface)
+                    Text(meta.description, style = MaterialTheme.typography.bodySmall,
+                        maxLines = 2, overflow = TextOverflow.Ellipsis, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    Text(meta.players, style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
             }
-
             if (isExpanded) {
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(1.dp)
-                        .background(MaterialTheme.colorScheme.outline)
-                )
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(1.dp)
-                        .background(MaterialTheme.colorScheme.primary)
-                )
-                Column(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(start = 16.dp, end = 16.dp, top = 12.dp, bottom = 16.dp),
-                    verticalArrangement = Arrangement.spacedBy(14.dp)
-                ) {
-                    Text(
-                        text = meta.description,
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        maxLines = 2,
-                        overflow = TextOverflow.Ellipsis
-                    )
-                    Box(
-                        modifier = Modifier
-                            .fillMaxWidth(0.5f)
-                            .height(1.dp)
-                            .background(MaterialTheme.colorScheme.outline)
-                    )
-                    Text(
-                        text = "适合人数：${meta.players}",
-                        style = MaterialTheme.typography.labelMedium,
-                        color = MaterialTheme.colorScheme.onSurface
-                    )
+                Column(Modifier.padding(start = 20.dp, end = 20.dp, bottom = 20.dp),
+                    verticalArrangement = Arrangement.spacedBy(12.dp)) {
                     Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                         supportedModes.forEach { mode ->
-                            val selected = currentMode == mode
-                            Surface(
-                                modifier = Modifier
-                                    .weight(1f)
-                                    .height(36.dp)
-                                    .clickable { onModeClick(mode) },
-                                color = if (selected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.surfaceVariant,
-                                shape = RoundedCornerShape(designSystem.cornerRadius.md),
-                                tonalElevation = 0.dp,
-                                shadowElevation = 0.dp
-                            ) {
-                                Box(contentAlignment = Alignment.Center) {
-                                    Text(
-                                        text = modeTitle(mode),
-                                        style = MaterialTheme.typography.labelMedium,
-                                        color = if (selected) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurfaceVariant,
-                                        maxLines = 1
-                                    )
-                                }
+                            Surface(Modifier.weight(1f).clickable { onModeClick(mode) },
+                                shape = RoundedCornerShape(12.dp),
+                                color = if (effectiveMode == mode) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surfaceVariant) {
+                                Text(when(mode) { OperationMode.LOCAL -> "单机"; OperationMode.LAN -> "局域网"; OperationMode.ONLINE -> "网络房间" },
+                                    modifier = Modifier.padding(vertical = 12.dp), textAlign = TextAlign.Center,
+                                    style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.onSurface)
                             }
                         }
                     }
-                    Text(
-                        text = modeDescription(effectiveMode),
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        maxLines = 2,
-                        overflow = TextOverflow.Ellipsis
-                    )
-                    Surface(
-                        modifier = Modifier
-                            .widthIn(min = 96.dp)
-                            .height(38.dp)
-                            .clickable { onQuickEnter(effectiveMode) },
-                        color = MaterialTheme.colorScheme.primary,
-                        shape = RoundedCornerShape(designSystem.cornerRadius.button),
-                        tonalElevation = 0.dp,
-                        shadowElevation = 0.dp
-                    ) {
-                        Row(
-                            modifier = Modifier.fillMaxSize().padding(horizontal = 10.dp),
-                            horizontalArrangement = Arrangement.SpaceBetween,
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Text(
-                                text = "进入游戏",
-                                style = MaterialTheme.typography.labelLarge,
-                                color = MaterialTheme.colorScheme.onPrimary,
-                                fontWeight = FontWeight.SemiBold
-                            )
-                            Icon(
-                                imageVector = Icons.AutoMirrored.Rounded.ArrowForward,
-                                contentDescription = null,
-                                tint = MaterialTheme.colorScheme.onPrimary,
-                                modifier = Modifier.size(16.dp)
-                            )
-                        }
-                    }
+                    Button(onClick = { onQuickEnter(effectiveMode) }, modifier = Modifier.fillMaxWidth().height(44.dp),
+                        shape = RoundedCornerShape(16.dp)) { Text("开始游戏", fontWeight = FontWeight.Bold) }
                 }
             }
-
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(3.dp)
-                    .background(MaterialTheme.colorScheme.outline)
-            ) {
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth(if (isExpanded) 1f else 0.35f)
-                        .height(3.dp)
-                        .background(MaterialTheme.colorScheme.primary)
-                )
+            Box(Modifier.fillMaxWidth().height(3.dp).background(MaterialTheme.colorScheme.outline.copy(alpha = 0.4f))) {
+                Box(Modifier.fillMaxWidth(expansion).height(3.dp).background(MaterialTheme.colorScheme.primary))
             }
         }
     }

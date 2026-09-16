@@ -73,6 +73,8 @@ import org.walks.gamecopilot.data.RandomListEntity
 import org.walks.gamecopilot.ui.components.AppDialog
 import org.walks.gamecopilot.ui.picker.WeSingleColumnPicker
 import yigamecopilotx.composeapp.generated.resources.Res
+import yigamecopilotx.composeapp.generated.resources.icon_answer_special
+import yigamecopilotx.composeapp.generated.resources.icon_finger_special
 import yigamecopilotx.composeapp.generated.resources.icon_card
 import yigamecopilotx.composeapp.generated.resources.icon_coin
 import yigamecopilotx.composeapp.generated.resources.icon_dice
@@ -86,12 +88,12 @@ import yigamecopilotx.composeapp.generated.resources.icon_wheel_svg
 
 enum class RandomCate(val key: String, val iconRes: DrawableResource?) {
     Empty("", null),
-    Finger(RANDOM_PAGE_CONFIG_CATE_FINGER, Res.drawable.icon_wheel_svg),
+    Finger(RANDOM_PAGE_CONFIG_CATE_FINGER, Res.drawable.icon_finger_special),
     Card(RANDOM_PAGE_CONFIG_CATE_CARD, Res.drawable.icon_card),
     Dice(RANDOM_PAGE_CONFIG_CATE_DICE, Res.drawable.icon_dice),
     Coin(RANDOM_PAGE_CONFIG_CATE_COIN, Res.drawable.icon_coin),
     Wheel(RANDOM_PAGE_CONFIG_CATE_WHEEL, Res.drawable.icon_wheel_svg),
-    AnswerBook(RANDOM_PAGE_CONFIG_CATE_ANSWER_BOOK, Res.drawable.icon_card);
+    AnswerBook(RANDOM_PAGE_CONFIG_CATE_ANSWER_BOOK, Res.drawable.icon_answer_special);
 
     companion object {
         fun getCateByKey(key: String): RandomCate {

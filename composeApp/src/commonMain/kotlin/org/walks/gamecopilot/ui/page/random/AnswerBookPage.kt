@@ -1,5 +1,8 @@
-package org.walks.gamecopilot.ui.page.random
+﻿package org.walks.gamecopilot.ui.page.random
 
+import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.CubicBezierEasing
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
@@ -7,183 +10,112 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import org.walks.gamecopilot.MainViewmodel
+import org.walks.gamecopilot.data.entity.AnswerBookPhase
 import org.walks.gamecopilot.intent.AnswerBookIntent
 import org.walks.gamecopilot.theme.LocalAppDesign
 
 @Composable
-fun AnswerBookPage(
-    viewmodel: MainViewmodel,
-    modifier: Modifier = Modifier
-) {
+fun AnswerBookPage(viewmodel: MainViewmodel, modifier: Modifier = Modifier) {
     val design = LocalAppDesign.current
-    val answerBookState by viewmodel.answerBookState.collectAsState()
-
-    Column(
-        modifier = modifier
-            .fillMaxSize()
-            .background(MaterialTheme.colorScheme.surface)
-            .padding(horizontal = design.spacing.lg, vertical = design.spacing.lg),
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.SpaceBetween
-    ) {
-        Column(
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.spacedBy(4.dp)
-        ) {
-            Text(
-                text = "答案之书",
-                style = MaterialTheme.typography.titleLarge,
-                fontWeight = FontWeight.Bold,
-                color = MaterialTheme.colorScheme.onSurface
-            )
-            Text(
-                text = "心中默念问题，点击书本翻开答案。",
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                textAlign = TextAlign.Center
-            )
-        }
-
-        BoxWithConstraints(
-            modifier = Modifier
-                .weight(1f)
-                .fillMaxWidth()
-                .padding(vertical = design.spacing.lg),
-            contentAlignment = Alignment.Center
-        ) {
-            val maxCardHeight = maxHeight.coerceAtMost(420.dp)
-            val maxCardWidth = maxWidth * 0.86f
-            val cardHeight = maxCardHeight.coerceAtMost(maxCardWidth / 0.72f)
-            val cardWidth = cardHeight * 0.72f
-
-            Box(
-                modifier = Modifier
-                    .width(cardWidth)
-                    .height(cardHeight)
-                    // 非翻转中时，点击书本即可翻开/再翻一次
-                    .clickable(
-                        enabled = !answerBookState.isFlipping,
-                        interactionSource = remember { MutableInteractionSource() },
-                        indication = null
-                    ) {
-                        viewmodel.handleAnswerBookIntent(
-                            if (answerBookState.currentAnswer == null) {
-                                AnswerBookIntent.FlipBook
-                            } else {
-                                AnswerBookIntent.ResetFlip
-                            }
-                        )
-                    },
-                contentAlignment = Alignment.Center
-            ) {
-                when {
-                    answerBookState.isFlipping -> {
-                        FlipBookAnimation(
-                            isFlipping = true,
-                            flipProgress = answerBookState.flipProgress,
-                            answer = answerBookState.currentAnswer,
-                            question = "",
-                            modifier = Modifier.fillMaxSize()
-                        )
-                    }
-
-                    answerBookState.currentAnswer != null -> {
-                        FlipBookAnimation(
-                            isFlipping = false,
-                            flipProgress = 1f,
-                            answer = answerBookState.currentAnswer,
-                            question = "",
-                            modifier = Modifier.fillMaxSize()
-                        )
-                    }
-
-                    else -> {
-                        BookCover(
-                            modifier = Modifier
-                                .fillMaxSize()
-                                .clip(RoundedCornerShape(design.cornerRadius.card))
-                        )
-                    }
-                }
+    val state by viewmodel.answerBookState.collectAsState()
+    val progress = remember {
+        Animatable(if (state.phase == AnswerBookPhase.OPEN || state.phase == AnswerBookPhase.CLOSING) 1f else 0f)
+    }
+    // Use the display frame clock; leaving the page cancels playback and returning resumes its phase.
+    LaunchedEffect(state.phase) {
+        val phase = state.phase
+        when (phase) {
+            AnswerBookPhase.CLOSED -> progress.snapTo(0f)
+            AnswerBookPhase.OPEN -> progress.snapTo(1f)
+            AnswerBookPhase.CLOSING, AnswerBookPhase.OPENING -> {
+                progress.animateTo(
+                    targetValue = if (phase == AnswerBookPhase.OPENING) 1f else 0f,
+                    animationSpec = tween(
+                        durationMillis = if (phase == AnswerBookPhase.OPENING) 520 else 300,
+                        easing = CubicBezierEasing(0.42f, 0f, 0.58f, 1f)
+                    )
+                )
+                viewmodel.handleAnswerBookIntent(AnswerBookIntent.AnimationFinished(phase))
             }
         }
+    }
 
+    BoxWithConstraints(modifier.fillMaxSize().background(MaterialTheme.colorScheme.surface)) {
+        // Match Harmony's available-content layout, including a scrollable book on short screens.
+        val bookWidth = (maxWidth - 32.dp).coerceIn(1.dp, 460.dp)
+        val bookHeight = (maxHeight - 170.dp).coerceIn(220.dp, 320.dp)
+        val showTwoPages = maxWidth >= 420.dp
         Column(
-            modifier = Modifier.fillMaxWidth(),
+            modifier = Modifier.fillMaxSize().padding(vertical = design.spacing.lg),
             horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.spacedBy(design.spacing.sm)
+            verticalArrangement = Arrangement.spacedBy(design.spacing.md)
         ) {
-            if (answerBookState.isFlipping) {
+            Column(
+                Modifier.fillMaxWidth().padding(horizontal = design.spacing.xl),
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.spacedBy(design.spacing.sm)
+            ) {
                 Text(
-                    text = "命运之书正在翻开...",
-                    fontSize = 14.sp,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                    "答案之书", fontSize = design.fontSize.headline.value.sp,
+                    fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface
                 )
-                Spacer(modifier = Modifier.height(52.dp))
-            } else {
-                Button(
-                    onClick = {
-                        viewmodel.handleAnswerBookIntent(
-                            if (answerBookState.currentAnswer == null) {
-                                AnswerBookIntent.FlipBook
-                            } else {
-                                AnswerBookIntent.ResetFlip
-                            }
-                        )
+                Text(
+                    if (state.phase == AnswerBookPhase.OPEN || state.phase == AnswerBookPhase.CLOSING) {
+                        "需要换个角度？可以再问一次。"
+                    } else {
+                        "心中默念问题，轻触书本翻开。"
                     },
-                    shape = RoundedCornerShape(design.cornerRadius.button),
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = MaterialTheme.colorScheme.primary,
-                        contentColor = MaterialTheme.colorScheme.onPrimary
-                    ),
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .heightIn(min = 52.dp)
+                    fontSize = design.fontSize.body.value.sp,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    textAlign = TextAlign.Center
+                )
+            }
+            Box(Modifier.weight(1f).fillMaxWidth().verticalScroll(rememberScrollState())) {
+                Box(
+                    modifier = Modifier.fillMaxWidth().height(bookHeight + 20.dp)
+                        .semantics {
+                            contentDescription = if (state.isFlipping) "翻页中" else "点击答案之书翻页"
+                        }
+                        .clickable(
+                            enabled = !state.isFlipping,
+                            role = Role.Button,
+                            interactionSource = remember { MutableInteractionSource() },
+                            indication = null
+                        ) { viewmodel.handleAnswerBookIntent(AnswerBookIntent.FlipBook) },
+                    contentAlignment = Alignment.Center
                 ) {
-                    Text(
-                        text = if (answerBookState.currentAnswer == null) "翻开答案之书" else "再翻一次",
-                        fontWeight = FontWeight.SemiBold,
-                        fontSize = 16.sp,
-                        color = MaterialTheme.colorScheme.onPrimary,
-                        textAlign = TextAlign.Center
+                    AnswerBookSpread(
+                        answer = state.currentAnswer,
+                        phase = state.phase,
+                        progress = progress.value,
+                        bookWidth = bookWidth,
+                        bookHeight = bookHeight,
+                        showTwoPages = showTwoPages
                     )
                 }
-
-                Text(
-                    text = if (answerBookState.currentAnswer == null) {
-                        "心中默念问题，点击书本即可翻开。"
-                    } else {
-                        "点击书本可再翻一次，换个答案方向。"
-                    },
-                    fontSize = 12.sp,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    textAlign = TextAlign.Center,
-                    modifier = Modifier.fillMaxWidth()
-                )
             }
         }
     }

@@ -12,18 +12,22 @@ data class MonopolyPlayer(
     val isInJail: Boolean = false,
     val jailTurns: Int = 0,
     val position: Int = 0,
-    val isBankrupt: Boolean = false
+    val isBankrupt: Boolean = false,
+    val colorIndex: Int = -1
 )
 
 @Serializable
 data class MonopolyGameState(
     val players: List<MonopolyPlayer> = emptyList(),
+    val transactions: List<MonopolyTransaction> = emptyList(),
     val currentPlayerIndex: Int = 0,
     val bankBalance: Long = Long.MAX_VALUE,
     val houses: Map<Int, Int> = emptyMap(),
     val hotels: Map<Int, Boolean> = emptyMap(),
     val gameStarted: Boolean = false,
-    val roundNumber: Int = 1
+    val roundNumber: Int = 1,
+    val preset: String = "electronic",
+    val initialBalance: Long = 1_500_000
 )
 
 @Serializable
@@ -32,7 +36,10 @@ data class MonopolyTransaction(
     val toPlayerId: String?,
     val amount: Long,
     val description: String,
-    val timestamp: Long = currentTimeMillis()
+    val timestamp: Long = currentTimeMillis(),
+    val fromPlayerName: String? = null,
+    val toPlayerName: String? = null,
+    val batchId: String = ""
 )
 
 @Serializable

@@ -22,6 +22,7 @@ interface ServiceDiscovery {
 
 expect fun createServiceDiscovery(port: Int = DEFAULT_DISCOVERY_PORT): ServiceDiscovery
 
-const val DEFAULT_DISCOVERY_PORT = 37666
+// 与 HarmonyOS 客户端和 LANConstants 保持一致，保证跨端可以互相发现。
+const val DEFAULT_DISCOVERY_PORT = 37668
 const val DISCOVERY_BROADCAST_INTERVAL = 3000L
 const val DISCOVERY_TIMEOUT = 10000L

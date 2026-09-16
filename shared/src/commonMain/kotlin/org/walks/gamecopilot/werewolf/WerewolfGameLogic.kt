@@ -6,18 +6,16 @@ import kotlin.random.Random
 /**
  * 一夜终极狼人 - 核心游戏逻辑
  *
- * 夜间行动核心设计：
- * - 物理传递顺序：所有玩家随机打乱（防泄密）
- * - 逻辑执行顺序：按 nightOrder 优先级（保正确性）
- * - 记录所有交换操作，查看身份时按 nightOrder 回溯计算
- * - 夜间结束时统一结算所有交换，计算最终 currentRole
+ * 夜间按规则顺序传机，夹入无行动玩家；页面不公开下一位的身份。
+ * 记录交换并按角色行动顺序回放，保证查验只看到该时点的身份。
+ * 最后统一结算换牌，投票依据最终身份判定阵营。
  */
 object WerewolfGameLogic {
 
     // ===== 初始化 =====
 
     /**
-     * 初始化游戏：洗牌分配角色，随机打乱夜间传递顺序
+     * 初始化游戏：洗牌分配角色，生成夜间传递顺序
      */
     fun initializeGame(preset: WerewolfPreset, nicknames: List<String>): WerewolfGameState {
         val shuffledRoles = preset.roles.shuffled(Random.Default)
@@ -43,7 +41,7 @@ object WerewolfGameLogic {
             )
         }
 
-        // 所有玩家随机打乱顺序（包含无夜间行动的玩家）
+        // 所有玩家都参与传机，主动角色保持规则要求的先后顺序
         val nightOrder = computeNightActionOrder(players)
 
         return WerewolfGameState(
@@ -58,15 +56,37 @@ object WerewolfGameLogic {
     }
 
     /**
-     * 计算夜间传递顺序（所有玩家，随机打乱）
-     *
-     * 关键设计：
-     * - 所有玩家都参与传递，无行动者看到"没有夜间行动"快速跳过
-     * - 顺序随机打乱，旁观者无法通过"第几个拿到设备"推断角色
+     * 主动角色按规则行动，无行动角色随机插入。
      */
     private fun computeNightActionOrder(players: List<WerewolfPlayer>): List<Int> {
-        return players.map { it.id }.shuffled(Random.Default)
+        val ordered = players.filter { it.initialRole.hasNightAction }.shuffled()
+            .sortedBy { it.initialRole.nightOrder }.map { it.id }.toMutableList()
+        players.filterNot { it.initialRole.hasNightAction }.shuffled().forEach {
+            ordered.add(Random.nextInt(ordered.size + 1), it.id)
+        }
+        return ordered
     }
+
+    fun isDoppelgangerFollowUp(state: WerewolfGameState): Boolean = state.currentNightStep == state.doppelgangerFollowUpStep
+
+    fun confirmNightResult(state: WerewolfGameState): WerewolfGameState {
+        if (isDoppelgangerFollowUp(state)) return state.copy(doppelgangerPendingAction = false, doppelgangerFollowUpStep = -1)
+        if (!state.doppelgangerPendingAction || state.doppelgangerFollowUpStep >= 0) return state
+        val role = state.doppelgangerCopiedRole ?: return state
+        val order = state.nightActionOrder.toMutableList()
+        var at = state.currentNightStep + 1
+        if (role in listOf(WerewolfRole.WEREWOLF, WerewolfRole.MASON_A, WerewolfRole.MASON_B, WerewolfRole.INSOMNIAC)) {
+            while (at < order.size && state.players[order[at]].initialRole.nightOrder <= role.nightOrder) at++
+        }
+        order.add(at, order[state.currentNightStep])
+        return state.copy(nightActionOrder = order, doppelgangerFollowUpStep = at)
+    }
+
+    private fun actionOrder(state: WerewolfGameState, role: WerewolfRole): Int =
+        if (isDoppelgangerFollowUp(state) && role in listOf(WerewolfRole.SEER, WerewolfRole.ROBBER, WerewolfRole.TROUBLEMAKER, WerewolfRole.DRUNK)) 1 else role.nightOrder
+
+    private fun effectiveNightRole(state: WerewolfGameState, player: WerewolfPlayer): WerewolfRole =
+        if (player.initialRole == WerewolfRole.DOPPELGANGER) state.doppelgangerCopiedRole ?: player.initialRole else player.initialRole
 
     // ===== 核心：按 nightOrder 回溯计算身份 =====
 
@@ -92,7 +112,7 @@ object WerewolfGameLogic {
                 "doppelganger" -> {
                     // 化身幽灵：将 actor 的角色变为目标玩家的角色
                     val targetId = swap.targetPlayerId ?: continue
-                    playerRoles[swap.actorPlayerId] = playerRoles[targetId]
+                    // Copying changes allegiance, not the physical card. Resolve allegiance only at settlement.
                 }
                 "robber" -> {
                     val targetId = swap.targetPlayerId ?: continue
@@ -151,21 +171,21 @@ object WerewolfGameLogic {
 
     fun isLoneWolf(state: WerewolfGameState, playerId: Int): Boolean {
         val player = state.players.getOrNull(playerId) ?: return false
-        if (player.initialRole != WerewolfRole.WEREWOLF) return false
-        val wolfCount = state.players.count { it.initialRole == WerewolfRole.WEREWOLF }
+        if (effectiveNightRole(state, player) != WerewolfRole.WEREWOLF) return false
+        val wolfCount = state.players.count { effectiveNightRole(state, it) == WerewolfRole.WEREWOLF }
         return wolfCount == 1
     }
 
     fun getWolfTeammates(state: WerewolfGameState, playerId: Int): List<WerewolfPlayer> {
         return state.players.filter {
-            it.initialRole == WerewolfRole.WEREWOLF && it.id != playerId
+            effectiveNightRole(state, it) == WerewolfRole.WEREWOLF && it.id != playerId
         }
     }
 
     fun getMasonTeammates(state: WerewolfGameState, playerId: Int): List<WerewolfPlayer> {
         val player = state.players.getOrNull(playerId) ?: return emptyList()
         return state.players.filter {
-            (it.initialRole == WerewolfRole.MASON_A || it.initialRole == WerewolfRole.MASON_B) && it.id != player.id
+            effectiveNightRole(state, it) in listOf(WerewolfRole.MASON_A, WerewolfRole.MASON_B) && it.id != player.id
         }
     }
 
@@ -182,8 +202,7 @@ object WerewolfGameLogic {
      * 化身幽灵：复制目标玩家身份
      * nightOrder=1，在所有交换之前，所以看到的一定是 initialRole
      *
-     * 修复：记录 NightSwapAction(doppelganger)，使 finalizeNightActions 时
-     * 化身幽灵的 currentRole 被正确更新为被复制者的角色
+     * 复制记录保留物理化身牌；最终结算时将其映射到复制身份的阵营。
      */
     fun executeDoppelgangerAction(state: WerewolfGameState, playerId: Int, targetPlayerId: Int): Pair<WerewolfGameState, String> {
         val targetPlayer = state.players.getOrNull(targetPlayerId)
@@ -192,7 +211,7 @@ object WerewolfGameLogic {
         // 化身幽灵 nightOrder=1，所有交换都在后面，直接看 initialRole
         val copiedRole = getRoleForViewer(state, targetPlayerId, WerewolfRole.DOPPELGANGER.nightOrder)
 
-        // 记录 doppelganger 交换操作，使 computeRolesAfterSwaps 能正确更新角色
+        // 记录复制动作，后续换牌仍移动原来的物理化身牌。
         val swapAction = NightSwapAction(
             actorPlayerId = playerId,
             actorNightOrder = WerewolfRole.DOPPELGANGER.nightOrder,
@@ -230,7 +249,7 @@ object WerewolfGameLogic {
      * 基于初始角色（initialRole），不受交换影响
      */
     fun getMinionWolvesText(state: WerewolfGameState): String {
-        val wolves = state.players.filter { it.initialRole == WerewolfRole.WEREWOLF }
+        val wolves = state.players.filter { effectiveNightRole(state, it) == WerewolfRole.WEREWOLF }
         return if (wolves.isEmpty()) {
             "场上没有狼人！你不知道谁是你的队友"
         } else {
@@ -247,7 +266,7 @@ object WerewolfGameLogic {
         val target = state.players.getOrNull(targetPlayerId)
             ?: return state to "错误：找不到目标玩家"
 
-        val nightOrder = WerewolfRole.SEER.nightOrder
+        val nightOrder = actionOrder(state, WerewolfRole.SEER)
         val targetRole = getRoleForViewer(state, targetPlayerId, nightOrder)
 
         val resultText = "${target.nickname} 的身份是：${targetRole.displayName}"
@@ -264,7 +283,7 @@ object WerewolfGameLogic {
     fun executeSeerViewCenter(state: WerewolfGameState, idx1: Int, idx2: Int): Pair<WerewolfGameState, String> {
         if (idx1 == idx2) return state to "错误：不能选择同一张底牌"
 
-        val nightOrder = WerewolfRole.SEER.nightOrder
+        val nightOrder = actionOrder(state, WerewolfRole.SEER)
         val role1 = getCenterCardForViewer(state, idx1, nightOrder)
         val role2 = getCenterCardForViewer(state, idx2, nightOrder)
 
@@ -285,7 +304,7 @@ object WerewolfGameLogic {
         val target = state.players.getOrNull(targetPlayerId)
             ?: return state to "错误：找不到目标玩家"
 
-        val nightOrder = WerewolfRole.ROBBER.nightOrder
+        val nightOrder = actionOrder(state, WerewolfRole.ROBBER)
         // 查看目标在强盗行动时的身份（不包含强盗自己的交换）
         val viewedRole = getRoleForViewer(state, targetPlayerId, nightOrder)
 
@@ -314,7 +333,7 @@ object WerewolfGameLogic {
         val t2 = state.players.getOrNull(target2Id)
             ?: return state to "错误：找不到目标2"
 
-        val nightOrder = WerewolfRole.TROUBLEMAKER.nightOrder
+        val nightOrder = actionOrder(state, WerewolfRole.TROUBLEMAKER)
         val swapAction = NightSwapAction(
             actorPlayerId = -1, // 捣蛋鬼不参与交换本身
             actorNightOrder = nightOrder,
@@ -336,7 +355,7 @@ object WerewolfGameLogic {
      * nightOrder=7：记录交换操作（酒鬼不能看新牌）
      */
     fun executeDrunkSwap(state: WerewolfGameState, playerId: Int, centerIndex: Int): Pair<WerewolfGameState, String> {
-        val nightOrder = WerewolfRole.DRUNK.nightOrder
+        val nightOrder = actionOrder(state, WerewolfRole.DRUNK)
         val swapAction = NightSwapAction(
             actorPlayerId = playerId,
             actorNightOrder = nightOrder,
@@ -384,7 +403,7 @@ object WerewolfGameLogic {
         )
 
         val updatedPlayers = state.players.mapIndexed { index, player ->
-            player.copy(currentRole = finalPlayerRoles[index])
+            player.copy(currentRole = if (finalPlayerRoles[index] == WerewolfRole.DOPPELGANGER) state.doppelgangerCopiedRole ?: WerewolfRole.DOPPELGANGER else finalPlayerRoles[index])
         }
 
         val updatedCenterCards = state.centerCards.mapIndexed { index, card ->
@@ -420,8 +439,14 @@ object WerewolfGameLogic {
             candidates
         }
 
+        val dead = eliminatedIds.toMutableSet()
+        do {
+            val before = dead.size
+            state.players.filter { it.id in dead && it.currentRole == WerewolfRole.HUNTER }
+                .mapNotNull { it.voteTarget }.forEach { dead.add(it) }
+        } while (dead.size != before)
         val updatedPlayers = state.players.map { player ->
-            if (eliminatedIds.contains(player.id)) {
+            if (dead.contains(player.id)) {
                 player.copy(isAlive = false, isRevealed = true)
             } else player
         }
@@ -432,8 +457,8 @@ object WerewolfGameLogic {
         return state.copy(
             players = updatedPlayers,
             voteResults = voteCounts,
-            eliminatedPlayerIds = eliminatedIds,
-            hunterPending = hunterEliminated != null,
+            eliminatedPlayerIds = dead.toList(),
+            hunterPending = false,
             hunterPlayerId = hunterEliminated?.id
         )
     }
@@ -453,36 +478,24 @@ object WerewolfGameLogic {
 
     // ===== 胜负判定 =====
 
-    fun determineWinner(state: WerewolfGameState): WerewolfFaction? {
+    fun determineWinners(state: WerewolfGameState): List<WerewolfFaction> {
         val tannerEliminated = state.players.any {
             it.currentRole == WerewolfRole.TANNER && !it.isAlive
         }
-        if (tannerEliminated) {
-            return WerewolfFaction.INDEPENDENT
-        }
+        val wolfDead = state.players.any { it.currentRole == WerewolfRole.WEREWOLF && !it.isAlive }
+        if (tannerEliminated) return listOfNotNull(WerewolfFaction.INDEPENDENT, WerewolfFaction.VILLAGER.takeIf { wolfDead })
 
         val wolvesOnField = state.players.filter {
             it.currentRole == WerewolfRole.WEREWOLF
         }
         val hasWolvesOnField = wolvesOnField.isNotEmpty()
-        val wolvesInCenter = state.centerCards.count { it.role == WerewolfRole.WEREWOLF }
-
-        if (hasWolvesOnField) {
-            val anyWolfEliminated = wolvesOnField.any { !it.isAlive }
-            return if (anyWolfEliminated) {
-                WerewolfFaction.VILLAGER
-            } else {
-                WerewolfFaction.WEREWOLF
-            }
-        } else if (wolvesInCenter > 0) {
-            val hasAnyEliminated = state.players.any { !it.isAlive }
-            return if (hasAnyEliminated) {
-                WerewolfFaction.WEREWOLF
-            } else {
-                WerewolfFaction.VILLAGER
-            }
-        } else {
-            return WerewolfFaction.VILLAGER
-        }
+        if (hasWolvesOnField) return listOf(if(wolfDead) WerewolfFaction.VILLAGER else WerewolfFaction.WEREWOLF)
+        val minions = state.players.filter { it.currentRole == WerewolfRole.MINION }
+        if(minions.any { !it.isAlive }) return listOf(WerewolfFaction.VILLAGER)
+        if(minions.isNotEmpty() && state.players.any { !it.isAlive }) return listOf(WerewolfFaction.WEREWOLF)
+        if(minions.isEmpty() && state.players.all { it.isAlive }) return listOf(WerewolfFaction.VILLAGER)
+        return emptyList()
     }
+    fun determineWinner(state: WerewolfGameState): WerewolfFaction? = determineWinners(state).firstOrNull()
+    fun winnerText(state: WerewolfGameState): String = determineWinners(state).joinToString("、") { if(it == WerewolfFaction.INDEPENDENT) "皮匠" else it.displayName }.let { if(it.isEmpty()) "无人获胜" else "$it 胜利" }
 }

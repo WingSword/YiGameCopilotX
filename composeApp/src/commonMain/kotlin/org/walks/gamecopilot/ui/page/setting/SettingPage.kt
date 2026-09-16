@@ -1,11 +1,13 @@
 package org.walks.gamecopilot.ui.page.setting
 
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -20,6 +22,9 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.rounded.KeyboardArrowRight
+import androidx.compose.material.icons.rounded.AccountBalanceWallet
+import androidx.compose.material.icons.rounded.BarChart
 import androidx.compose.material.icons.rounded.AutoAwesome
 import androidx.compose.material.icons.rounded.DarkMode
 import androidx.compose.material.icons.rounded.LightMode
@@ -48,6 +53,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
@@ -61,6 +67,7 @@ import org.walks.gamecopilot.service.ai.AiProvider
 import org.walks.gamecopilot.service.ai.AiStyle
 import org.walks.gamecopilot.theme.LocalAppDesign
 import org.walks.gamecopilot.theme.ThemeMode
+import org.walks.gamecopilot.ui.components.AppSegmentedControl
 
 
 /**
@@ -69,33 +76,52 @@ import org.walks.gamecopilot.theme.ThemeMode
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun SettingPage(viewmodel: MainViewmodel) {
+fun SettingPage(viewmodel: MainViewmodel, onOpenMonopolyLedger: () -> Unit = {}, onOpenStats: () -> Unit = {}) {
     val design = LocalAppDesign.current
-    val scrollState = rememberScrollState()
-
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(horizontal = design.spacing.xl)
-            .verticalScroll(scrollState)
-            .padding(top = design.spacing.xl, bottom = 96.dp),
-        verticalArrangement = Arrangement.spacedBy(design.spacing.lg)
-    ) {
-        Box(
-            modifier = Modifier.padding(
-                horizontal = design.spacing.sm,
-                vertical = design.spacing.md
-            )
-        ) {
-            Text(
-                text = "设置中心",
-                style = MaterialTheme.typography.headlineSmall,
-                color = MaterialTheme.colorScheme.onBackground,
-                fontWeight = FontWeight.SemiBold
-            )
+    val records by org.walks.gamecopilot.data.GameStatsManager.recordsFlow.collectAsState()
+    val currentTheme by viewmodel.themeMode.collectAsState()
+    val aiConfig by viewmodel.aiConfig.collectAsState()
+    var aiExpanded by remember { mutableStateOf(false) }
+    Box(Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background), contentAlignment = Alignment.TopCenter) {
+    Column(Modifier.widthIn(max = 680.dp).fillMaxSize()
+        .verticalScroll(rememberScrollState()).padding(horizontal = 20.dp).padding(top = 24.dp, bottom = 110.dp),
+        verticalArrangement = Arrangement.spacedBy(18.dp)) {
+        Text("我的", style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.Bold)
+        androidx.compose.material3.Surface(shape = RoundedCornerShape(28.dp),
+            color = MaterialTheme.colorScheme.primaryContainer, modifier = Modifier.fillMaxWidth()) {
+            Column(Modifier.padding(24.dp), verticalArrangement = Arrangement.spacedBy(20.dp)) {
+                Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                    Text("我的桌游", Modifier.weight(1f), fontWeight = FontWeight.Bold, fontSize = 22.sp,
+                        color = MaterialTheme.colorScheme.onPrimaryContainer)
+                    Text("✦", fontSize = 32.sp, color = MaterialTheme.colorScheme.primary)
+                }
+                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(40.dp)) {
+                    Column { Text("${records.size}", fontSize = 32.sp, fontWeight = FontWeight.Bold); Text("累计对局", fontSize = 12.sp) }
+                    Column { Text("${records.sumOf { it.playerCount }}", fontSize = 32.sp, fontWeight = FontWeight.Bold); Text("参与人次", fontSize = 12.sp) }
+                }
+            }
         }
-
-        SettingCard(title = "AI 助手", design = design) {
+        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+            PersonalToolTile("桌游记账", Icons.Rounded.AccountBalanceWallet, Modifier.weight(1f), onOpenMonopolyLedger)
+            PersonalToolTile("对局统计", Icons.Rounded.BarChart, Modifier.weight(1f), onOpenStats)
+        }
+        SettingCard("偏好设置", design) {
+            Column(Modifier.padding(20.dp), verticalArrangement = Arrangement.spacedBy(18.dp)) {
+                Text("外观", style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                AppSegmentedControl(options = listOf("跟随系统", "浅色", "深色"),
+                    selectedIndex = listOf(ThemeMode.SYSTEM, ThemeMode.LIGHT, ThemeMode.DARK).indexOf(currentTheme),
+                    onSelected = { viewmodel.setThemeMode(listOf(ThemeMode.SYSTEM, ThemeMode.LIGHT, ThemeMode.DARK)[it]) })
+                Row(Modifier.fillMaxWidth().clickable { aiExpanded = !aiExpanded }.padding(vertical = 10.dp),
+                    verticalAlignment = Alignment.CenterVertically) {
+                    Icon(Icons.Rounded.AutoAwesome, null, tint = MaterialTheme.colorScheme.primary)
+                    Text("对局提示", Modifier.weight(1f).padding(start = 12.dp), fontWeight = FontWeight.Medium)
+                    Text(if (aiConfig.isEnabled) "已开启" else "已关闭", fontSize = 13.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    Text(if (aiExpanded) "  −" else "  ›", fontSize = 22.sp)
+                }
+            }
+        }
+        if (aiExpanded) {
+        SettingCard(title = "对局提示", design = design) {
             val aiConfig by viewmodel.aiConfig.collectAsState()
             var showApiKey by remember { mutableStateOf(false) }
 
@@ -139,40 +165,15 @@ fun SettingPage(viewmodel: MainViewmodel) {
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier.padding(bottom = 6.dp)
                 )
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
-                    AiProvider.entries.forEach { provider ->
-                        val isSelected = aiConfig.provider == provider
-                        TextButton(
-                            onClick = {
-                                viewmodel.handleAiIntent(AiIntent.UpdateProvider(provider))
-                            },
-                            modifier = Modifier
-                                .weight(1f)
-                                .clip(RoundedCornerShape(10.dp))
-                                .background(
-                                    if (isSelected) MaterialTheme.colorScheme.primaryContainer
-                                    else MaterialTheme.colorScheme.surfaceVariant
-                                )
-                                .border(
-                                    width = if (isSelected) 1.5.dp else 0.dp,
-                                    color = if (isSelected) MaterialTheme.colorScheme.primary
-                                    else MaterialTheme.colorScheme.surfaceVariant,
-                                    shape = RoundedCornerShape(10.dp)
-                                )
-                        ) {
-                            Text(
-                                text = provider.displayName,
-                                fontSize = 14.sp,
-                                fontWeight = if (isSelected) FontWeight.SemiBold else FontWeight.Normal,
-                                color = if (isSelected) MaterialTheme.colorScheme.primary
-                                else MaterialTheme.colorScheme.onSurfaceVariant
-                            )
-                        }
+                AppSegmentedControl(
+                    options = AiProvider.entries.map { it.displayName },
+                    selectedIndex = AiProvider.entries.indexOf(aiConfig.provider),
+                    onSelected = { index ->
+                        viewmodel.handleAiIntent(
+                            AiIntent.UpdateProvider(AiProvider.entries[index])
+                        )
                     }
-                }
+                )
 
                 Spacer(modifier = Modifier.height(design.spacing.lg))
 
@@ -228,40 +229,15 @@ fun SettingPage(viewmodel: MainViewmodel) {
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier.padding(bottom = 6.dp)
                 )
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
-                    AiStyle.entries.forEach { style ->
-                        val isSelected = aiConfig.aiStyle == style
-                        TextButton(
-                            onClick = {
-                                viewmodel.handleAiIntent(AiIntent.UpdateStyle(style))
-                            },
-                            modifier = Modifier
-                                .weight(1f)
-                                .clip(RoundedCornerShape(10.dp))
-                                .background(
-                                    if (isSelected) MaterialTheme.colorScheme.primaryContainer
-                                    else MaterialTheme.colorScheme.surfaceVariant
-                                )
-                                .border(
-                                    width = if (isSelected) 1.5.dp else 0.dp,
-                                    color = if (isSelected) MaterialTheme.colorScheme.primary
-                                    else MaterialTheme.colorScheme.surfaceVariant,
-                                    shape = RoundedCornerShape(10.dp)
-                                )
-                        ) {
-                            Text(
-                                text = style.displayName,
-                                fontSize = 13.sp,
-                                fontWeight = if (isSelected) FontWeight.SemiBold else FontWeight.Normal,
-                                color = if (isSelected) MaterialTheme.colorScheme.primary
-                                else MaterialTheme.colorScheme.onSurfaceVariant
-                            )
-                        }
+                AppSegmentedControl(
+                    options = AiStyle.entries.map { it.displayName },
+                    selectedIndex = AiStyle.entries.indexOf(aiConfig.aiStyle),
+                    onSelected = { index ->
+                        viewmodel.handleAiIntent(
+                            AiIntent.UpdateStyle(AiStyle.entries[index])
+                        )
                     }
-                }
+                )
 
                 // 当前状态提示
                 if (aiConfig.isEnabled) {
@@ -280,203 +256,30 @@ fun SettingPage(viewmodel: MainViewmodel) {
             }
         }
 
-        SettingCard(title = "版本信息", design = design) {
-            Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(design.spacing.xl)
-            ) {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Text("当前版本", color = MaterialTheme.colorScheme.onSurfaceVariant)
-                    Text(
-                        text = PlatformHelper.getInstance().getAppVersionName(),
-                        fontWeight = FontWeight.SemiBold,
-                        color = MaterialTheme.colorScheme.primary
-                    )
-                }
 
-                Spacer(modifier = Modifier.height(design.spacing.md))
-
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Text("构建版本", color = MaterialTheme.colorScheme.onSurfaceVariant)
-                    Text(
-                        text = PlatformHelper.getInstance().getAppVersionCode().toString(),
-                        fontWeight = FontWeight.SemiBold,
-                        color = MaterialTheme.colorScheme.primary
-                    )
+        }
+        SettingCard("关于", design) {
+            Column(Modifier.padding(20.dp), verticalArrangement = Arrangement.spacedBy(14.dp)) {
+                Row(Modifier.fillMaxWidth()) {
+                    Text("桌游助手", Modifier.weight(1f))
+                    Text("v${PlatformHelper.getInstance().getAppVersionName()}", color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
+                Text("联系与反馈", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                androidx.compose.foundation.text.selection.SelectionContainer { Text("YvesSword@outlook.com", color = MaterialTheme.colorScheme.primary) }
             }
         }
+    }
+}
 
-        SettingCard(title = "外观主题", design = design) {
-            val currentTheme by viewmodel.themeMode.collectAsState()
+}
 
-            Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(design.spacing.xl)
-            ) {
-                ThemeOptionRow(
-                    icon = {
-                        Icon(
-                            Icons.Rounded.SettingsBrightness,
-                            contentDescription = null,
-                            modifier = Modifier.size(20.dp)
-                        )
-                    },
-                    label = "跟随系统",
-                    desc = "根据系统设置自动切换",
-                    selected = currentTheme == ThemeMode.SYSTEM,
-                    onClick = { viewmodel.setThemeMode(ThemeMode.SYSTEM) }
-                )
-
-                Spacer(modifier = Modifier.height(12.dp))
-
-                ThemeOptionRow(
-                    icon = {
-                        Icon(
-                            Icons.Rounded.LightMode,
-                            contentDescription = null,
-                            modifier = Modifier.size(20.dp)
-                        )
-                    },
-                    label = "浅色模式",
-                    desc = "明亮清新的界面风格",
-                    selected = currentTheme == ThemeMode.LIGHT,
-                    onClick = { viewmodel.setThemeMode(ThemeMode.LIGHT) }
-                )
-
-                Spacer(modifier = Modifier.height(12.dp))
-
-                ThemeOptionRow(
-                    icon = {
-                        Icon(
-                            Icons.Rounded.DarkMode,
-                            contentDescription = null,
-                            modifier = Modifier.size(20.dp)
-                        )
-                    },
-                    label = "深色模式",
-                    desc = "护眼沉浸的暗色风格",
-                    selected = currentTheme == ThemeMode.DARK,
-                    onClick = { viewmodel.setThemeMode(ThemeMode.DARK) }
-                )
-            }
-        }
-
-        SettingCard(title = "应用介绍", design = design) {
-            Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(design.spacing.xl)
-            ) {
-                Text(
-                    text = "桌游助手是一款专为桌游爱好者设计的智能助手应用。" +
-                            "集成多款热门派对桌游，提供便捷的工具和辅助功能，让游戏体验更加流畅。",
-                    style = MaterialTheme.typography.bodyMedium,
-                    lineHeight = 22.sp,
-                    color = MaterialTheme.colorScheme.onSurface
-                )
-
-                Spacer(modifier = Modifier.height(design.spacing.lg))
-
-                SectionTitle(text = "支持游戏")
-
-                Text(
-                    text = "• 谁是卧底 — 发言推理，找出卧底\n" +
-                            "• 阿瓦隆 — 阵营博弈，任务对抗\n" +
-                            "• 你画我猜 — 创意表达，趣味猜词\n" +
-                            "• 猎巫镇 — 身份对抗，白天讨论夜晚行动\n" +
-                            "• 一夜终极狼人 — 快速推理，一夜定胜负",
-                    style = MaterialTheme.typography.bodyMedium,
-                    lineHeight = 22.sp,
-                    color = MaterialTheme.colorScheme.onSurface,
-                    modifier = Modifier.padding(start = design.spacing.md)
-                )
-
-                Spacer(modifier = Modifier.height(design.spacing.lg))
-
-                SectionTitle(text = "随机工具")
-
-                Text(
-                    text = "• 骰子、硬币、转盘、指转盘、卡牌\n" +
-                            "• 支持自定义配置和编辑\n" +
-                            "• 适合各类桌游辅助决策",
-                    style = MaterialTheme.typography.bodyMedium,
-                    lineHeight = 22.sp,
-                    color = MaterialTheme.colorScheme.onSurface,
-                    modifier = Modifier.padding(start = design.spacing.md)
-                )
-            }
-        }
-
-        SettingCard(title = "联系反馈", design = design) {
-            Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(design.spacing.xl)
-            ) {
-                Text(
-                    text = "如果您在使用过程中遇到任何问题或有任何建议，欢迎通过以下方式联系我们。" +
-                            "我们非常重视您的反馈，将尽快为您提供帮助。",
-                    style = MaterialTheme.typography.bodyMedium,
-                    lineHeight = 22.sp,
-                    color = MaterialTheme.colorScheme.onSurface
-                )
-
-                Spacer(modifier = Modifier.height(design.spacing.md))
-
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Text("反馈邮箱", color = MaterialTheme.colorScheme.onSurfaceVariant)
-                    Text(
-                        text = "YvesSword@outlook.com",
-                        fontWeight = FontWeight.SemiBold,
-                        color = MaterialTheme.colorScheme.primary
-                    )
-                }
-
-                Spacer(modifier = Modifier.height(design.spacing.md))
-
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Text("反馈类型", color = MaterialTheme.colorScheme.onSurfaceVariant)
-                    Text(
-                        text = "问题反馈、功能建议、合作咨询",
-                        fontWeight = FontWeight.SemiBold,
-                        color = MaterialTheme.colorScheme.primary
-                    )
-                }
-
-                Spacer(modifier = Modifier.height(design.spacing.md))
-
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Text("响应时间", color = MaterialTheme.colorScheme.onSurfaceVariant)
-                    Text(
-                        text = "1-3个工作日内",
-                        fontWeight = FontWeight.SemiBold,
-                        color = MaterialTheme.colorScheme.primary
-                    )
-                }
-            }
+@Composable
+private fun PersonalToolTile(label: String, icon: ImageVector, modifier: Modifier, onClick: () -> Unit) {
+    androidx.compose.material3.Surface(modifier.clickable(onClick = onClick), shape = RoundedCornerShape(24.dp),
+        color = MaterialTheme.colorScheme.surface) {
+        Column(Modifier.padding(20.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
+            Icon(icon, null, Modifier.size(30.dp), tint = MaterialTheme.colorScheme.primary)
+            Text(label, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
         }
     }
 }
@@ -494,7 +297,11 @@ private fun SettingCard(
         modifier = Modifier.fillMaxWidth(),
         colors = colors,
         shape = RoundedCornerShape(design.cornerRadius.card),
-        elevation = CardDefaults.cardElevation(defaultElevation = design.elevation.card)
+        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
+        border = BorderStroke(
+            width = 1.dp,
+            color = MaterialTheme.colorScheme.outline.copy(alpha = 0.3f)
+        )
     ) {
         Column(modifier = Modifier.fillMaxWidth()) {
             Text(
@@ -516,7 +323,7 @@ private fun SettingCard(
 
 @Composable
 private fun ThemeOptionRow(
-    icon: @Composable () -> Unit,
+    icon: ImageVector,
     label: String,
     desc: String,
     selected: Boolean,
@@ -550,7 +357,16 @@ private fun ThemeOptionRow(
                 ),
             contentAlignment = Alignment.Center
         ) {
-            icon()
+            Icon(
+                imageVector = icon,
+                contentDescription = null,
+                tint = if (selected) {
+                    MaterialTheme.colorScheme.onPrimary
+                } else {
+                    MaterialTheme.colorScheme.onSurfaceVariant
+                },
+                modifier = Modifier.size(20.dp)
+            )
         }
 
         Spacer(modifier = Modifier.size(12.dp))

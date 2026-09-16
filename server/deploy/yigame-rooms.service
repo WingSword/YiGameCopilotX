@@ -1,0 +1,24 @@
+[Unit]
+Description=YiGame cloud room service
+After=network.target
+
+[Service]
+User=yigame
+Group=yigame
+WorkingDirectory=/opt/yigame-rooms
+EnvironmentFile=/opt/yigame-rooms/.env
+Environment=HOST=127.0.0.1
+Environment=DATA_DIR=/var/lib/yigame-rooms
+ExecStart=/usr/bin/java -Xms64m -Xmx256m -Dsun.net.httpserver.maxReqTime=15 -Dsun.net.httpserver.maxRspTime=15 -jar /opt/yigame-rooms/yigame-room-server.jar
+Restart=on-failure
+RestartSec=3
+StateDirectory=yigame-rooms
+UMask=0077
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/var/lib/yigame-rooms
+
+[Install]
+WantedBy=multi-user.target

@@ -2,6 +2,8 @@ package org.walks.gamecopilot.navigation
 
 
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
+import org.walks.gamecopilot.online.CloudInvitations
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -14,7 +16,6 @@ import org.walks.gamecopilot.MainViewmodel
 import org.walks.gamecopilot.awalong.AwalongEntrance
 import org.walks.gamecopilot.awalong.AwalongGamePageOptimized
 import org.walks.gamecopilot.event.NavigationEvent
-import org.walks.gamecopilot.lan.data.GameType
 import org.walks.gamecopilot.ui.page.drawguess.DrawBoardPage
 import org.walks.gamecopilot.ui.page.game.localspy.LocalSpyGamePage
 import org.walks.gamecopilot.ui.page.home.HomePage
@@ -24,6 +25,7 @@ import org.walks.gamecopilot.ui.page.lan.LANCreateRoomPage
 import org.walks.gamecopilot.ui.page.lan.LANRoomDiscoveryPage
 import org.walks.gamecopilot.ui.page.lan.LANRoomLobbyPage
 import org.walks.gamecopilot.ui.page.multiplayer.MultiplayerPage
+import org.walks.gamecopilot.ui.page.monopoly.MonopolyMoneyPage
 import org.walks.gamecopilot.ui.page.random.RandomPage
 import org.walks.gamecopilot.ui.page.room.RoomPage
 import org.walks.gamecopilot.ui.page.setting.SettingPage
@@ -34,6 +36,11 @@ import org.walks.gamecopilot.werewolf.WerewolfGamePage
 @Composable
 fun NavigationHost(viewmodel: MainViewmodel, navi: NavHostController) {
     val navEntries = remember { NaviRoute.entries }
+    val invitation by CloudInvitations.pending.collectAsState()
+    val invitationError by CloudInvitations.error.collectAsState()
+    LaunchedEffect(invitation, invitationError) {
+        if(invitation != null || invitationError.isNotEmpty()) navi.navigate(NaviRoute.MULTIPLAYER.route) { launchSingleTop = true }
+    }
 
     NavHost(navi, startDestination = NaviRoute.HOME.route) {
 
@@ -43,13 +50,19 @@ fun NavigationHost(viewmodel: MainViewmodel, navi: NavHostController) {
                     NaviRoute.HOME -> HomePage(viewmodel, navi)
                     NaviRoute.MULTIPLAYER -> MultiplayerPage(viewmodel, navi)
                     NaviRoute.LOCAL_SPY -> LocalSpyGamePage(viewmodel) { navi.popBackStack() }
-                    NaviRoute.ROOM -> RoomPage(viewmodel)
+                    NaviRoute.ROOM -> org.walks.gamecopilot.ui.page.multiplayer.CloudRoomPage { navi.popBackStack() }
                     NaviRoute.RANDOM -> RandomPage(viewmodel)
                     NaviRoute.AWALONG -> AwalongEntrance(viewmodel, navi)
                     NaviRoute.AWALONG_GAME -> AwalongGamePageOptimized(navi, viewmodel)
                     NaviRoute.HUNT_TOWN -> HuntTownPage { navi.popBackStack() }
-                    NaviRoute.STATS -> StatsPage(viewmodel)
-                    NaviRoute.SETTING -> SettingPage(viewmodel)
+                    NaviRoute.STATS -> StatsPage(viewmodel) { navi.popBackStack() }
+                    NaviRoute.SETTING -> SettingPage(
+                        viewmodel = viewmodel,
+                        onOpenMonopolyLedger = { navi.navigate(NaviRoute.MONOPOLY.route) },
+                        onOpenStats = { navi.navigate(NaviRoute.STATS.route) }
+                    )
+                    NaviRoute.MONOPOLY -> MonopolyMoneyPage(viewmodel, onCloud = { navi.navigate(NaviRoute.CLOUD_LEDGER.route) }) { navi.popBackStack() }
+                    NaviRoute.CLOUD_LEDGER -> org.walks.gamecopilot.ui.page.multiplayer.LedgerCloudEntryPage(onBack = { navi.popBackStack() }) { navi.navigate(NaviRoute.ROOM.route) }
                     NaviRoute.DRAW_GUESS -> org.walks.gamecopilot.ui.page.home.DrawGuessEntrance(
                         navi
                     )
@@ -88,19 +101,6 @@ fun NavigationHost(viewmodel: MainViewmodel, navi: NavHostController) {
                     )
 
                     NaviRoute.LAN_LOBBY -> LANRoomLobbyPage(
-                        onStartGame = {
-                            when (viewmodel.lanState.value.currentRoom?.roomInfo?.gameType) {
-                                GameType.LOCAL_SPY -> navi.navigate(NaviRoute.LOCAL_SPY.route)
-                                GameType.AWALONG -> navi.navigate(NaviRoute.AWALONG_GAME.route)
-                                GameType.DRAW_GUESS -> navi.navigate(NaviRoute.DRAW_GUESS.route)
-                                GameType.RANDOM_TOOLS -> navi.navigate(NaviRoute.RANDOM.route)
-                                GameType.ONE_NIGHT_WEREWOLF -> navi.navigate(NaviRoute.ONE_NIGHT_WEREWOLF_GAME.route)
-                                GameType.HUNT_TOWN,
-                                GameType.MONOPOLY,
-                                GameType.ALL,
-                                null -> Unit
-                            }
-                        },
                         onLeaveRoom = { navi.popBackStack() },
                         viewModel = viewmodel
                     )

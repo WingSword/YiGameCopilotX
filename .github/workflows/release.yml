@@ -27,17 +27,13 @@ jobs:
         run: |
           sed -i 's|mirrors.huaweicloud.com/gradle|services.gradle.org/distributions|' gradle/wrapper/gradle-wrapper.properties
 
-      - name: Decode keystore
-        run: |
-          echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 -d > swordKey
-
-      - name: Write signing properties
-        run: |
-          echo "" >> local.properties
-          echo "KEYSTORE_FILE=swordKey" >> local.properties
-          echo "KEYSTORE_PASSWORD=${{ secrets.KEYSTORE_PASSWORD }}" >> local.properties
-          echo "KEY_ALIAS=${{ secrets.KEY_ALIAS }}" >> local.properties
-          echo "KEY_PASSWORD=${{ secrets.KEY_PASSWORD }}" >> local.properties
+      - name: Prepare signing configuration
+        env:
+          KEYSTORE_BASE64: ${{ secrets.KEYSTORE_BASE64 }}
+          KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
+          KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
+        run: python3 scripts/ci-android-release.py prepare
 
       - name: Setup Gradle
         uses: gradle/actions/setup-gradle@v4
@@ -45,21 +41,26 @@ jobs:
       - name: Build Release APK
         run: ./gradlew :composeApp:assembleRelease
 
+      - name: Verify release signature and manifest
+        run: python3 scripts/ci-android-release.py verify
+
       - name: Rename APK
         run: |
-          APK_PATH=$(find composeApp/build/outputs -name "*release*.apk" -type f | head -1)
           TAG="${GITHUB_REF#refs/tags/}"
           if [ -z "$TAG" ] || [ "$TAG" = "$GITHUB_REF" ]; then
             TAG="dev-$(date +%Y%m%d-%H%M%S)"
           fi
-          cp "$APK_PATH" "YiGameCopilotX-${TAG}.apk"
+          cp "$RELEASE_APK_PATH" "YiGameCopilotX-${TAG}.apk"
           echo "APK_NAME=YiGameCopilotX-${TAG}.apk" >> $GITHUB_ENV
 
       - name: Upload APK artifact
         uses: actions/upload-artifact@v4
         with:
           name: apk
-          path: YiGameCopilotX-*.apk
+          path: |
+            YiGameCopilotX-*.apk
+            release-verification.json
+          if-no-files-found: error
 
       - name: Create GitHub Release
         if: startsWith(github.ref, 'refs/tags/v')
@@ -67,3 +68,7 @@ jobs:
         with:
           files: YiGameCopilotX-*.apk
           generate_release_notes: true
+
+      - name: Remove temporary signing files
+        if: always()
+        run: python3 scripts/ci-android-release.py cleanup

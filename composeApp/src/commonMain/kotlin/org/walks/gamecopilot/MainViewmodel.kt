@@ -1,5 +1,7 @@
 package org.walks.gamecopilot
 
+import org.walks.gamecopilot.theme.RandomToolRules
+
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.Dispatchers
@@ -29,6 +31,7 @@ import org.walks.gamecopilot.data.RandomListEntity
 import org.walks.gamecopilot.data.WheelItem
 import org.walks.gamecopilot.data.WsRoomDataEntity
 import org.walks.gamecopilot.data.entity.AnswerBookState
+import org.walks.gamecopilot.data.entity.AnswerBookPhase
 import org.walks.gamecopilot.data.entity.GameEntity
 import org.walks.gamecopilot.data.entity.LocalSpyEntity
 import org.walks.gamecopilot.event.NavigationEvent
@@ -50,7 +53,9 @@ import org.walks.gamecopilot.mmkv.MMKV_AI_PROVIDER_KEY
 import org.walks.gamecopilot.mmkv.MMKV_AI_STYLE_KEY
 import org.walks.gamecopilot.mmkv.MMKV_AI_TIMEOUT_KEY
 import org.walks.gamecopilot.mmkv.MMKV_RANDOM_CARDS_SETTING_KEY
+import org.walks.gamecopilot.mmkv.MMKV_RANDOM_DEFAULTS_INITIALIZED_KEY
 import org.walks.gamecopilot.mmkv.MMKV_RANDOM_LABEL_NAME_KEY
+import org.walks.gamecopilot.mmkv.MMKV_THEME_MODE_KEY
 import org.walks.gamecopilot.navigation.NaviRoute
 import org.walks.gamecopilot.service.ai.AiConfig
 import org.walks.gamecopilot.service.ai.AiProvider
@@ -58,8 +63,20 @@ import org.walks.gamecopilot.service.ai.AiServiceFactory
 import org.walks.gamecopilot.service.ai.AiStyle
 import org.walks.gamecopilot.service.ai.prompts.GamePromptTemplates
 import org.walks.gamecopilot.utils.DateTimeUtils
+import kotlin.random.Random
 import kotlin.time.Clock
 import kotlin.time.ExperimentalTime
+
+data class RandomToolResult(
+    val value: String,
+    val isPrimarySide: Boolean? = null
+)
+
+data class RandomToolOutcome(
+    val configName: String = "",
+    val rollId: Long = 0L,
+    val results: List<RandomToolResult> = emptyList()
+)
 
 /**
  * 应用主视图模型
@@ -89,11 +106,16 @@ class MainViewmodel : ViewModel() {
     val operationMode: StateFlow<Int> = _operationMode
 
     /** 主题模式：SYSTEM / LIGHT / DARK */
-    private val _themeMode = MutableStateFlow(org.walks.gamecopilot.theme.ThemeMode.SYSTEM)
+    private val _themeMode = MutableStateFlow(
+        org.walks.gamecopilot.theme.ThemeMode.values().firstOrNull {
+            it.name == MMKVUtils.getString(MMKV_THEME_MODE_KEY, "")
+        } ?: org.walks.gamecopilot.theme.ThemeMode.SYSTEM
+    )
     val themeMode: StateFlow<org.walks.gamecopilot.theme.ThemeMode> = _themeMode
 
     fun setThemeMode(mode: org.walks.gamecopilot.theme.ThemeMode) {
         _themeMode.value = mode
+        MMKVUtils.put(MMKV_THEME_MODE_KEY, mode.name)
     }
 
     /**
@@ -128,8 +150,20 @@ class MainViewmodel : ViewModel() {
      * 当前随机工具内容状态
      * 包含当前选择的随机配置列表
      */
+    private var randomToolsOpened = false
+    fun openRandomTools() {
+        if (!randomToolsOpened) {
+            randomToolsOpened = true
+            randomLabelChange(RANDOM_PAGE_CONFIG_CATE_ANSWER_BOOK + "答案之书")
+        }
+    }
+
     private val _currentRandomContentState = MutableStateFlow(RandomListEntity())
     val currentRandomContentState: StateFlow<RandomListEntity> = _currentRandomContentState
+
+    /** 骰子/硬币的本次真实结果；动画只负责呈现该状态。 */
+    private val _randomToolOutcomeState = MutableStateFlow(RandomToolOutcome())
+    val randomToolOutcomeState: StateFlow<RandomToolOutcome> = _randomToolOutcomeState
 
     /**
      * 转盘选项状态
@@ -311,22 +345,20 @@ class MainViewmodel : ViewModel() {
     fun handleRandomPageIntent(intent: RandomPageIntent) {
         when (intent) {
             is RandomPageIntent.OnRefresh -> {
-                val shuffledCards = with(currentRandomContentState.value) {
-                    this.list.map { it.second }.optimizedShuffle()
-                        .zip(this.list.map { it.first }.optimizedShuffle()) { front, back ->
-                            RandomItem(second = front, first = back)
-                        }
+                val current = _currentRandomContentState.value
+                val refreshedItems = if (
+                    current.name.startsWith(RANDOM_PAGE_CONFIG_CATE_CARD)
+                ) {
+                    current.list.optimizedShuffle()
+                } else {
+                    current.list
                 }
-
-                viewModelScope.launch {
-                    _currentRandomContentState.emit(
-                        currentRandomContentState.value.copy(
-                            list = shuffledCards,
-                            refreshTime = Clock.System.now().toEpochMilliseconds()
-                        )
+                publishRandomOutcome(
+                    current.copy(
+                        list = refreshedItems,
+                        refreshTime = current.refreshTime + 1L
                     )
-                }
-
+                )
             }
 
             is RandomPageIntent.OnAddNewRandom -> {
@@ -382,6 +414,9 @@ class MainViewmodel : ViewModel() {
                     val currentConfigName = _currentRandomContentState.value.name
                     if (currentConfigName == intent.randomListEntity.name) {
                         _currentRandomContentState.value = intent.randomListEntity
+                        _randomToolOutcomeState.value = RandomToolOutcome(
+                            configName = intent.randomListEntity.name
+                        )
                     }
                 } catch (e: Exception) {
                     GameLogger.error("编辑随机配置失败: ${intent.randomListEntity.name}", e)
@@ -391,7 +426,9 @@ class MainViewmodel : ViewModel() {
             is RandomPageIntent.OnChangeNewRandomLabel -> {
                 viewModelScope.launch {
                     _randomLabelsState.emit(
-                        MMKVUtils.getSet(MMKV_RANDOM_LABEL_NAME_KEY)?.toList() ?: emptyList()
+                        sortRandomLabels(
+                            MMKVUtils.getSet(MMKV_RANDOM_LABEL_NAME_KEY) ?: emptySet()
+                        )
                     )
                 }
             }
@@ -442,10 +479,10 @@ class MainViewmodel : ViewModel() {
             }
 
             RandomPageIntent.TriggerRandom -> {
-                // 触发随机事件，增加refreshTime来触发洗牌动画
-                _currentRandomContentState.update { current ->
-                    current.copy(refreshTime = Clock.System.now().toEpochMilliseconds())
-                }
+                val current = _currentRandomContentState.value
+                publishRandomOutcome(
+                    current.copy(refreshTime = current.refreshTime + 1L)
+                )
             }
 
             RandomPageIntent.OnAddNewRandomDialogSave -> {
@@ -956,11 +993,39 @@ class MainViewmodel : ViewModel() {
         }
     }
 
-    private fun randomLabelChange(selectedLabel: String) {
-        if (selectedLabel.isEmpty()) {
-            viewModelScope.launch {
-                _currentRandomContentState.emit(RandomListEntity())
+    private fun publishRandomOutcome(content: RandomListEntity) {
+        val results = when {
+            content.name.startsWith(RANDOM_PAGE_CONFIG_CATE_DICE) -> {
+                content.list.map { item ->
+                    RandomToolResult(value = RandomToolRules.dice(item.first, item.second, Random.nextDouble()).toString())
+                }
             }
+
+            content.name.startsWith(RANDOM_PAGE_CONFIG_CATE_COIN) -> {
+                content.list.map { item ->
+                    val isPrimarySide = RandomToolRules.heads(Random.nextDouble())
+                    RandomToolResult(
+                        value = if (isPrimarySide) item.first else item.second,
+                        isPrimarySide = isPrimarySide
+                    )
+                }
+            }
+
+            else -> emptyList()
+        }
+
+        _currentRandomContentState.value = content
+        _randomToolOutcomeState.value = RandomToolOutcome(
+            configName = content.name,
+            rollId = content.refreshTime,
+            results = results
+        )
+    }
+
+    private fun randomLabelChange(selectedLabel: String) {
+        _randomToolOutcomeState.value = RandomToolOutcome(configName = selectedLabel)
+        if (selectedLabel.isEmpty()) {
+            _currentRandomContentState.value = RandomListEntity()
             return
         }
         try {
@@ -970,11 +1035,16 @@ class MainViewmodel : ViewModel() {
                     ""
                 )
             )
-            viewModelScope.launch {
-                _currentRandomContentState.emit(jsonCard)
-            }
+            _currentRandomContentState.value = jsonCard
         } catch (e: Exception) {
-            // 如果发生异常，则使用默认值
+            // 清理损坏或已经丢失的配置，避免它在工具栏中反复出现。
+            val labels = (MMKVUtils.getSet(MMKV_RANDOM_LABEL_NAME_KEY) ?: emptySet())
+                .minus(selectedLabel)
+            MMKVUtils.remove(MMKV_RANDOM_CARDS_SETTING_KEY + selectedLabel)
+            MMKVUtils.putSet(MMKV_RANDOM_LABEL_NAME_KEY, labels)
+            _randomLabelsState.value = sortRandomLabels(labels)
+            _currentRandomContentState.value = RandomListEntity()
+            GameLogger.error("加载随机配置失败，已移除: $selectedLabel", e)
         }
     }
 
@@ -1069,9 +1139,14 @@ class MainViewmodel : ViewModel() {
     private fun initDefaultRandomConfigs() {
         viewModelScope.launch {
             try {
-                // 获取当前已保存的配置列表
-                val existingLabels =
-                    MMKVUtils.getSet(MMKV_RANDOM_LABEL_NAME_KEY)?.toMutableSet() ?: mutableSetOf()
+                val storedLabels = MMKVUtils.getSet(MMKV_RANDOM_LABEL_NAME_KEY) ?: emptySet()
+                // 老版本没有初始化标记；只要已有配置就视为初始化过，从而尊重用户
+                // 主动删除骰子、硬币或转盘的选择。
+                val hasInitialized = MMKVUtils.getBoolean(
+                    MMKV_RANDOM_DEFAULTS_INITIALIZED_KEY,
+                    storedLabels.isNotEmpty()
+                )
+                val existingLabels = sanitizeStoredRandomConfigs(storedLabels)
 
                 // 预置配置名称
                 val fingerConfigName = RANDOM_PAGE_SYSTEM_FINGER_SPINNER_NAME
@@ -1080,92 +1155,261 @@ class MainViewmodel : ViewModel() {
                 val wheelConfigName = RANDOM_PAGE_CONFIG_CATE_WHEEL + "今天吃啥"
                 val answerBookConfigName = RANDOM_PAGE_CONFIG_CATE_ANSWER_BOOK + "答案之书"
 
-                if (!existingLabels.contains(fingerConfigName)) {
-                    val fingerConfig = RandomListEntity(
-                        name = fingerConfigName,
-                        list = emptyList()
-                    )
-                    val fingerJson =
-                        Json.encodeToString(RandomListEntity.serializer(), fingerConfig)
-                    MMKVUtils.put(MMKV_RANDOM_CARDS_SETTING_KEY + fingerConfig.name, fingerJson)
-                    existingLabels.add(fingerConfig.name)
-                }
+                ensureRandomConfig(
+                    labels = existingLabels,
+                    config = RandomListEntity(name = fingerConfigName, list = emptyList())
+                )
 
-                // 检查并添加预置六面骰子
-                if (!existingLabels.contains(diceConfigName)) {
-                    val diceConfig = RandomListEntity(
+                // 骰子、硬币和转盘仅在首次启动时创建；升级后用户删除的工具不复活。
+                if (!hasInitialized) {
+                    ensureRandomConfig(
+                        labels = existingLabels,
+                        config = RandomListEntity(
                         name = diceConfigName,
-                        list = listOf(
-                            RandomItem(first = "1", second = "6")
+                        list = listOf(RandomItem(first = "1", second = "6"))
+                    )
+                    )
+                    ensureRandomConfig(
+                        labels = existingLabels,
+                        config = RandomListEntity(
+                            name = coinConfigName,
+                            list = listOf(RandomItem(first = "正面", second = "反面"))
                         )
                     )
-
-                    // 保存骰子配置数据
-                    val diceJson = Json.encodeToString(RandomListEntity.serializer(), diceConfig)
-                    MMKVUtils.put(MMKV_RANDOM_CARDS_SETTING_KEY + diceConfig.name, diceJson)
-                    existingLabels.add(diceConfig.name)
-                }
-
-                // 检查并添加预置硬币
-                if (!existingLabels.contains(coinConfigName)) {
-                    val coinConfig = RandomListEntity(
-                        name = coinConfigName,
-                        list = listOf(
-                            RandomItem(first = "正面", second = "反面")
+                    ensureRandomConfig(
+                        labels = existingLabels,
+                        config = RandomListEntity(
+                            name = wheelConfigName,
+                            list = listOf(
+                                RandomItem(first = "火锅", second = "25"),
+                                RandomItem(first = "烧烤", second = "20"),
+                                RandomItem(first = "日料", second = "15"),
+                                RandomItem(first = "中餐", second = "15"),
+                                RandomItem(first = "西餐", second = "10"),
+                                RandomItem(first = "快餐", second = "10"),
+                                RandomItem(first = "外卖", second = "5")
+                            )
                         )
                     )
-
-                    // 保存硬币配置数据
-                    val coinJson = Json.encodeToString(RandomListEntity.serializer(), coinConfig)
-                    MMKVUtils.put(MMKV_RANDOM_CARDS_SETTING_KEY + coinConfig.name, coinJson)
-                    existingLabels.add(coinConfig.name)
                 }
 
-                // 检查并添加"今天吃啥"转盘预设
-                if (!existingLabels.contains(wheelConfigName)) {
-                    val wheelConfig = RandomListEntity(
-                        name = wheelConfigName,
-                        list = listOf(
-                            RandomItem(first = "火锅", second = "25"),
-                            RandomItem(first = "烧烤", second = "20"),
-                            RandomItem(first = "日料", second = "15"),
-                            RandomItem(first = "中餐", second = "15"),
-                            RandomItem(first = "西餐", second = "10"),
-                            RandomItem(first = "快餐", second = "10"),
-                            RandomItem(first = "外卖", second = "5")
-                        )
-                    )
-
-                    // 保存转盘配置数据
-                    val wheelJson = Json.encodeToString(RandomListEntity.serializer(), wheelConfig)
-                    MMKVUtils.put(MMKV_RANDOM_CARDS_SETTING_KEY + wheelConfig.name, wheelJson)
-                    existingLabels.add(wheelConfig.name)
-                }
-
-                // 检查并添加预置答案之书
-                if (!existingLabels.contains(answerBookConfigName)) {
-                    val answerBookConfig = RandomListEntity(
+                ensureRandomConfig(
+                    labels = existingLabels,
+                    config = RandomListEntity(
                         name = answerBookConfigName,
                         list = emptyList() // 答案之书数据由 AnswerBookData 对象提供
                     )
-                    val answerBookJson = Json.encodeToString(
-                        RandomListEntity.serializer(), answerBookConfig
-                    )
-                    MMKVUtils.put(
-                        MMKV_RANDOM_CARDS_SETTING_KEY + answerBookConfig.name,
-                        answerBookJson
-                    )
-                    existingLabels.add(answerBookConfig.name)
-                }
+                )
+
+                migrateLegacyDefaultRandomConfigs(
+                    diceConfigName = diceConfigName,
+                    coinConfigName = coinConfigName
+                )
 
                 // 保存更新后的配置列表
                 MMKVUtils.putSet(MMKV_RANDOM_LABEL_NAME_KEY, existingLabels)
+                MMKVUtils.put(MMKV_RANDOM_DEFAULTS_INITIALIZED_KEY, true)
 
                 // 更新状态
-                _randomLabelsState.value = existingLabels.toList()
+                _randomLabelsState.value = sortRandomLabels(existingLabels)
             } catch (e: Exception) {
                 GameLogger.error("初始化默认随机配置失败", e)
             }
+        }
+    }
+
+    private fun ensureRandomConfig(
+        labels: MutableSet<String>,
+        config: RandomListEntity
+    ) {
+        if (labels.add(config.name)) {
+            MMKVUtils.put(
+                MMKV_RANDOM_CARDS_SETTING_KEY + config.name,
+                Json.encodeToString(RandomListEntity.serializer(), config)
+            )
+        }
+    }
+
+    /**
+     * 清理跨端导入、旧版本或异常退出留下的配置。损坏项会被移除；可修复项会
+     * 限制名称、数量、文本和数值范围后重新保存。
+     */
+    private fun sanitizeStoredRandomConfigs(labels: Set<String>): MutableSet<String> {
+        val sanitizedLabels = linkedSetOf<String>()
+        labels.forEach { storedLabel ->
+            val storageKey = MMKV_RANDOM_CARDS_SETTING_KEY + storedLabel
+            val storedJson = MMKVUtils.getString(storageKey, "")
+            val storedConfig = try {
+                Json.decodeFromString<RandomListEntity>(storedJson)
+            } catch (e: Exception) {
+                MMKVUtils.remove(storageKey)
+                GameLogger.error("随机配置已损坏并清理: $storedLabel", e)
+                return@forEach
+            }
+
+            val sanitized = sanitizeRandomConfig(storedLabel, storedConfig)
+            if (sanitized == null || !sanitizedLabels.add(sanitized.name)) {
+                if (storedLabel != sanitized?.name) MMKVUtils.remove(storageKey)
+                return@forEach
+            }
+
+            if (storedLabel != sanitized.name) MMKVUtils.remove(storageKey)
+            MMKVUtils.put(
+                MMKV_RANDOM_CARDS_SETTING_KEY + sanitized.name,
+                Json.encodeToString(RandomListEntity.serializer(), sanitized)
+            )
+        }
+        return sanitizedLabels
+    }
+
+    private fun sanitizeRandomConfig(
+        storedLabel: String,
+        config: RandomListEntity
+    ): RandomListEntity? {
+        val prefixes = listOf(
+            RANDOM_PAGE_CONFIG_CATE_DICE,
+            RANDOM_PAGE_CONFIG_CATE_CARD,
+            RANDOM_PAGE_CONFIG_CATE_COIN,
+            RANDOM_PAGE_CONFIG_CATE_WHEEL,
+            RANDOM_PAGE_CONFIG_CATE_FINGER,
+            RANDOM_PAGE_CONFIG_CATE_ANSWER_BOOK
+        )
+        val candidateName = config.name.takeIf { name ->
+            prefixes.any { name.startsWith(it) }
+        } ?: storedLabel
+        val prefix = prefixes.firstOrNull { candidateName.startsWith(it) } ?: return null
+        val displayName = candidateName.removePrefix(prefix).trim().take(20)
+        if (displayName.isBlank()) return null
+
+        fun clean(value: String, fallback: String, maxLength: Int): String =
+            value.trim().takeIf { it.isNotEmpty() }?.take(maxLength) ?: fallback
+
+        val source = config.list.take(if (prefix == RANDOM_PAGE_CONFIG_CATE_WHEEL) 20 else 30)
+        val items = when (prefix) {
+            RANDOM_PAGE_CONFIG_CATE_DICE -> source.mapIndexed { index, item ->
+                var first = item.first.toIntOrDefault(1).coerceIn(1, 100)
+                var second = item.second.toIntOrDefault(6).coerceIn(1, 100)
+                if (first > second) {
+                    val originalFirst = first
+                    first = second
+                    second = originalFirst
+                }
+                RandomItem(index, second.toString(), first.toString(), prefix)
+            }.ifEmpty { listOf(RandomItem(0, "6", "1", prefix)) }
+
+            RANDOM_PAGE_CONFIG_CATE_WHEEL -> source.mapIndexed { index, item ->
+                RandomItem(
+                    id = index,
+                    first = clean(item.first, "选项${index + 1}", 24),
+                    second = item.second.toIntOrDefault(1).coerceIn(1, 100).toString(),
+                    cate = prefix
+                )
+            }.toMutableList().apply {
+                while (size < 2) {
+                    val index = size
+                    add(RandomItem(index, "50", "选项${index + 1}", prefix))
+                }
+            }
+
+            RANDOM_PAGE_CONFIG_CATE_COIN,
+            RANDOM_PAGE_CONFIG_CATE_CARD -> source.mapIndexed { index, item ->
+                val firstFallback = if (prefix == RANDOM_PAGE_CONFIG_CATE_COIN) {
+                    "正面"
+                } else {
+                    "牌背 ${index + 1}"
+                }
+                val secondFallback = if (prefix == RANDOM_PAGE_CONFIG_CATE_COIN) {
+                    "反面"
+                } else {
+                    "牌面 ${index + 1}"
+                }
+                RandomItem(
+                    id = index,
+                    first = clean(item.first, firstFallback, 40),
+                    second = clean(item.second, secondFallback, 40),
+                    cate = prefix
+                )
+            }.ifEmpty {
+                if (prefix == RANDOM_PAGE_CONFIG_CATE_COIN) {
+                    listOf(RandomItem(0, "反面", "正面", prefix))
+                } else {
+                    listOf(RandomItem(0, "牌面 1", "牌背 1", prefix))
+                }
+            }
+
+            else -> emptyList()
+        }
+        return RandomListEntity(
+            list = items,
+            name = prefix + displayName,
+            refreshTime = config.refreshTime.coerceAtLeast(0L)
+        )
+    }
+
+    private fun sortRandomLabels(labels: Collection<String>): List<String> {
+        fun rank(name: String): Int = when (name) {
+            RANDOM_PAGE_CONFIG_CATE_ANSWER_BOOK + "答案之书" -> 0
+            RANDOM_PAGE_SYSTEM_FINGER_SPINNER_NAME -> 1
+            RANDOM_PAGE_CONFIG_CATE_WHEEL + "今天吃啥" -> 2
+            RANDOM_PAGE_CONFIG_CATE_COIN + "硬币" -> 3
+            RANDOM_PAGE_CONFIG_CATE_DICE + "六面骰子" -> 4
+            else -> 100
+        }
+        // sortedBy is stable: system tools get a fixed rank while custom tools keep the
+        // user's existing insertion order instead of being renamed/reordered alphabetically.
+        return labels.sortedBy { rank(it) }
+    }
+
+    /**
+     * 兼容旧包或跨端导入可能留下的旧默认结构：6 个固定骰子
+     * （1..1 到 6..6）或 2 个正反面相同的固定硬币。仅当默认名称和结构
+     * 同时精确匹配时才迁移，不改动普通自定义配置。
+     */
+    private fun migrateLegacyDefaultRandomConfigs(
+        diceConfigName: String,
+        coinConfigName: String
+    ) {
+        migrateLegacyDefaultRandomConfig(
+            configName = diceConfigName,
+            replacementItems = listOf(RandomItem(first = "1", second = "6"))
+        ) { items ->
+            items.size == 6 &&
+                    items.all { it.first == it.second } &&
+                    items.map { it.first.toIntOrDefault() }.sorted() == (1..6).toList()
+        }
+
+        migrateLegacyDefaultRandomConfig(
+            configName = coinConfigName,
+            replacementItems = listOf(RandomItem(first = "正面", second = "反面"))
+        ) { items ->
+            items.size == 2 && items.all { it.first == it.second }
+        }
+    }
+
+    private fun migrateLegacyDefaultRandomConfig(
+        configName: String,
+        replacementItems: List<RandomItem>,
+        isLegacy: (List<RandomItem>) -> Boolean
+    ) {
+        val storageKey = MMKV_RANDOM_CARDS_SETTING_KEY + configName
+        val storedJson = MMKVUtils.getString(storageKey, "")
+        if (storedJson.isBlank()) return
+
+        try {
+            val storedConfig = Json.decodeFromString<RandomListEntity>(storedJson)
+            if (!isLegacy(storedConfig.list)) return
+
+            val migratedConfig = storedConfig.copy(
+                list = replacementItems,
+                refreshTime = 0L
+            )
+            MMKVUtils.put(
+                storageKey,
+                Json.encodeToString(RandomListEntity.serializer(), migratedConfig)
+            )
+            GameLogger.debug("已迁移旧版随机配置: $configName")
+        } catch (e: Exception) {
+            GameLogger.error("迁移旧版随机配置失败: $configName", e)
         }
     }
 
@@ -1249,7 +1493,7 @@ class MainViewmodel : ViewModel() {
 
     /**
      * 处理答案之书意图
-     * @param intent 答案之书意图（翻书、重置、更新问题）
+     * @param intent 答案之书意图（翻书、动画完成、更新问题）
      */
     fun handleAnswerBookIntent(intent: AnswerBookIntent) {
         when (intent) {
@@ -1257,62 +1501,20 @@ class MainViewmodel : ViewModel() {
                 val currentState = _answerBookState.value
                 if (currentState.isFlipping) return
 
-                // 开始翻书动画
+                val answer = AnswerBookData.getRandomAnswerExcluding(currentState.lastAnswerIndex)
                 _answerBookState.update {
-                    it.copy(
-                        isFlipping = true,
-                        flipProgress = 0f
-                    )
+                    it.beginFlip(answer, AnswerBookData.answers.indexOf(answer))
                 }
-
-                // 使用协程驱动翻书动画进度
-                viewModelScope.launch {
-                    val totalDuration = 1500L // 动画总时长 1.5 秒
-                    val steps = 30 // 动画帧数
-                    val stepDuration = totalDuration / steps
-
-                    for (step in 1..steps) {
-                        delay(stepDuration)
-                        val progress = step.toFloat() / steps.toFloat()
-
-                        // 动画过半时，设置答案内容
-                        if (step == steps / 2) {
-                            val answer = AnswerBookData.getRandomAnswerExcluding(
-                                _answerBookState.value.lastAnswerIndex
-                            )
-                            val answerIndex = AnswerBookData.answers.indexOf(answer)
-                            _answerBookState.update { state ->
-                                state.copy(
-                                    currentAnswer = answer,
-                                    lastAnswerIndex = answerIndex
-                                )
-                            }
-                        }
-
-                        _answerBookState.update { state ->
-                            state.copy(flipProgress = progress)
-                        }
-                    }
-
-                    // 动画结束
-                    _answerBookState.update { state ->
-                        state.copy(
-                            isFlipping = false,
-                            flipProgress = 1f
-                        )
-                    }
-                }
+                PlatformHelper.getInstance().vibrateMethod()
             }
 
-            is AnswerBookIntent.ResetFlip -> {
-                // 重置状态，回到初始封面
+            is AnswerBookIntent.AnimationFinished -> {
+                val completedOpening = _answerBookState.value.phase == intent.phase &&
+                    intent.phase == AnswerBookPhase.OPENING
                 _answerBookState.update {
-                    it.copy(
-                        currentAnswer = null,
-                        isFlipping = false,
-                        flipProgress = 0f
-                    )
+                    it.finishAnimation(intent.phase)
                 }
+                if (completedOpening) PlatformHelper.getInstance().vibrateLongMethod()
             }
 
             is AnswerBookIntent.UpdateQuestion -> {

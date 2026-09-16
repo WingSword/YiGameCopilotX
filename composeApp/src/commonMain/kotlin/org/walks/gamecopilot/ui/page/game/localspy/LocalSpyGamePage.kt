@@ -5,6 +5,8 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -17,8 +19,11 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import org.walks.gamecopilot.MainViewmodel
 import org.walks.gamecopilot.PlatformHelper
+import org.walks.gamecopilot.data.GameStatsManager
+import org.walks.gamecopilot.data.entity.GameMode
 import org.walks.gamecopilot.getWordMapBySelectedGroups
 import org.walks.gamecopilot.intent.AiIntent
+import org.walks.gamecopilot.intent.GameIntent
 import org.walks.gamecopilot.ui.components.AiMessageBubble
 import org.walks.gamecopilot.ui.components.common.OfflinePassingGuideDialog
 import org.walks.gamecopilot.ui.page.game.localspy.components.GameConfigurationSection
@@ -66,12 +71,18 @@ fun LocalSpyGamePage(viewmodel: MainViewmodel, onBack: () -> Unit) {
     // 状态控制：所有玩家是否都已查看身份
     var allPlayersViewed by remember { mutableStateOf(false) }
 
-    var showGuideDialog by remember { mutableStateOf(true) }
+    var showGuideDialog by remember { mutableStateOf(false) }
     
     // 游戏开始后自动折叠词库区域
     LaunchedEffect(gameTimeState) {
         if (gameTimeState > 0) {
             isWordLibraryExpanded = false
+        }
+    }
+
+    LaunchedEffect(showAllIdentities) {
+        if (showAllIdentities && gameTimeState > 0) {
+            GameStatsManager.completeLatestGame(GameMode.SPY_MAIN, "身份已公布")
         }
     }
     
@@ -99,13 +110,16 @@ fun LocalSpyGamePage(viewmodel: MainViewmodel, onBack: () -> Unit) {
             onBack = onBack,
             isWordLibraryExpanded = isWordLibraryExpanded,
             onToggleWordLibrary = { isWordLibraryExpanded = it },
-            onShowWordsDialog = { showWordsDialog = true }
+            onShowWordsDialog = { showWordsDialog = true },
+            onShowGuide = { showGuideDialog = true }
         )
 
         Column(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(horizontal = 16.dp)
+                .verticalScroll(rememberScrollState())
+                .padding(bottom = 24.dp)
         ) {
             Spacer(modifier = Modifier.height(8.dp))
 
@@ -125,7 +139,12 @@ fun LocalSpyGamePage(viewmodel: MainViewmodel, onBack: () -> Unit) {
             onWordLibraryToggle = { isWordLibraryExpanded = it },
             onShowAllIdentities = { showAllIdentities = it },
             onAllPlayersViewed = { allPlayersViewed = it },
-            onGameIntent = { viewmodel.handleGameIntent(it) },
+            onGameIntent = { intent ->
+                viewmodel.handleGameIntent(intent)
+                if (intent == GameIntent.StartGame) {
+                    GameStatsManager.recordGameStart(GameMode.SPY_MAIN, playerNum)
+                }
+            },
             onGameTimeStateChange = { gameTimeState = it }
         )
 

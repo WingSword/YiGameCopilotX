@@ -5,7 +5,7 @@ enum class NaviRoute(val route: String, val label: String, val type: Int = 0) {
     RANDOM("random", "随机工具"),
     MULTIPLAYER("multiplayer", "联机"),
     STATS("stats", "信息"),
-    SETTING("setting", "设置"),
+    SETTING("setting", "我的"),
     LOCAL_SPY("localSpy", "本地卧底", 1),
     ROOM("room", "房间", 1),
     AWALONG("awalong", "阿瓦隆配置", 1),
@@ -15,6 +15,8 @@ enum class NaviRoute(val route: String, val label: String, val type: Int = 0) {
     DRAW_BOARD("drawBoard", "画板", 1),
     ONE_NIGHT_WEREWOLF("oneNightWerewolf", "一夜狼人配置", 1),
     ONE_NIGHT_WEREWOLF_GAME("oneNightWerewolfGame", "一夜狼人", 1),
+    MONOPOLY("monopoly", "桌游记账", 1),
+    CLOUD_LEDGER("cloudLedger", "云端记账", 1),
     LAN_DISCOVERY("lanDiscovery", "局域网发现", 1),
     LAN_CREATE_ROOM("lanCreateRoom", "创建房间", 1),
     LAN_LOBBY("lanLobby", "房间大厅", 1)

@@ -22,6 +22,17 @@ configurations.configureEach {
     exclude(group = "androidx.vectordrawable", module = "vectordrawable-animated")
 }
 
+// Optional official local toolchain for environments where Gradle cannot reach GitHub.
+// Normal release builds continue to use Kotlin's pinned Binaryen download.
+gradle.projectsEvaluated {
+    providers.gradleProperty("yigame.binaryenExecutable").orNull?.let { executable ->
+        project.extensions.configure<org.jetbrains.kotlin.gradle.targets.wasm.binaryen.BinaryenEnvSpec> {
+            download.set(false)
+            command.set(executable)
+        }
+    }
+}
+
 kotlin {
     @OptIn(ExperimentalWasmDsl::class)
     wasmJs {
@@ -117,8 +128,8 @@ android {
         applicationId = "org.walks.gamecopilot"
         minSdk = libs.versions.android.minSdk.get().toInt()
         targetSdk = libs.versions.android.targetSdk.get().toInt()
-        versionCode = 5
-        versionName = "1.4"
+        versionCode = 9
+        versionName = "1.5"
     }
 
     packaging {

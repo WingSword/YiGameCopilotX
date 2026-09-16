@@ -9,7 +9,6 @@ import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.derivedStateOf
@@ -48,9 +47,9 @@ fun GameGreetingView(
     onAllPlayersViewed: (Boolean) -> Unit = {}
 ) {
     // 当前选中玩家索引（1-based）
-    var currentSelectPlayer by remember { mutableIntStateOf(1) }
+    var currentSelectPlayer by remember(key) { mutableIntStateOf(1) }
     // 身份显示状态机（默认隐藏，但可以由外部控制）
-    val identityDisPlayState = remember { mutableStateOf(IDENTITY_DISMISS) }
+    val identityDisPlayState = remember(key) { mutableStateOf(IDENTITY_DISMISS) }
 
     // 监听外部showAllIdentities状态，当长按公布身份时立即更新显示状态
     LaunchedEffect(showAllIdentities) {
@@ -60,22 +59,20 @@ fun GameGreetingView(
     }
     
     // 单个玩家身份展示状态列表，记录已查看过身份的玩家
-    val playerIdentityState = remember {
+    val playerIdentityState = remember(key) {
         mutableStateListOf<Int>()
     }
 
     // 派生游戏状态（根据key变化重置）
-    val realGameState by remember(key) {
-        derivedStateOf { gameState }
-    }
+    val realGameState = gameState
     
     // 玩家查看次数记录列表，用于统计查看次数和判断是否所有玩家都已查看
     val watchedTimeList = remember(key) {
-        mutableStateListOf(*(Array(17) { 0 }))
+        mutableStateListOf(*(Array(gameState.totalPlayerNumber + 1) { 0 }))
     }
 
     /* 当key变化时重置游戏状态 */
-    LaunchedEffect(key1 = realGameState.gameWord) {
+    LaunchedEffect(key) {
         identityDisPlayState.value = IDENTITY_DISMISS
         // 重置watchedTimeList
         repeat(watchedTimeList.size) { index ->
@@ -102,7 +99,6 @@ fun GameGreetingView(
             playerIdentityState = playerIdentityState,
             onClick = { currentSelect ->
                 currentSelectPlayer = currentSelect
-                watchedTimeList[currentSelect] += 1
                 identityDisPlayState.value = IDENTITY_SHOW
                 PlatformHelper.getInstance().vibrateMethod()
             }
@@ -113,7 +109,6 @@ fun GameGreetingView(
 
     // 身份卡片动画显示逻辑
     AnimatedVisibility(
-        modifier = Modifier.fillMaxSize(),
         visible = identityDisPlayState.value == IDENTITY_SHOW,
         // 组合动画+物理效果
         enter = slideInVertically(
@@ -138,7 +133,8 @@ fun GameGreetingView(
                     ?: "玩家$currentSelectPlayer",
                 identity = gameState.optIdentity(currentSelectPlayer),
                 isSpy = gameState.isSpy(currentSelectPlayer),
-                onClose = { identityDisPlayState.value = IDENTITY_DISMISS }
+                onClose = { identityDisPlayState.value = IDENTITY_DISMISS },
+                onRevealed = { watchedTimeList[currentSelectPlayer] += 1 }
             )
         }
     }

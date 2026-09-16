@@ -5,7 +5,7 @@ import com.russhwolf.settings.set
 
 object MMKVUtils {
 
-    private val settings: Settings by lazy { Settings() }
+    private val settings: Settings by lazy { createPlatformSettings() }
 
     fun put(key: String, value: Any?) {
         when (value) {
@@ -85,3 +85,5 @@ object MMKVUtils {
         return settings.hasKey(key)
     }
 }
+
+internal expect fun createPlatformSettings(): Settings

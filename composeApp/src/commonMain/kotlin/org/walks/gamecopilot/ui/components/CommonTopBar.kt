@@ -1,13 +1,6 @@
 package org.walks.gamecopilot.ui.components
 
-import androidx.compose.animation.core.animateFloatAsState
-import androidx.compose.animation.core.tween
-import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
-import androidx.compose.foundation.clickable
-import androidx.compose.foundation.interaction.MutableInteractionSource
-import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -16,22 +9,17 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.rounded.ArrowBack
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.scale
-import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.Path
-import androidx.compose.ui.graphics.StrokeCap
-import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -40,12 +28,12 @@ import org.walks.gamecopilot.theme.LocalAppDesign
 
 /**
  * 顶部栏操作按钮数据类
- * @param icon 图标Composable
+ * @param icon 图标
  * @param contentDescription 内容描述
  * @param onClick 点击回调
  */
 data class TopBarAction(
-    val icon: @Composable (Color) -> Unit,
+    val icon: ImageVector,
     val contentDescription: String,
     val onClick: () -> Unit
 )
@@ -78,28 +66,22 @@ fun CommonTopBar(
     val design = LocalAppDesign.current
 
     Surface(
-        modifier = modifier
-            .fillMaxWidth()
-            .padding(
-                horizontal = design.spacing.xl,
-                vertical = design.spacing.sm
-            ),
-        shape = RoundedCornerShape(design.cornerRadius.lg),
-        color = MaterialTheme.colorScheme.surface,
+        modifier = modifier.fillMaxWidth(),
+        color = MaterialTheme.colorScheme.background,
         tonalElevation = design.elevation.none,
-        shadowElevation = design.elevation.xs
+        shadowElevation = design.elevation.appBar
     ) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(
                     horizontal = design.spacing.xl,
-                    vertical = design.spacing.lg
+                    vertical = design.spacing.md
                 ),
             verticalAlignment = Alignment.CenterVertically
         ) {
             if (onBack != null) {
-                BackButton(onClick = onBack)
+                AppBackButton(onClick = onBack)
                 Spacer(modifier = Modifier.width(design.spacing.lg))
             }
 
@@ -108,7 +90,7 @@ fun CommonTopBar(
             ) {
                 Text(
                     text = title,
-                    fontSize = 20.sp,
+                    style = MaterialTheme.typography.titleLarge,
                     fontWeight = FontWeight.SemiBold,
                     color = MaterialTheme.colorScheme.onSurface,
                     maxLines = 1,
@@ -117,7 +99,7 @@ fun CommonTopBar(
                 subtitle?.let {
                     Text(
                         text = it,
-                        fontSize = 12.sp,
+                        style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis
@@ -125,8 +107,14 @@ fun CommonTopBar(
                 }
             }
 
-            actions.forEach { action ->
-                ActionButton(action = action)
+            Row(horizontalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(6.dp)) {
+                actions.forEach { action ->
+                    AppIconButton(
+                        icon = action.icon,
+                        contentDescription = action.contentDescription,
+                        onClick = action.onClick
+                    )
+                }
             }
 
             customAction?.invoke()
@@ -134,96 +122,14 @@ fun CommonTopBar(
     }
 }
 
-/**
- * 返回按钮组件
- */
-@Composable
-private fun BackButton(onClick: () -> Unit) {
-    val design = LocalAppDesign.current
-    val interactionSource = remember { MutableInteractionSource() }
-    val isPressed by interactionSource.collectIsPressedAsState()
-
-    val scale by animateFloatAsState(
-        targetValue = if (isPressed) 0.96f else 1f,
-        animationSpec = tween(150),
-        label = "backButtonScale"
-    )
-
-    Box(
-        modifier = Modifier
-            .size(36.dp)
-            .scale(scale)
-            .shadow(
-                elevation = design.elevation.none,
-                shape = RoundedCornerShape(design.cornerRadius.md)
-            )
-            .clip(RoundedCornerShape(design.cornerRadius.md))
-            .border(
-                width = 1.dp,
-                color = MaterialTheme.colorScheme.outlineVariant,
-                shape = RoundedCornerShape(design.cornerRadius.md)
-            )
-            .clickable(
-                interactionSource = interactionSource,
-                onClick = onClick
-            ),
-        contentAlignment = Alignment.Center
-    ) {
-        BackIcon(
-            color = MaterialTheme.colorScheme.onSurface,
-            modifier = Modifier.size(20.dp)
-        )
-    }
-}
-
-/**
- * 操作按钮组件
- */
-@Composable
-private fun ActionButton(action: TopBarAction) {
-    val design = LocalAppDesign.current
-    val interactionSource = remember { MutableInteractionSource() }
-    val isPressed by interactionSource.collectIsPressedAsState()
-
-    val scale by animateFloatAsState(
-        targetValue = if (isPressed) 0.96f else 1f,
-        animationSpec = tween(150),
-        label = "actionButtonScale"
-    )
-
-    Box(
-        modifier = Modifier
-            .size(36.dp)
-            .scale(scale)
-            .clip(RoundedCornerShape(design.cornerRadius.md))
-            .background(MaterialTheme.colorScheme.surfaceVariant)
-            .clickable(
-                interactionSource = interactionSource,
-                onClick = action.onClick
-            ),
-        contentAlignment = Alignment.Center
-    ) {
-        action.icon(MaterialTheme.colorScheme.primary)
-    }
-}
-
-/**
- * 返回图标
- */
 @Composable
 fun BackIcon(color: Color, modifier: Modifier = Modifier.size(24.dp)) {
-    Canvas(modifier = modifier) {
-        val stroke = size.width * 0.1f
-        drawPath(
-            path = Path().apply {
-                moveTo(size.width * 0.65f, size.height * 0.15f)
-                lineTo(size.width * 0.25f, size.height * 0.5f)
-                lineTo(size.width * 0.65f, size.height * 0.85f)
-            },
-            color = color,
-            style = Stroke(width = stroke, cap = StrokeCap.Round)
-        )
-    }
+    Icon(
+        imageVector = Icons.AutoMirrored.Rounded.ArrowBack,
+        contentDescription = null,
+        tint = color,
+        modifier = modifier
+    )
 }
 
 /**
