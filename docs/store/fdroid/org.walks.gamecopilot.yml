@@ -1,5 +1,6 @@
-# Packaging template: replace RELEASE_COMMIT with the tested, public release SHA.
-# Do not submit this template as completed build metadata.
+# Candidate packaging metadata, not yet submitted to F-Droid.
+# Pinned to the source that passed GitHub Actions run 35742097588.
+# Official F-Droid build/scan checks and final release version are still pending.
 Categories:
   - Games
 License: Apache-2.0
@@ -26,7 +27,7 @@ Repo: https://github.com/WingSword/YiGameCopilotX.git
 Builds:
   - versionName: '1.5'
     versionCode: 9
-    commit: RELEASE_COMMIT
+    commit: 43147662bd8a320fea0df7c7fb12f5b33d9436ee
     subdir: composeApp
     gradle:
       - fdroid

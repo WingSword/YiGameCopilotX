@@ -39,27 +39,38 @@ completed preparation, not an approval or a claim of production readiness.
   startup, lobby entry/back, tools and light/dark theme switching. Fixed light
   status-bar contrast and the dark navigation-area background. This is not
   a new end-to-end validation of the production room server.
-- Console access was last blocked by Google's identity verification. No AAB
-  has been uploaded and developer-account eligibility is not yet known.
+- Console access was blocked by Google's identity verification; the login tab
+  now reports an expired session. No AAB has been uploaded and developer-account
+  eligibility is not yet known.
 - Privacy, production HTTPS/data retention and account-specific release steps
   remain open. See `GOOGLE_PLAY_DATA_SAFETY_DRAFT.md`.
 
 ## F-Droid
 
 - Owner selected Apache-2.0; root LICENSE and README updated. Existing third-party
-  notices retained. The source must be public at the exact reviewed commit.
+  notices retained. Source and license are public at commit
+  `43147662bd8a320fea0df7c7fb12f5b33d9436ee` on
+  [`codex/store-publication-20260922`](https://github.com/WingSword/YiGameCopilotX/tree/codex/store-publication-20260922).
 - Signed F-Droid candidate built and checked; app retains full room features.
   API 36 emulator screenshots were captured from the actual F-Droid artifact.
-- Added English/Chinese fastlane metadata, icon, screenshots and a build template.
+- Added English/Chinese fastlane metadata, icon, screenshots and candidate build
+  metadata pinned to that exact public commit.
 - This is not an official F-Droid build or an inclusion submission. Clean Linux
-  builds with official repositories, scanner/lint checks and a pinned release
-  commit are still needed. Bit-for-bit reproducibility has not been established.
-- The user reported completing GitLab login; the account initially displayed
-  its welcome/initialization page. Continue from the live GitLab page and record
-  any submitted merge-request URL explicitly.
+  upstream builds with official repositories passed in GitHub Actions; an unsigned
+  F-Droid build and official scanner/lint checks are still needed. Bit-for-bit
+  reproducibility has not been established.
+- GitLab login is confirmed. Mandatory account initialization requires company,
+  group, project and country/region; the observed country list does not include
+  China. The user was asked to finish setup using truthful information. No fork
+  or merge request has been created. Do not repeat the login request.
 
 ## Shared evidence and remaining release work
 
+- [GitHub Actions run 35742097588](https://github.com/WingSword/YiGameCopilotX/actions/runs/35742097588)
+  completed successfully for source `43147662bd8a320fea0df7c7fb12f5b33d9436ee`:
+  `direct`, `domestic`, `googlePlay`, and `fdroid` APKs plus the Play AAB.
+  All APK signature/manifest verification steps passed. This dispatch created
+  CI artifacts, not a GitHub Release or store submission.
 - Wasm compilation passed after adding the native-system-bar hook; Wasm/iOS
   implementations are no-ops. Harmony already updates its system-bar colors in
   `Index.ets.onThemeChange`; no new Harmony or iOS device test was performed.
