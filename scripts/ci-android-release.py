@@ -10,6 +10,31 @@ import subprocess
 import sys
 
 SIGNING_KEYS = ('KEYSTORE_BASE64', 'KEYSTORE_PASSWORD', 'KEY_ALIAS', 'KEY_PASSWORD')
+CHANNELS = ('domestic', 'googlePlay', 'direct', 'fdroid')
+
+
+def application_id(channel):
+    if channel not in CHANNELS:
+        raise ValueError('Unknown distribution channel.')
+    return 'org.walks.gamecopilot' + ('.domestic' if channel == 'domestic' else '')
+
+
+def verify_manifest(manifest, tree, channel):
+    if 'application-debuggable' in manifest or f"package: name='{application_id(channel)}'" not in manifest:
+        raise ValueError('Expected a non-debuggable package for the selected channel.')
+    nodes = re.findall(r'E: meta-data\b(?:(?!\n\s*E:).)*', tree, re.DOTALL)
+    distribution = [node for node in nodes if 'org.walks.gamecopilot.DISTRIBUTION_CHANNEL' in node]
+    if len(distribution) != 1 or not re.search(r'android:value[^\n]*="' + re.escape(channel) + '"', distribution[0]):
+        raise ValueError('Packaged distribution metadata does not match the selected channel.')
+    forbidden = ['REQUEST_INSTALL_PACKAGES'] if channel != 'direct' else []
+    if channel == 'domestic':
+        forbidden += ['ACCESS_WIFI_STATE', 'CHANGE_WIFI_STATE', 'CHANGE_WIFI_MULTICAST_STATE']
+    if any('android.permission.' + permission in manifest for permission in forbidden):
+        raise ValueError('Unexpected update or LAN permission in the store package.')
+    if channel == 'googlePlay':
+        target = re.search(r"targetSdkVersion:'(\d+)'", manifest)
+        if not target or int(target.group(1)) < 36:
+            raise ValueError('Google Play submissions require target SDK 36 or higher from 2026-08-31.')
 
 
 def property_value(value):
@@ -81,12 +106,13 @@ def certificate_digest(signature):
     return certificates.pop()
 
 
-def verify(root):
-    directory = root / 'composeApp/build/outputs/apk/release'
+def verify(root, channel='direct'):
+    expected_id = application_id(channel)
+    directory = root / 'composeApp/build/outputs/apk' / channel / 'release'
     metadata = json.loads((directory / 'output-metadata.json').read_text(encoding='utf-8'))
     elements = metadata['elements']
-    if metadata.get('variantName') != 'release' or metadata.get('applicationId') != 'org.walks.gamecopilot' or len(elements) != 1:
-        raise ValueError('Expected one release APK for org.walks.gamecopilot.')
+    if metadata.get('variantName') != channel + 'Release' or metadata.get('applicationId') != expected_id or len(elements) != 1:
+        raise ValueError('Expected one release APK for the selected channel.')
     apk = (directory / elements[0]['outputFile']).resolve()
     if apk.parent != directory.resolve() or not apk.is_file() or apk.suffix != '.apk':
         raise ValueError('Release APK is missing or outside the expected output directory.')
@@ -98,8 +124,8 @@ def verify(root):
     signature = command([java, '-jar', tools / 'lib/apksigner.jar', 'verify', '--verbose', '--print-certs', apk])
     actual = certificate_digest(signature)
     manifest = command([tools / 'aapt2', 'dump', 'badging', apk])
-    if 'application-debuggable' in manifest or "package: name='org.walks.gamecopilot'" not in manifest:
-        raise ValueError('Expected a non-debuggable production package.')
+    tree = command([tools / 'aapt2', 'dump', 'xmltree', apk, '--file', 'AndroidManifest.xml'])
+    verify_manifest(manifest, tree, channel)
     # Read the exact same Java Properties file as Gradle; passwords never enter argv.
     helper = signing_dir() / 'ReleaseCertificate.java'
     helper.write_text('''
@@ -119,7 +145,8 @@ class ReleaseCertificate {
     expected = command([java, helper, root / 'local.properties']).strip().lower()
     if actual != expected:
         raise ValueError('APK signer does not match the configured release key.')
-    report = {'applicationId': metadata['applicationId'], 'versionCode': elements[0]['versionCode'],
+    report = {'channel': channel, 'roomsEnabled': channel != 'domestic',
+              'applicationId': metadata['applicationId'], 'versionCode': elements[0]['versionCode'],
               'versionName': elements[0]['versionName'], 'debuggable': False, 'signatureVerified': True,
               'matchesReleaseCertificate': True, 'signerCertificateSha256': actual,
               'sha256': hashlib.sha256(apk.read_bytes()).hexdigest()}
@@ -145,11 +172,15 @@ def cleanup(root):
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('action', choices=('prepare', 'verify', 'cleanup'))
+    parser.add_argument('--channel', choices=CHANNELS, default='direct')
     args = parser.parse_args()
     if os.environ.get('GITHUB_ACTIONS') != 'true':
         raise ValueError('This helper is restricted to GitHub Actions.')
     root = Path(__file__).resolve().parents[1]
-    {'prepare': prepare, 'verify': verify, 'cleanup': cleanup}[args.action](root)
+    if args.action == 'verify':
+        verify(root, args.channel)
+    else:
+        {'prepare': prepare, 'cleanup': cleanup}[args.action](root)
 
 
 if __name__ == '__main__':

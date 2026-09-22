@@ -55,14 +55,18 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import org.walks.gamecopilot.MainViewmodel
 import org.walks.gamecopilot.PlatformHelper
+import org.walks.gamecopilot.currentTimeMillis
+import org.walks.gamecopilot.registerCustomDrawWords
 import org.walks.gamecopilot.data.DrawGuessWordLibrary
 import org.walks.gamecopilot.data.GameStatsManager
+import org.walks.gamecopilot.data.WordImportEngine
 import org.walks.gamecopilot.data.entity.GameMode
 import org.walks.gamecopilot.intent.AiIntent
 import org.walks.gamecopilot.ui.components.AiMessageBubble
 import org.walks.gamecopilot.ui.components.AppDialog
 import org.walks.gamecopilot.ui.components.CommonTopBar
 import org.walks.gamecopilot.ui.components.common.OfflinePassingGuideDialog
+import org.walks.gamecopilot.ui.components.common.WordImportDialog
 
 data class PathState(
     val points: List<Offset>,
@@ -104,7 +108,9 @@ fun DrawBoardPage(
     viewmodel: MainViewmodel,
     onBack: () -> Unit
 ) {
-    var showGuideDialog by remember { mutableStateOf(true) }
+    var showGuideDialog by remember { mutableStateOf(false) }
+    var showOptionsDialog by remember { mutableStateOf(false) }
+    var showImportDialog by remember { mutableStateOf(false) }
     var showWordDialog by remember { mutableStateOf(false) }
     var showEndConfirmation by remember { mutableStateOf(false) }
     var currentWord by remember { mutableStateOf(DrawGuessWordLibrary.getRandomWord()) }
@@ -134,26 +140,26 @@ fun DrawBoardPage(
             .background(MaterialTheme.colorScheme.background)
     ) {
         CommonTopBar(
-            title = "画板",
-            subtitle = "自由创作",
+            title = "你画我猜",
+            subtitle = "一人作画，大家来猜",
             onBack = onBack,
             actions = emptyList(),
             customAction = {
                 Row {
                     TextButton(onClick = { showWordDialog = true }) {
                         Text(
-                            text = "查看词汇",
+                            text = "词卡",
                             fontSize = 14.sp,
                             fontWeight = FontWeight.Medium,
                             color = MaterialTheme.colorScheme.primary
                         )
                     }
-                    TextButton(onClick = { showEndConfirmation = true }) {
+                    TextButton(onClick = { showOptionsDialog = true }) {
                         Text(
-                            text = "结束",
+                            text = "更多",
                             fontSize = 14.sp,
                             fontWeight = FontWeight.Medium,
-                            color = MaterialTheme.colorScheme.error
+                            color = MaterialTheme.colorScheme.primary
                         )
                     }
                 }
@@ -254,7 +260,7 @@ fun DrawBoardPage(
             message = aiMessage,
             isLoading = isLoadingAi,
             onRefresh = {
-                val context = "当前画板上的词汇是「$currentWord」，请作为AI评论员幽默地点评这幅画。"
+                val context = "当前画板上的词汇是「$currentWord」，请作为AI评论员幽默地点评这幅画，但不要说出答案。"
                 viewmodel.handleAiIntent(AiIntent.SendMessage("drawguess", context))
             },
             modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
@@ -268,6 +274,41 @@ fun DrawBoardPage(
             onNextWord = {
                 PlatformHelper.getInstance().vibrateMethod()
                 currentWord = DrawGuessWordLibrary.getRandomWord()
+            }
+        )
+    }
+
+    if (showOptionsDialog) {
+        AppDialog(
+            title = "你画我猜",
+            subtitle = "词卡仅供出题和作画玩家查看，传递手机前请关闭。",
+            onDismiss = { showOptionsDialog = false }
+        ) {
+            TextButton(onClick = {
+                showOptionsDialog = false
+                showImportDialog = true
+            }, modifier = Modifier.fillMaxWidth()) { Text("导入词库") }
+            TextButton(onClick = {
+                showOptionsDialog = false
+                showGuideDialog = true
+            }, modifier = Modifier.fillMaxWidth()) { Text("同机说明") }
+            TextButton(onClick = {
+                showOptionsDialog = false
+                showEndConfirmation = true
+            }, modifier = Modifier.fillMaxWidth()) { Text("结束本局", color = MaterialTheme.colorScheme.error) }
+        }
+    }
+
+    if (showImportDialog) {
+        WordImportDialog(
+            title = "导入你画我猜词库",
+            isSpyMode = false,
+            onDismiss = { showImportDialog = false },
+            onImportSuccess = { text ->
+                val result = WordImportEngine.parseDrawWords(text)
+                if (result is WordImportEngine.ImportResult.DrawWords) {
+                    registerCustomDrawWords("custom_draw_${currentTimeMillis()}", result.words)
+                }
             }
         )
     }

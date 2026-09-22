@@ -41,22 +41,22 @@ fun AppIconButton(
     contentDescription: String,
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
-    containerColor: Color = MaterialTheme.colorScheme.surfaceVariant,
+    containerColor: Color = MaterialTheme.colorScheme.surface,
     contentColor: Color = MaterialTheme.colorScheme.onSurface
 ) {
     val design = LocalAppDesign.current
-    val shape = RoundedCornerShape(design.cornerRadius.md)
+    val shape = RoundedCornerShape(design.cornerRadius.button)
 
     Surface(
         modifier = modifier
-            .size(40.dp)
+            .size(44.dp)
             .clip(shape)
             .clickable(onClick = onClick),
         shape = shape,
         color = containerColor,
         border = BorderStroke(
             width = 1.dp,
-            color = MaterialTheme.colorScheme.outline.copy(alpha = 0.62f)
+            color = MaterialTheme.colorScheme.outline.copy(alpha = 0.30f)
         )
     ) {
         Box(contentAlignment = Alignment.Center) {
@@ -77,7 +77,7 @@ fun AppBackButton(onClick: () -> Unit, modifier: Modifier = Modifier) {
         contentDescription = "返回",
         onClick = onClick,
         modifier = modifier,
-        containerColor = Color.Transparent
+        containerColor = MaterialTheme.colorScheme.surface
     )
 }
 
@@ -251,7 +251,7 @@ fun AppChoiceRow(
             if (selected) {
                 MaterialTheme.colorScheme.primary.copy(alpha = 0.56f)
             } else {
-                MaterialTheme.colorScheme.outline.copy(alpha = 0.62f)
+            MaterialTheme.colorScheme.outline.copy(alpha = 0.30f)
             }
         )
     ) {

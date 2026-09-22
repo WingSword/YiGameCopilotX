@@ -4,6 +4,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -18,6 +19,8 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.PhoneAndroid
 import androidx.compose.material3.Icon
+import androidx.compose.material3.FilterChip
+import androidx.compose.material3.FilterChipDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Surface
@@ -41,7 +44,7 @@ import org.walks.gamecopilot.data.entity.GameMode
 import org.walks.gamecopilot.intent.GameIntent
 import org.walks.gamecopilot.navigation.NaviRoute
 import org.walks.gamecopilot.theme.LocalAppDesign
-import org.walks.gamecopilot.ui.components.AppChoiceRow
+import org.walks.gamecopilot.ui.components.AppCard
 import org.walks.gamecopilot.ui.components.AppDialog
 import org.walks.gamecopilot.ui.components.AppDialogActions
 import org.walks.gamecopilot.ui.components.AppPrimaryAction
@@ -81,24 +84,29 @@ fun WerewolfEntrance(viewmodel: MainViewmodel, navi: NavHostController) {
             verticalArrangement = Arrangement.spacedBy(design.spacing.md)
         ) {
             item {
-                AppSectionHeader(
-                    title = "选择人数",
-                    subtitle = "预设会自动匹配玩家牌与三张中央底牌"
-                )
-            }
-            items(WerewolfPresets.presets.size) { index ->
-                val preset = WerewolfPresets.presets[index]
-                PresetCard(
-                    preset = preset,
-                    isSelected = playerCount == preset.playerCount,
-                    onClick = {
-                        playerCount = preset.playerCount
-                        nicknames.clear()
-                        repeat(preset.playerCount) { playerIndex ->
-                            nicknames.add("玩家${playerIndex + 1}")
+                AppCard {
+                    AppSectionHeader(title = "选择人数", subtitle = "人数确定后，自动配好角色与三张中央底牌")
+                    FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        WerewolfPresets.presets.forEach { preset ->
+                            FilterChip(
+                                selected = playerCount == preset.playerCount,
+                                onClick = {
+                                    playerCount = preset.playerCount
+                                    nicknames.clear()
+                                    repeat(preset.playerCount) { nicknames.add("玩家${it + 1}") }
+                                },
+                                label = { Text("${preset.playerCount} 人") },
+                                colors = FilterChipDefaults.filterChipColors(
+                                    containerColor = MaterialTheme.colorScheme.surfaceVariant,
+                                    selectedContainerColor = MaterialTheme.colorScheme.primaryContainer,
+                                    selectedLabelColor = MaterialTheme.colorScheme.onPrimaryContainer
+                                )
+                            )
                         }
                     }
-                )
+                    Text(currentPreset.description, style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant)
+                }
             }
             item {
                 Spacer(modifier = Modifier.height(design.spacing.sm))
@@ -122,7 +130,7 @@ fun WerewolfEntrance(viewmodel: MainViewmodel, navi: NavHostController) {
                 GameStatsManager.recordGameStart(GameMode.ONE_NIGHT_WEREWOLF, playerCount)
                 navi.navigate(NaviRoute.ONE_NIGHT_WEREWOLF_GAME.route)
             },
-            supportingText = "进入后直接从第 1 位玩家开始查看身份，不再重复配置人数。"
+            supportingText = "将手机交给第 1 位玩家，每次看完请先隐藏身份。"
         )
 
         OutlinedButton(
@@ -136,7 +144,7 @@ fun WerewolfEntrance(viewmodel: MainViewmodel, navi: NavHostController) {
                 modifier = Modifier.size(18.dp)
             )
             Spacer(modifier = Modifier.width(8.dp))
-            Text("查看单机传机流程")
+            Text("同机游玩说明")
         }
     }
 
@@ -154,44 +162,6 @@ fun WerewolfEntrance(viewmodel: MainViewmodel, navi: NavHostController) {
             "交接设备前滑回隐藏面，避免旁人看到身份。"
         ),
         onDismiss = { showGuideDialog = false }
-    )
-}
-
-@Composable
-private fun PresetCard(
-    preset: WerewolfPreset,
-    isSelected: Boolean,
-    onClick: () -> Unit
-) {
-    AppChoiceRow(
-        title = preset.name,
-        description = preset.description,
-        selected = isSelected,
-        onClick = onClick,
-        leadingContent = {
-            Surface(
-                modifier = Modifier.size(42.dp),
-                shape = RoundedCornerShape(LocalAppDesign.current.cornerRadius.md),
-                color = if (isSelected) {
-                    MaterialTheme.colorScheme.primary
-                } else {
-                    MaterialTheme.colorScheme.surfaceVariant
-                }
-            ) {
-                Box(contentAlignment = Alignment.Center) {
-                    Text(
-                        text = preset.playerCount.toString(),
-                        style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.Bold,
-                        color = if (isSelected) {
-                            MaterialTheme.colorScheme.onPrimary
-                        } else {
-                            MaterialTheme.colorScheme.onSurfaceVariant
-                        }
-                    )
-                }
-            }
-        }
     )
 }
 

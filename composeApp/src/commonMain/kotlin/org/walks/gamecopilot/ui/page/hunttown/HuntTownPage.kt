@@ -1,12 +1,14 @@
 package org.walks.gamecopilot.ui.page.hunttown
+import org.walks.gamecopilot.distribution.AppDistribution
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -16,12 +18,12 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.Button
-import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.FilterChip
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
@@ -38,7 +40,11 @@ import org.walks.gamecopilot.PlatformHelper
 import org.walks.gamecopilot.data.GameStatsManager
 import org.walks.gamecopilot.data.entity.GameMode
 import org.walks.gamecopilot.ui.components.CommonTopBar
+import org.walks.gamecopilot.ui.components.AppCard
+import org.walks.gamecopilot.ui.components.AppPrimaryAction
+import org.walks.gamecopilot.ui.components.AppSectionHeader
 import org.walks.gamecopilot.ui.components.common.OfflinePassingGuideDialog
+import org.walks.gamecopilot.theme.LocalAppDesign
 import kotlin.math.max
 
 private enum class HuntRole { WITCH, SHERIFF, VILLAGER }
@@ -65,7 +71,8 @@ private enum class HuntPhase(val label: String) {
 
 @Composable
 fun HuntTownPage(onBack: () -> Unit) {
-    var showGuideDialog by remember { mutableStateOf(true) }
+    var showGuideDialog by remember { mutableStateOf(false) }
+    val design = LocalAppDesign.current
     var playerCount by remember { mutableStateOf(8) }
     var witchCount by remember { mutableStateOf(2) }
     var gameStarted by remember { mutableStateOf(false) }
@@ -105,26 +112,26 @@ fun HuntTownPage(onBack: () -> Unit) {
     ) {
         CommonTopBar(
             title = "猎巫镇",
-            subtitle = "单机主持流程",
-            onBack = onBack
+            subtitle = "同机主持 · 单身份简化玩法",
+            onBack = onBack,
+            customAction = {
+                TextButton(onClick = { showGuideDialog = true }) { Text("玩法") }
+            }
         )
 
         Column(
             modifier = Modifier
                 .fillMaxSize()
                 .verticalScroll(rememberScrollState())
-                .padding(horizontal = 16.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp)
+                .padding(horizontal = design.spacing.xl)
+                .padding(bottom = design.spacing.xl),
+            verticalArrangement = Arrangement.spacedBy(design.spacing.lg)
         ) {
-            Card(
-                modifier = Modifier.fillMaxWidth(),
-                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)
-            ) {
-                Column(
-                    modifier = Modifier.padding(14.dp),
-                    verticalArrangement = Arrangement.spacedBy(6.dp)
+            if (gameStarted) {
+                AppCard(
+                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primaryContainer)
                 ) {
-                    Text("当前阶段：${phase.label}", fontWeight = FontWeight.Bold)
+                    Text(phase.label, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onPrimaryContainer)
                     if (winnerText.isNotBlank()) {
                         Text(winnerText, color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.Bold)
                     }
@@ -167,13 +174,23 @@ fun HuntTownPage(onBack: () -> Unit) {
                     }
                 )
             } else if (phase == HuntPhase.DEAL_CARDS) {
-                val player = players[dealIndex]
-                Text("请将设备递给 ${player.nickname}（${dealIndex + 1}/${players.size}）", style = MaterialTheme.typography.titleLarge)
-                if (dealRevealed) {
-                    Text(when(player.role) { HuntRole.WITCH -> "女巫"; HuntRole.SHERIFF -> "警长"; HuntRole.VILLAGER -> "村民" }, style = MaterialTheme.typography.headlineLarge)
-                    if(player.role == HuntRole.WITCH) Text("女巫同伴：" + players.filter { it.role == HuntRole.WITCH && it.id != player.id }.joinToString("、") { it.nickname }.ifEmpty { "无" })
-                    Button(onClick = { dealRevealed = false; if(dealIndex == players.lastIndex) phase = HuntPhase.NIGHT_CLOSE_EYES else dealIndex++ }) { Text("隐藏并交给下一位") }
-                } else Button(onClick = { dealRevealed = true }) { Text("点击查看身份") }
+                AppCard {
+                    val player = players[dealIndex]
+                    AppSectionHeader("请将设备递给 ${player.nickname}", subtitle = "${dealIndex + 1} / ${players.size} · 查看时请避开其他玩家")
+                    if (dealRevealed) {
+                        Text(when(player.role) { HuntRole.WITCH -> "女巫"; HuntRole.SHERIFF -> "警长"; HuntRole.VILLAGER -> "村民" }, style = MaterialTheme.typography.headlineLarge)
+                        if(player.role == HuntRole.WITCH) Text("女巫同伴：" + players.filter { it.role == HuntRole.WITCH && it.id != player.id }.joinToString("、") { it.nickname }.ifEmpty { "无" })
+                    }
+                    AppPrimaryAction(
+                        text = if (!dealRevealed) "点击查看身份" else if (dealIndex == players.lastIndex) "隐藏并交还主持人" else "隐藏并交给下一位",
+                        onClick = {
+                            if (dealRevealed) {
+                                dealRevealed = false
+                                if (dealIndex == players.lastIndex) phase = HuntPhase.NIGHT_CLOSE_EYES else dealIndex++
+                            } else dealRevealed = true
+                        }
+                    )
+                }
             } else {
                 HuntPhasePanel(
                     phase = phase,
@@ -265,6 +282,10 @@ fun HuntTownPage(onBack: () -> Unit) {
         show = showGuideDialog,
         gameTitle = "猎巫镇",
         steps = listOf(
+            "这是 4–12 人的单身份简化玩法，不包含原版的多张审判牌、手牌与阴谋传染。",
+            "同机需要额外一位不参赛主持人。玩家先依次查看身份，再将设备交给主持人；人数不含主持人。",
+            "夜间由主持人避开其他玩家的视线记录女巫目标与警长守护。" +
+                if (AppDistribution.roomsEnabled) "参赛玩家请使用网络房间分别操作。" else "主持人不参与对局。",
             "主持人按阶段推进：闭眼 -> 女巫行动 -> 凌晨提示 -> 警长守护 -> 白天结算。",
             "凌晨阶段会播放持续提示音，确认“睁眼”后会停止。",
             "白天可翻开一名玩家身份作为放逐，系统自动判断阵营胜负。"
@@ -282,17 +303,23 @@ private fun SetupPanel(
     onStart: () -> Unit
 ) {
     val maxWitches = max(1, playerCount / 3)
-    Card(modifier = Modifier.fillMaxWidth()) {
-        Column(modifier = Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
-            Text("人数配置", fontWeight = FontWeight.Bold)
-            NumberSelectorRow("总人数", playerCount, (4..12).toList(), onPlayerCountChange)
+    AppCard {
+        AppSectionHeader("同机主持", subtitle = "4–12 位玩家 · 额外一位不参赛主持人")
+        Text("玩家轮流查看身份后，将设备交给主持人，由主持人私下记录夜间行动。" +
+            if (AppDistribution.roomsEnabled) "所有人都想参赛时，建议使用网络房间。" else "主持人不参与对局。",
+            style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        Text("当前为单身份简化玩法，未包含原版的多张审判牌、手牌与阴谋传染。", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+    }
+    AppCard {
+            AppSectionHeader("人数配置", subtitle = "人数不含主持人")
+            NumberSelectorRow("玩家人数", playerCount, (4..12).toList(), onPlayerCountChange)
             NumberSelectorRow("女巫人数", witchCount, (1..maxWitches).toList(), onWitchCountChange)
             Text("警长人数固定为 1，其余为村民。", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-            Button(onClick = onStart, modifier = Modifier.fillMaxWidth()) { Text("开始猎巫镇") }
-        }
+            AppPrimaryAction(text = "开始传机发牌", onClick = onStart)
     }
 }
 
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
 private fun NumberSelectorRow(
     title: String,
@@ -302,20 +329,10 @@ private fun NumberSelectorRow(
 ) {
     Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
         Text("$title：$current")
-        Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+        FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             candidates.forEach { number ->
                 val selected = number == current
-                Box(
-                    modifier = Modifier
-                        .background(
-                            if (selected) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surfaceVariant,
-                            RoundedCornerShape(8.dp)
-                        )
-                        .clickable { onSelect(number) }
-                        .padding(horizontal = 10.dp, vertical = 6.dp)
-                ) {
-                    Text(number.toString(), color = if (selected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface)
-                }
+                FilterChip(selected = selected, onClick = { onSelect(number) }, label = { Text(number.toString()) })
             }
         }
     }
@@ -335,8 +352,7 @@ private fun HuntPhasePanel(
     onRevealPlayer: (Int) -> Unit
 ) {
     val alivePlayers = players.filter { it.alive }
-    Card(modifier = Modifier.fillMaxWidth()) {
-        Column(modifier = Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+    AppCard {
             when (phase) {
                 HuntPhase.NIGHT_CLOSE_EYES -> {
                     Text("请所有玩家闭眼，进入夜晚。")
@@ -430,10 +446,7 @@ private fun HuntPhasePanel(
                 }
             }
 
-            Button(onClick = onNext, modifier = Modifier.fillMaxWidth()) {
-                Text(if (phase == HuntPhase.GAME_END) "返回配置" else "下一步")
-            }
-        }
+            AppPrimaryAction(text = if (phase == HuntPhase.GAME_END) "返回配置" else "下一步", onClick = onNext)
     }
 }
 
@@ -448,7 +461,7 @@ private fun SelectablePlayerRow(
             .fillMaxWidth()
             .background(
                 if (selected) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surfaceVariant,
-                RoundedCornerShape(8.dp)
+                RoundedCornerShape(LocalAppDesign.current.cornerRadius.button)
             )
             .clickable { onClick() }
             .padding(horizontal = 10.dp, vertical = 8.dp),

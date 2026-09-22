@@ -297,18 +297,6 @@ fun TaskResultPhase(
     canShowLadyOfLake: Boolean = false,
     onShowLadyOfLake: () -> Unit = {}
 ) {
-
-
-    // 判断游戏是否结束 - 实时计算，不使用remember缓存
-    val successCount =
-        gameState.dayList.count { it.gamePhase == "TASK_RESULT" && it.taskResult == 1 }
-    val failureCount =
-        gameState.dayList.count { it.gamePhase == "TASK_RESULT" && it.taskResult == -1 }
-    val totalRounds = gameState.dayList.size
-
-    // 好人完成3次任务成功，或坏人完成2次任务失败，或已完成所有轮次
-    successCount >= 3 || failureCount >= 2 || (totalRounds >= 5 && (successCount >= 3 || failureCount >= 2))
-
     // 获取所有锁定的玩家
     val lockedPlayers = remember(taskIndex) {
         gameState.dayList.take(taskIndex + 1).flatMap { it.lockedPlayers }.toSet()

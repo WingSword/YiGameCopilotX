@@ -7,7 +7,7 @@
     "stageRadius": 26,
     "stagePaddingX": 20,
     "stagePaddingY": 18,
-    "tileWidth": 88,
+    "tileWidth": 64,
     "tileHeight": 60,
     "tileRadius": 20,
     "tileIcon": 24,

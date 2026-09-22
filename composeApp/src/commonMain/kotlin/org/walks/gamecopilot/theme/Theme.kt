@@ -1,6 +1,7 @@
 package org.walks.gamecopilot.theme
 
 import androidx.compose.foundation.isSystemInDarkTheme
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.material3.LocalTextStyle
@@ -41,6 +42,11 @@ private val DarkColorScheme = darkColorScheme(
     background = Color(0xFF050505),
     onBackground = Color(0xFFF6F6F7),
     surface = Color(0xFF1B1B1D),
+    surfaceContainerLowest = Color(0xFF101012),
+    surfaceContainerLow = Color(0xFF1B1B1D),
+    surfaceContainer = Color(0xFF1B1B1D),
+    surfaceContainerHigh = Color(0xFF242426),
+    surfaceContainerHighest = Color(0xFF1B1B1D),
     onSurface = Color(0xFFF6F6F7),
     surfaceVariant = Color(0xFF2B2B2E),
     onSurfaceVariant = Color(0xFFA5A5AA),
@@ -68,6 +74,11 @@ private val LightColorScheme = lightColorScheme(
     background = Color(0xFFF3F3F7),
     onBackground = Color(0xFF0D0D10),
     surface = Color(0xFFFFFFFF),
+    surfaceContainerLowest = Color(0xFFFFFFFF),
+    surfaceContainerLow = Color(0xFFF8F8FA),
+    surfaceContainer = Color(0xFFFFFFFF),
+    surfaceContainerHigh = Color(0xFFFFFFFF),
+    surfaceContainerHighest = Color(0xFFFFFFFF),
     onSurface = Color(0xFF0D0D10),
     surfaceVariant = Color(0xFFE9E9EE),
     onSurfaceVariant = Color(0xFF66666E),
@@ -96,6 +107,7 @@ fun WeUITheme(
         useDarkTheme -> DarkColorScheme
         else -> LightColorScheme
     }
+    PlatformSystemBars(useDarkTheme)
 
     val designSystem = remember(useDarkTheme) {
         AppDesignSystem()
@@ -110,7 +122,7 @@ fun WeUITheme(
             LocalTextStyle provides TextStyle(fontFamily = appFontFamily()),
             LocalAppDesign provides designSystem
         ) {
-            Box(modifier = Modifier.navigationBarsPadding()) {
+            Box(modifier = Modifier.background(colorScheme.background).navigationBarsPadding()) {
                 content()
             }
         }

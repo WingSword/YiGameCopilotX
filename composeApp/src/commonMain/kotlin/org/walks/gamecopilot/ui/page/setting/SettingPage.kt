@@ -62,6 +62,9 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import org.walks.gamecopilot.MainViewmodel
 import org.walks.gamecopilot.PlatformHelper
+import org.walks.gamecopilot.distribution.AppDistribution
+import org.walks.gamecopilot.getPlatform
+import androidx.compose.ui.platform.LocalUriHandler
 import org.walks.gamecopilot.intent.AiIntent
 import org.walks.gamecopilot.service.ai.AiProvider
 import org.walks.gamecopilot.service.ai.AiStyle
@@ -78,6 +81,7 @@ import org.walks.gamecopilot.ui.components.AppSegmentedControl
 @Composable
 fun SettingPage(viewmodel: MainViewmodel, onOpenMonopolyLedger: () -> Unit = {}, onOpenStats: () -> Unit = {}) {
     val design = LocalAppDesign.current
+    val uriHandler = LocalUriHandler.current
     val records by org.walks.gamecopilot.data.GameStatsManager.recordsFlow.collectAsState()
     val currentTheme by viewmodel.themeMode.collectAsState()
     val aiConfig by viewmodel.aiConfig.collectAsState()
@@ -263,6 +267,12 @@ fun SettingPage(viewmodel: MainViewmodel, onOpenMonopolyLedger: () -> Unit = {},
                 Row(Modifier.fillMaxWidth()) {
                     Text("桌游助手", Modifier.weight(1f))
                     Text("v${PlatformHelper.getInstance().getAppVersionName()}", color = MaterialTheme.colorScheme.onSurfaceVariant)
+                }
+                Text(AppDistribution.channel.label, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                if (AppDistribution.externalUpdatesEnabled && getPlatform().name.startsWith("Android")) {
+                    TextButton(onClick = { uriHandler.openUri("https://github.com/WingSword/YiGameCopilotX/releases/latest") }) {
+                        Text("获取新版")
+                    }
                 }
                 Text("联系与反馈", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 androidx.compose.foundation.text.selection.SelectionContainer { Text("YvesSword@outlook.com", color = MaterialTheme.colorScheme.primary) }

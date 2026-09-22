@@ -71,8 +71,11 @@ class HarmonyClient {
     }
     const models = load('model/online/CloudRoomModels.ets', {});
     this.models = models;
+    const distribution = load('distribution/AppDistribution.ets', { BuildProfile: { default: { DISTRIBUTION_CHANNEL: this.channel || 'direct' } } });
+    this.distribution = distribution.AppDistribution;
     const module = load('store/CloudRoomStore.ets', {
       '@ohos.net.http': { default: network }, '@ohos.util': { default: { generateRandomUUID: () => randomUUID() } },
+      '../distribution/AppDistribution': distribution,
       '../utils/PreferencesUtils': { PreferencesUtils: prefs }, '../model/online/CloudRoomModels': models
     });
     this.store = module.CloudRoomStore.getInstance();
@@ -126,6 +129,39 @@ const entry = (room = fixture(), roomKey = 'secret1') => ({ token: 'member-token
 const error = code => ({ code, message: code });
 const auth = { token: 'member-token' };
 const equalBody = body => ({ ...auth, inspect: actual => assert.deepEqual(actual, body) });
+
+async function domesticSuite(address) {
+  const storeFile = path.join(temp, 'harmony.json');
+  const saved = {
+    cloud_room_session_v1: JSON.stringify({ server: address, token: 'member-token', roomId: '028922', roomKey: 'secret1' }),
+    cloud_ledger_pending_v1: 'pending-ledger', cloud_draw_pending_v1: 'pending-drawing'
+  };
+  fs.writeFileSync(storeFile, JSON.stringify(saved));
+  const client = new HarmonyClient(); client.channel = 'domestic'; await client.restart();
+  const before = requests;
+  try {
+    assert.equal(client.distribution.roomsEnabled, false);
+    for (const route of ['MultiplayerPage', 'RoomPage', 'LedgerCloudEntryPage', 'LANRoomDiscoveryPage', 'LANCreateRoomPage', 'LANRoomLobbyPage']) {
+      assert.ok(client.distribution.isRoomRoute(route));
+    }
+    for (const route of ['HomePage', 'MonopolyMoneyPage', 'RandomPage', 'WerewolfGamePage']) assert.ok(!client.distribution.isRoomRoute(route));
+    await client.call({ op: 'restore' }); await client.call({ op: 'refresh' });
+    for (const create of [true, false]) {
+      const result = await client.call({ op: 'enter', create, server: address, code: '028922', body: { nickname: 'host', roomKey: 'secret1' } });
+      assert.equal(result.result, false); assert.equal(result.error, client.distribution.roomsUnavailable);
+    }
+    assert.equal((await client.call({ op: 'action', name: 'ready' })).result, false);
+    assert.equal((await client.call({ op: 'close' })).result, false);
+    assert.equal((await client.call({ op: 'invite' })).invitation, null);
+    assert.equal((await client.call({ op: 'ledger' })).result, false);
+    const result = await client.call({ op: 'draw' });
+    assert.equal(result.result, false); assert.equal(result.joined, false);
+    assert.equal(result.room, null); assert.equal(result.pendingLedger, ''); assert.equal(result.pendingDraw, '');
+    assert.equal(requests, before, 'domestic client must never contact the server');
+    assert.deepEqual(JSON.parse(fs.readFileSync(storeFile)), saved, 'saved full-edition data stays untouched');
+    console.log('PASS Harmony domestic: disabled routes, saved session, enter/actions/invite rejected, zero HTTP');
+  } finally { fs.rmSync(storeFile, { force: true }); await client.stop(); }
+}
 
 async function suite(label, client, address) {
   let checks = 0;
@@ -589,6 +625,7 @@ async function liveExpansion() {
   await new Promise(resolve => server.listen(0, '127.0.0.1', resolve));
   try {
     const address = 'http://127.0.0.1:' + server.address().port;
+    await domesticSuite(address);
     await suite('Kotlin', new KotlinClient(), address);
     await suite('Harmony', new HarmonyClient(), address);
     await transportFailureSuite(address);

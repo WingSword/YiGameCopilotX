@@ -64,6 +64,7 @@ import org.walks.gamecopilot.ui.components.AppScreen
 fun LANRoomDiscoveryPage(
     onRoomSelected: (LANRoomInfo) -> Unit,
     onCreateRoom: () -> Unit,
+    onBack: () -> Unit,
     viewModel: MainViewmodel
 ) {
     val lanState by viewModel.lanState.collectAsState()
@@ -96,6 +97,7 @@ fun LANRoomDiscoveryPage(
 
     AppScreen(
         title = "局域网房间",
+        onBack = onBack,
         subtitle = "搜索同一 WiFi 下正在等待加入的桌游房间。",
         actions = {
             IconButton(onClick = { showGameTypeFilter = true }) {

@@ -1,0 +1,1 @@
+Adds distribution-specific builds, online room flows and virtual ledgers. Improves pass-the-phone role viewing, random tool navigation and the answer book. Google Play targets Android 16. Store builds omit the external update shortcut.

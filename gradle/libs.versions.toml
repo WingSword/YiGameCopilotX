@@ -1,7 +1,8 @@
 [versions]
-android-compileSdk = "35"
+android-compileSdk = "36"
 android-minSdk = "26"
 android-targetSdk = "35"
+android-playTargetSdk = "36"
 kotlin = "2.3.20"
 agp = "9.0.1"
 compose = "1.9.3"
@@ -45,7 +46,6 @@ jetbrains-navigation-compose = { module = "org.jetbrains.androidx.navigation:nav
 napier = { module = "io.github.aakira:napier", version.ref = "napier" }
 multiplatform-settings = { module = "com.russhwolf:multiplatform-settings", version.ref = "multiplatform-settings" }
 multiplatform-settings-no-arg = { module = "com.russhwolf:multiplatform-settings-no-arg", version.ref = "multiplatform-settings" }
-places = { module = "com.google.android.libraries.places:places", version = "4.1.0" }
 
 [plugins]
 androidApplication = { id = "com.android.application", version.ref = "agp" }

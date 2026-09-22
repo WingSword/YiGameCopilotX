@@ -1,0 +1,40 @@
+# Packaging template: replace RELEASE_COMMIT with the tested, public release SHA.
+# Do not submit this template as completed build metadata.
+Categories:
+  - Games
+License: Apache-2.0
+AuthorName: WingSword
+AuthorEmail: YvesSword@outlook.com
+WebSite: https://github.com/WingSword/YiGameCopilotX
+SourceCode: https://github.com/WingSword/YiGameCopilotX
+IssueTracker: https://github.com/WingSword/YiGameCopilotX/issues
+
+AutoName: 桌游助手
+Summary: Party game guides, random tools and virtual scorekeeping
+Description: |-
+    A Chinese-language tabletop companion with pass-the-phone role viewing,
+    room play, random tools and virtual scorekeeping. See the upstream
+    fastlane metadata for the complete feature description.
+
+AntiFeatures:
+  NonFreeNet:
+    en-US: Optional DeepSeek hints use a third-party service with a user-provided API key. Local preset hints work offline.
+
+RepoType: git
+Repo: https://github.com/WingSword/YiGameCopilotX.git
+
+Builds:
+  - versionName: '1.5'
+    versionCode: 9
+    commit: RELEASE_COMMIT
+    subdir: composeApp
+    gradle:
+      - fdroid
+    prebuild:
+      - sed -i '\|maven.aliyun.com/repository/|d' ../settings.gradle.kts
+      - sed -i 's|mirrors.huaweicloud.com/gradle|services.gradle.org/distributions|' ../gradle/wrapper/gradle-wrapper.properties
+
+AutoUpdateMode: None
+UpdateCheckMode: None
+CurrentVersion: '1.5'
+CurrentVersionCode: 9

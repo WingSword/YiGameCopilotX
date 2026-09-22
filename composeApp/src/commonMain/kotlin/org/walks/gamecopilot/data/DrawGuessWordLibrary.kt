@@ -53,11 +53,11 @@ object DrawGuessWordLibrary {
         "科学家", "工程师", "程序员", "运动员", "演员", "歌手", "舞蹈家", "摄影师", "记者", "魔术师"
     )
 
-    val allWords: List<String> by lazy {
+    val allWords: List<String> get() {
         val builtin =
             animals + fruits + objects + food + sports + vehicles + buildings + weather + actions + professions
         val custom = customDrawWordLists.values.flatten()
-        (builtin + custom).distinct()
+        return (builtin + custom).distinct()
     }
 
     val categories = mapOf(

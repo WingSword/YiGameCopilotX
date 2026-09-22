@@ -73,7 +73,7 @@ fun AppScreen(
                     text = title,
                     style = MaterialTheme.typography.headlineSmall,
                     color = MaterialTheme.colorScheme.onBackground,
-                    fontWeight = FontWeight.SemiBold,
+                    fontWeight = FontWeight.Bold,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis
                 )
@@ -114,7 +114,7 @@ fun AppCard(
         elevation = CardDefaults.cardElevation(defaultElevation = design.elevation.card),
         border = BorderStroke(
             width = 1.dp,
-            color = MaterialTheme.colorScheme.outline.copy(alpha = 0.72f)
+            color = MaterialTheme.colorScheme.outline.copy(alpha = 0.30f)
         )
     ) {
         Column(

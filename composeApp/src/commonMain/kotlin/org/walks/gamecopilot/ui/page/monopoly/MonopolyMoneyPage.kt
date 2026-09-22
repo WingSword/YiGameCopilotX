@@ -1,5 +1,7 @@
 package org.walks.gamecopilot.ui.page.monopoly
 
+import org.walks.gamecopilot.distribution.AppDistribution
+
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.fillMaxSize
@@ -152,7 +154,7 @@ fun MonopolyMoneyPage(
         Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
             TextButton(onClick = { showScene = true }) { Text(LedgerScenes.name(ledger.preset) + " · " + unit) }
             TextButton(onClick = { showBatch = true }, enabled = ledger.players.isNotEmpty()) { Text("全员收付") }
-            TextButton(onClick = onCloud) { Text("云端记账") }
+            if (AppDistribution.roomsEnabled) TextButton(onClick = onCloud) { Text("云端记账") }
         }
         if (roundTable) {
             RoundTableBoard(players = ledger.players, recent = { recentPlayerTransaction(it, ledger.transactions) },

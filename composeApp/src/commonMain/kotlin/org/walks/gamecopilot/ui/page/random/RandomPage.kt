@@ -36,6 +36,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -45,7 +46,6 @@ import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -64,12 +64,14 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.snapshotFlow
 import androidx.compose.runtime.snapshots.SnapshotStateList
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.graphics.TransformOrigin
 import androidx.compose.ui.graphics.graphicsLayer
@@ -82,6 +84,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import kotlinx.serialization.json.Json
 import org.jetbrains.compose.resources.DrawableResource
@@ -215,31 +218,24 @@ fun RandomPage(viewmodel: MainViewmodel) {
                     color = MaterialTheme.colorScheme.onBackground
                 )
                 if (!landscape) Text(
-                    text = "选一个工具，把这次决定交给运气",
+                    text = if (isEditMode) "点击图标编辑或删除自定义工具" else "滑动切换工具，长按管理自定义项",
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier.padding(top = design.spacing.xs)
                 )
             }
-            OutlinedButton(
-                onClick = {
-                    viewmodel.handleRandomPageIntent(RandomPageIntent.OnAddNewRandomDialogShow)
-                },
-                shape = RoundedCornerShape(design.cornerRadius.button)
-                ,contentPadding = if (landscape) PaddingValues(horizontal = 8.dp, vertical = 8.dp) else ButtonDefaults.ContentPadding
-            ) {
-                if (!landscape) Icon(
-                    imageVector = Icons.Default.Add,
-                    contentDescription = null,
-                    modifier = Modifier.size(18.dp)
-                )
-                if (!landscape) Spacer(Modifier.width(design.spacing.xs))
-                Text("新增")
+            if (isEditMode) {
+                TextButton(
+                    onClick = { isEditMode = false },
+                    contentPadding = PaddingValues(horizontal = 8.dp)
+                ) {
+                    Text("完成")
+                }
             }
         }
 
         RandomConfigList(
-            modifier = if (landscape) Modifier.weight(1f).width(104.dp) else Modifier.fillMaxWidth(),
+            modifier = if (landscape) Modifier.weight(1f).width(84.dp) else Modifier.fillMaxWidth(),
             vertical = landscape,
             randomLabelsList = randomLabelsList,
             currentSelectLabel = currentSelectLabel,
@@ -261,6 +257,10 @@ fun RandomPage(viewmodel: MainViewmodel) {
                 editConfigName = configName
                 editRandomDialogShow = true
                 isEditMode = false
+            },
+            onAddNew = {
+                isEditMode = false
+                viewmodel.handleRandomPageIntent(RandomPageIntent.OnAddNewRandomDialogShow)
             },
             isSystemDefault = { label ->
                 label.startsWith(RANDOM_PAGE_CONFIG_CATE_FINGER) ||
@@ -433,7 +433,7 @@ fun RandomPage(viewmodel: MainViewmodel) {
         }
         if (landscape) {
             Row(Modifier.fillMaxSize().padding(bottom = 84.dp)) {
-                Box(Modifier.width(148.dp).fillMaxHeight()) { controls() }
+                Box(Modifier.width(124.dp).fillMaxHeight()) { controls() }
                 tool(Modifier.weight(1f).fillMaxHeight())
             }
         } else {
@@ -449,6 +449,7 @@ fun RandomPage(viewmodel: MainViewmodel) {
                 addRandomDialogShow = false
                 viewmodel.handleRandomPageIntent(RandomPageIntent.OnAddNewRandom(it))
                 viewmodel.handleRandomPageIntent(RandomPageIntent.OnChangeNewRandomLabel)
+                viewmodel.handleRandomPageIntent(RandomPageIntent.OnSelectLabel(it.name))
             })
 
         EditRandomDialog(
@@ -963,13 +964,30 @@ fun RandomConfigList(
     onItemClick: (String) -> Unit,
     onDelete: (String) -> Unit,
     onLongClick: (String) -> Unit,
+    onAddNew: () -> Unit,
     onEdit: (String) -> Unit = {},
     isSystemDefault: (String) -> Boolean = { false }
 ) {
+    val listState = rememberLazyListState()
     // 过滤掉空的配置项（没有类别的配置）
     val filteredLabels = randomLabelsList.filter { item ->
         val cate = RandomCate.getCateByItem(item)
         cate != RandomCate.Empty
+    }
+    var lastRevealedSelection by remember { mutableStateOf<String?>(null) }
+    val selectedIndex = filteredLabels.indexOf(currentSelectLabel)
+    LaunchedEffect(currentSelectLabel, selectedIndex) {
+        if (selectedIndex < 0 || lastRevealedSelection == currentSelectLabel) return@LaunchedEffect
+        val layout = snapshotFlow { listState.layoutInfo }.first {
+            it.totalItemsCount > selectedIndex && it.visibleItemsInfo.isNotEmpty()
+        }
+        val selectedItem = layout.visibleItemsInfo.firstOrNull { it.index == selectedIndex }
+        if (selectedItem == null || selectedItem.offset < layout.viewportStartOffset ||
+            selectedItem.offset + selectedItem.size > layout.viewportEndOffset
+        ) {
+            listState.animateScrollToItem(selectedIndex)
+        }
+        lastRevealedSelection = currentSelectLabel
     }
 
     Surface(
@@ -1006,16 +1024,61 @@ fun RandomConfigList(
                     showEditActions = !isProtected
                 )
         }
-        if (vertical) {
-            LazyColumn(Modifier.fillMaxSize(), contentPadding = PaddingValues(8.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                items(filteredLabels) { tile(it) }
+        Box {
+            if (vertical) {
+                LazyColumn(
+                    modifier = Modifier.fillMaxSize(),
+                    state = listState,
+                    contentPadding = PaddingValues(6.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.spacedBy(4.dp)
+                ) {
+                    items(filteredLabels, key = { "config:$it" }) { tile(it) }
+                    item(key = "add") { AddRandomConfigItem(onClick = onAddNew) }
+                }
+            } else {
+                LazyRow(
+                    modifier = Modifier.fillMaxWidth(),
+                    state = listState,
+                    contentPadding = PaddingValues(horizontal = 6.dp, vertical = 8.dp),
+                    horizontalArrangement = Arrangement.spacedBy(4.dp)
+                ) {
+                    items(filteredLabels, key = { "config:$it" }) { tile(it) }
+                    item(key = "add") { AddRandomConfigItem(onClick = onAddNew) }
+                }
             }
-        } else {
-            LazyRow(Modifier.fillMaxWidth(), contentPadding = PaddingValues(horizontal = 20.dp, vertical = 8.dp),
-                horizontalArrangement = Arrangement.spacedBy(4.dp)) {
-                items(filteredLabels) { tile(it) }
+            if (listState.canScrollForward) {
+                // This decoration has no pointer handler, so the last visible item remains tappable.
+                val colors = listOf(Color.Transparent, MaterialTheme.colorScheme.surface)
+                Box(Modifier.matchParentSize()) {
+                    Box(
+                        Modifier
+                            .then(if (vertical) Modifier.align(Alignment.BottomCenter).fillMaxWidth().height(24.dp)
+                                else Modifier.align(Alignment.CenterEnd).fillMaxHeight().width(24.dp))
+                            .background(if (vertical) Brush.verticalGradient(colors) else Brush.horizontalGradient(colors))
+                    )
+                }
             }
         }
+    }
+}
+
+@Composable
+private fun AddRandomConfigItem(onClick: () -> Unit) {
+    Column(
+        modifier = Modifier
+            .width(D.tileWidth.dp)
+            .height(D.tileHeight.dp)
+            .clip(RoundedCornerShape(D.tileRadius.dp))
+            .clickable(onClick = onClick)
+            .padding(horizontal = 4.dp, vertical = 8.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.Center
+    ) {
+        Icon(Icons.Default.Add, contentDescription = null, modifier = Modifier.size(D.tileIcon.dp),
+            tint = MaterialTheme.colorScheme.primary)
+        Spacer(Modifier.height(4.dp))
+        Text("新增", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.primary)
     }
 }
 
@@ -1053,7 +1116,7 @@ fun RandomConfigCircleItem(
                     indication = null,
                     onClick = onClick
                 )
-                .padding(horizontal = 8.dp, vertical = 8.dp),
+                .padding(horizontal = 4.dp, vertical = 8.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Center
         ) {
@@ -1363,7 +1426,7 @@ fun EditRandomDialog(
                     Text(
                         text = "选择类型",
                         style = MaterialTheme.typography.titleMedium,
-                        color = MaterialTheme.colorScheme.secondary
+                        color = MaterialTheme.colorScheme.onSurface
                     )
 
                     AddNewRandomCateActionBar(

@@ -1,13 +1,7 @@
 package org.walks.gamecopilot.ui.page.random
 
-import androidx.compose.animation.animateColorAsState
-import androidx.compose.animation.core.RepeatMode
-import androidx.compose.animation.core.animateDpAsState
-import androidx.compose.animation.core.animateFloat
-import androidx.compose.animation.core.infiniteRepeatable
-import androidx.compose.animation.core.rememberInfiniteTransition
-import androidx.compose.animation.core.tween
 import androidx.compose.foundation.ExperimentalFoundationApi
+import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -21,14 +15,12 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
-import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.lazy.LazyRow
-import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.selection.selectable
+import androidx.compose.foundation.selection.selectableGroup
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
@@ -55,7 +47,10 @@ import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshots.SnapshotStateList
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -67,9 +62,9 @@ import org.walks.gamecopilot.RANDOM_PAGE_CONFIG_CATE_COIN
 import org.walks.gamecopilot.RANDOM_PAGE_CONFIG_CATE_DICE
 import org.walks.gamecopilot.RANDOM_PAGE_CONFIG_CATE_FINGER
 import org.walks.gamecopilot.RANDOM_PAGE_CONFIG_CATE_WHEEL
-import org.walks.gamecopilot.clickableWithoutRipple
 import org.walks.gamecopilot.data.RandomItem
 import org.walks.gamecopilot.data.RandomListEntity
+import org.walks.gamecopilot.theme.LocalAppDesign
 import org.walks.gamecopilot.ui.components.AppDialog
 import org.walks.gamecopilot.ui.picker.WeSingleColumnPicker
 import yigamecopilotx.composeapp.generated.resources.Res
@@ -128,69 +123,56 @@ enum class RandomCate(val key: String, val iconRes: DrawableResource?) {
 
 }
 
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
 fun AddNewRandomCateActionBar(
     select: String,
     isEditing: Boolean = false,
     onClick: (RandomCate) -> Unit
 ) {
-    val visibleCateList = RandomCate.entries.filter {
-        it != RandomCate.Empty && it != RandomCate.Finger
-    }
-    LazyRow(horizontalArrangement = spacedBy(4.dp)) {
-        items(visibleCateList) { cate ->
+    val design = LocalAppDesign.current
+    // Finger spinner and answer book are built-in tools; the store does not allow custom copies.
+    val visibleCateList = listOf(RandomCate.Card, RandomCate.Dice, RandomCate.Coin, RandomCate.Wheel)
+    FlowRow(
+        modifier = Modifier.fillMaxWidth().selectableGroup(),
+        horizontalArrangement = spacedBy(design.spacing.md),
+        verticalArrangement = spacedBy(design.spacing.md)
+    ) {
+        visibleCateList.forEach { cate ->
             val isSelected = select == cate.key
-            // 边框宽度动画
-            val animatedBorderWidth by animateDpAsState(
-                targetValue = if (isSelected) 2.dp else 0.dp,
-                animationSpec = tween(durationMillis = 300)
-            )
-            // 边框颜色动画
-            val animatedBorderColor by animateColorAsState(
-                targetValue = if (isSelected) MaterialTheme.colorScheme.primary
-                else MaterialTheme.colorScheme.secondary.copy(0.5f),
-                animationSpec = tween(durationMillis = 300)
-            )
-
-            val animatedOffset by animateDpAsState(
-                targetValue = if (isSelected) 2.dp else 0.dp
-            )
-
-            // 若要实现脉冲效果，可以添加无限动画
-            val infiniteTransition = rememberInfiniteTransition()
-            val pulseAlpha by infiniteTransition.animateFloat(
-                initialValue = 0.4f,
-                targetValue = 1f,
-                animationSpec = infiniteRepeatable(
-                    animation = tween(800),
-                    repeatMode = RepeatMode.Reverse
-                )
-            )
-
-            cate.iconRes?.let {
-                Icon(
-                    painter = painterResource(cate.iconRes),
-                    contentDescription = null,
-                    modifier = Modifier
-                        .size(40.dp)
-                        .padding(2.dp)
-                        .offset(y = animatedOffset)
-                        .border(
-                            width = animatedBorderWidth,
-                            color = if (select == cate.key) animatedBorderColor.copy(alpha = pulseAlpha) else MaterialTheme.colorScheme.secondary,
-                            shape = CircleShape
-                        )
-                        .padding(4.dp)
-                        .clickableWithoutRipple {
-                            // 如果正在编辑，不允许切换到其他类型
-                            if (isEditing && select != cate.key) return@clickableWithoutRipple
-                            onClick(cate)
-                        },
-                    tint = if (isSelected) Color.Unspecified
-                    else MaterialTheme.colorScheme.secondary.copy(0.5f)
+            val enabled = !isEditing || isSelected
+            val label = when (cate) {
+                RandomCate.Card -> "卡牌"
+                RandomCate.Dice -> "骰子"
+                RandomCate.Coin -> "硬币"
+                RandomCate.Wheel -> "转盘"
+                RandomCate.AnswerBook -> "答案之书"
+                else -> ""
+            }
+            val shape = RoundedCornerShape(design.cornerRadius.button)
+            Row(
+                modifier = Modifier
+                    .heightIn(min = 48.dp)
+                    .alpha(if (enabled) 1f else 0.4f)
+                    .clip(shape)
+                    .background(if (isSelected) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surface)
+                    .border(1.dp, if (isSelected) MaterialTheme.colorScheme.primary.copy(alpha = 0.28f)
+                        else MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.7f), shape)
+                    .selectable(selected = isSelected, enabled = enabled, role = Role.RadioButton, onClick = { onClick(cate) })
+                    .padding(horizontal = design.spacing.lg, vertical = design.spacing.md),
+                horizontalArrangement = spacedBy(6.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                cate.iconRes?.let { icon ->
+                    Icon(painterResource(icon), contentDescription = null, modifier = Modifier.size(22.dp), tint = Color.Unspecified)
+                }
+                Text(
+                    text = label,
+                    style = MaterialTheme.typography.labelLarge,
+                    fontWeight = if (isSelected) FontWeight.SemiBold else FontWeight.Medium,
+                    color = if (isSelected) MaterialTheme.colorScheme.onPrimaryContainer else MaterialTheme.colorScheme.onSurface
                 )
             }
-
         }
     }
 }
@@ -621,7 +603,7 @@ fun AddNewRandomDialog(
                     Text(
                         text = "选择类型",
                         style = MaterialTheme.typography.titleMedium,
-                        color = MaterialTheme.colorScheme.secondary
+                        color = MaterialTheme.colorScheme.onSurface
                     )
 
                     AddNewRandomCateActionBar(

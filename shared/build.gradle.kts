@@ -68,7 +68,6 @@ kotlin {
             implementation("io.ktor:ktor-server-core:3.3.3")
             implementation("io.ktor:ktor-server-netty:3.3.3")
             implementation("io.ktor:ktor-server-websockets:3.3.3")
-            implementation(libs.places)
         }
 
         iosMain.dependencies {

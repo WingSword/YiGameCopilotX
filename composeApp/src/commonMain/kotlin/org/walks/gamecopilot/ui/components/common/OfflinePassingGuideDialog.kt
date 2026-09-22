@@ -29,7 +29,7 @@ fun OfflinePassingGuideDialog(
     if (!show) return
 
     AppDialog(
-        title = "$gameTitle · 单机传机流程",
+        title = "$gameTitle · 同机游玩说明",
         subtitle = "按顺序传递设备时，注意保护每位玩家的身份信息。",
         onDismiss = onDismiss,
         actions = {

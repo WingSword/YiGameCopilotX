@@ -30,7 +30,7 @@ fun OfflinePassingGuideCard(
         verticalArrangement = Arrangement.spacedBy(6.dp)
     ) {
         Text(
-            text = "$gameTitle · 单机传机流程",
+            text = "$gameTitle · 同机游玩说明",
             style = MaterialTheme.typography.titleSmall,
             fontWeight = FontWeight.Bold,
             color = MaterialTheme.colorScheme.onPrimaryContainer

@@ -80,7 +80,6 @@ kotlin {
             implementation(compose.preview)
             implementation(libs.androidx.activity.compose)
             implementation(compose.uiTooling)
-            implementation(libs.places)
             implementation("io.ktor:ktor-client-okhttp:3.1.1")
         }
         commonMain.dependencies {
@@ -130,6 +129,25 @@ android {
         targetSdk = libs.versions.android.targetSdk.get().toInt()
         versionCode = 9
         versionName = "1.5"
+    }
+
+    flavorDimensions += "distribution"
+    productFlavors {
+        listOf("domestic", "googlePlay", "direct", "fdroid").forEach { channel ->
+            create(channel) {
+                dimension = "distribution"
+                buildConfigField("String", "DISTRIBUTION_CHANNEL", "\"$channel\"")
+                manifestPlaceholders["distributionChannel"] = channel
+                if (channel == "googlePlay") {
+                    targetSdk = libs.versions.android.playTargetSdk.get().toInt()
+                }
+                if (channel == "domestic") {
+                    // Isolate store installs and data from full APK / F-Droid updates.
+                    applicationIdSuffix = ".domestic"
+                    versionNameSuffix = "-domestic"
+                }
+            }
+        }
     }
 
     packaging {
@@ -184,5 +202,6 @@ android {
 
     buildFeatures {
         compose = true
+        buildConfig = true
     }
 }

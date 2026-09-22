@@ -12,7 +12,7 @@ fun main() = runBlocking {
     val outputJson = Json { encodeDefaults = true }
     // Test-only injection into the production client's request pipeline. No test
     // transport hooks are shipped in the app, and successful calls still use HTTP.
-    val transport = Cloud.javaClass.getDeclaredField("client").apply { isAccessible = true }.get(Cloud) as HttpClient
+    val transport = (Cloud.javaClass.getDeclaredField("client\$delegate").apply { isAccessible = true }.get(Cloud) as Lazy<*>).value as HttpClient
     var injectedFailure: Throwable? = null
     var requestsBeforeFailure = 0
     transport.requestPipeline.intercept(HttpRequestPipeline.Before) {

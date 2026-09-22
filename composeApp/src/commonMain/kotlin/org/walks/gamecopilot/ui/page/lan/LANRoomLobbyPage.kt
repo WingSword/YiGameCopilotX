@@ -101,11 +101,7 @@ fun LANRoomLobbyPage(
     AppScreen(
         title = roomInfo?.roomName ?: "房间",
         subtitle = "房主: ${roomInfo?.hostName ?: "等待同步"} · ${roomInfo?.gameType?.displayName ?: "桌游"}",
-        actions = {
-            IconButton(onClick = { showLeaveDialog = true }) {
-                Icon(Icons.AutoMirrored.Filled.ExitToApp, contentDescription = "离开房间")
-            }
-        }
+        onBack = { showLeaveDialog = true }
     ) {
         RoomInfoCard(roomInfo)
 

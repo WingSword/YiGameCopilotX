@@ -8,7 +8,7 @@ object RandomToolDesign {
     const val stageRadius: Double = 26.0
     const val stagePaddingX: Double = 20.0
     const val stagePaddingY: Double = 18.0
-    const val tileWidth: Double = 88.0
+    const val tileWidth: Double = 64.0
     const val tileHeight: Double = 60.0
     const val tileRadius: Double = 20.0
     const val tileIcon: Double = 24.0

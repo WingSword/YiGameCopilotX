@@ -43,6 +43,10 @@ with tempfile.TemporaryDirectory(prefix='cloud-client-tests-') as directory:
                     '-no-stdlib', '-no-reflect', '-jvm-target', '17',
                     '-Xplugin=' + jar('org.jetbrains.kotlin', 'kotlin-serialization-compiler-plugin-embeddable', VERSION),
                     '-classpath', os.pathsep.join(runtime), '-d', str(tmp / 'classes'),
+                    str(ROOT / 'composeApp/src/commonMain/kotlin/org/walks/gamecopilot/distribution/AppDistribution.kt'),
+                    str(ROOT / 'composeApp/src/commonMain/kotlin/org/walks/gamecopilot/navigation/NaviRoute.kt'),
+                    str(ROOT / 'scripts/cloud-room-tests/Distribution.kt'),
+                    str(ROOT / 'scripts/cloud-room-tests/DistributionChecks.kt'),
                     str(ROOT / 'composeApp/src/commonMain/kotlin/org/walks/gamecopilot/online/CloudRoomClient.kt'),
                     str(ROOT / 'composeApp/src/commonMain/kotlin/org/walks/gamecopilot/online/CloudInvitations.kt'),
                     str(ROOT / 'shared/src/commonMain/kotlin/org/walks/gamecopilot/online/CloudRoomModels.kt'),
@@ -51,6 +55,9 @@ with tempfile.TemporaryDirectory(prefix='cloud-client-tests-') as directory:
                     str(ROOT / 'scripts/cloud-room-tests/InvitationChecks.kt'),
                     str(ROOT / 'scripts/cloud-room-tests/Settings.kt'),
                     str(ROOT / 'scripts/cloud-room-tests/ClientBridge.kt')], check=True)
+    for channel in ('domestic', 'googlePlay', 'direct', 'fdroid'):
+        subprocess.run([str(JAVA), '-cp', os.pathsep.join([str(tmp / 'classes')] + runtime), 'DistributionChecksKt'],
+                       env=dict(os.environ, YIGAME_TEST_CHANNEL=channel, CLOUD_TEST_STORE=str(tmp / (channel + '.properties'))), check=True)
     subprocess.run([str(JAVA), '-cp', os.pathsep.join([str(tmp / 'classes')] + runtime), 'InvitationChecksKt'],
                    env=dict(os.environ, CLOUD_TEST_STORE=str(tmp / 'invitation.properties')), check=True)
     subprocess.run([str(DEVECO / 'tools/node/node.exe'), str(ROOT / 'scripts/cloud-room-tests/contract.cjs'),

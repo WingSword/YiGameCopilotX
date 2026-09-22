@@ -85,7 +85,7 @@ fun AwalongGamePageOptimized(navi: NavController, viewmodel: MainViewmodel) {
     val customConfig by viewmodel.awalongCustomConfigState.collectAsState()
     val gameState by viewmodel.awalongGameState.collectAsState()
     var showRulesDialog by remember { mutableStateOf(false) }
-    var showGuideDialog by remember { mutableStateOf(true) }
+    var showGuideDialog by remember { mutableStateOf(false) }
 
     val scope = rememberCoroutineScope()
     val rotation = remember { Animatable(0f) }
@@ -212,6 +212,7 @@ fun AwalongGamePageOptimized(navi: NavController, viewmodel: MainViewmodel) {
             },
             customAction = {
                 Row(verticalAlignment = Alignment.CenterVertically) {
+                    TextButton(onClick = { showGuideDialog = true }) { Text("传机") }
                     Icon(
                         painter = painterResource(Res.drawable.icon_info),
                         contentDescription = "游戏规则",

@@ -110,6 +110,7 @@ fun LANCreateRoomPage(
 
     AppScreen(
         title = "创建房间",
+        onBack = onCancel,
         subtitle = "设置游戏类型、玩家人数和房间密码后即可组局。"
     ) {
         Column(

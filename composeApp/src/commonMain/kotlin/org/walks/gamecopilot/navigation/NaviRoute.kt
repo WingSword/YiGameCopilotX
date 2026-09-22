@@ -1,5 +1,7 @@
 package org.walks.gamecopilot.navigation
 
+import org.walks.gamecopilot.distribution.AppDistribution
+
 enum class NaviRoute(val route: String, val label: String, val type: Int = 0) {
     HOME("start", "首页"),
     RANDOM("random", "随机工具"),
@@ -21,6 +23,11 @@ enum class NaviRoute(val route: String, val label: String, val type: Int = 0) {
     LAN_CREATE_ROOM("lanCreateRoom", "创建房间", 1),
     LAN_LOBBY("lanLobby", "房间大厅", 1)
     ;
+
+    val available: Boolean
+        get() = AppDistribution.roomsEnabled || this !in setOf(
+            MULTIPLAYER, ROOM, CLOUD_LEDGER, LAN_DISCOVERY, LAN_CREATE_ROOM, LAN_LOBBY
+        )
 
     fun findNaviByRoute(route: String): NaviRoute {
         return entries.find { it.route == route } ?: HOME

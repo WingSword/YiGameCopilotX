@@ -48,7 +48,7 @@ if invites:
     assert '207 room invitation checks' in logs['server-tests']
     assert 'PASS Kotlin invitations/view policy: 69 checks' in logs['client-tests']
 artifacts={
-    'YiGameCopilotX-Android-debug.apk':root/'composeApp/build/outputs/apk/debug/composeApp-debug.apk',
+    'YiGameCopilotX-Android-direct-debug.apk':root/'composeApp/build/outputs/apk/direct/debug/composeApp-direct-debug.apk',
     'YiGameCopilotX-Harmony-debug.hap':root.parent/'YiGameCopilotX-Harmony/entry/build/default/outputs/default/entry-default-signed.hap',
     'yigame-room-server.jar':root/'server/dist/yigame-room-server.jar',
     'GAME_QA_REPORT.md':root/'docs'/('CLOUD_LIVE_UI_QA.md' if live else 'ROOM_INVITATIONS_QA.md' if invites else 'SIX_CLOUD_WEB_QA.md' if six else 'CLOUD_LEDGER_HUNT_QA.md' if expanded else 'ONE_NIGHT_CLOUD_AND_OFFLINE_QA.md'),

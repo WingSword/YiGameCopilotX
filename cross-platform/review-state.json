@@ -5,17 +5,18 @@
         "composeApp/src/commonMain/composeResources/drawable/answer_book_cover_icon.xml": "389029d79a593893b5fc7cc6be9d029179ad5bebd920120f5d839a7298dc5a8b",
         "composeApp/src/commonMain/kotlin/org/walks/gamecopilot/data/entity/AnswerBookState.kt": "40d4d71c4ea5f7d34973160764c8143f513e2b08ae338d91b91eb8d58c8ff70a",
         "composeApp/src/commonMain/kotlin/org/walks/gamecopilot/intent/AnswerBookIntent.kt": "5debecc9fdac267ee7f1e75043c84dd3ad6926966e87e5d930e75783393b7f2a",
-        "composeApp/src/commonMain/kotlin/org/walks/gamecopilot/MainViewmodel.kt": "3726d79cb04ae637c38ab94f11ab8adb9265c6458e171f42a77022228f4a7c87",
+        "composeApp/src/commonMain/kotlin/org/walks/gamecopilot/MainViewmodel.kt": "14de363daea6bcf1d013d205108b386da333a0efa50440af2774ee985e1c8990",
+        "composeApp/src/commonMain/kotlin/org/walks/gamecopilot/theme/RandomToolDesign.kt": "0bc0056b1dadba996e4404bb75d01b3be2d040079f5088c201fd7c3e9ec31283",
         "composeApp/src/commonMain/kotlin/org/walks/gamecopilot/ui/animation/RollCoinAnimation.kt": "8a1bef9a5a1694944590497f1aa3d4fe9b62f5d3de928ab8ca4c38082c8a4ee7",
         "composeApp/src/commonMain/kotlin/org/walks/gamecopilot/ui/animation/RollDiceAnimation.kt": "c47930a6d0a7dbe46085163987fc8375dc4dc229a3c057103963b2bf92b48adc",
-        "composeApp/src/commonMain/kotlin/org/walks/gamecopilot/ui/page/random/AddNewRandom.kt": "4f9c5f5687862249076010fcc7a4c38fd63f40305d6750f8afd5543c05937721",
+        "composeApp/src/commonMain/kotlin/org/walks/gamecopilot/ui/page/random/AddNewRandom.kt": "6001ce921186f5408caed370bed67b932c4ec63ba2285a8a0f810c4a446147c0",
         "composeApp/src/commonMain/kotlin/org/walks/gamecopilot/ui/page/random/AnswerBookComponents.kt": "6236f7317edc66d113d855577d0c426f07dd9b48d6a0c3eb82a90047d222dea6",
         "composeApp/src/commonMain/kotlin/org/walks/gamecopilot/ui/page/random/AnswerBookPage.kt": "8ee162fb09de8c90e23e5823065e3c332d0c629eab4f290f9c30df7c07e14e46",
         "composeApp/src/commonMain/kotlin/org/walks/gamecopilot/ui/page/random/FingerSpinnerComponent.kt": "32ddf9a6c677968367e04d74c72cdfd02bff7111fdf28f00167b0d47686b5b4c",
-        "composeApp/src/commonMain/kotlin/org/walks/gamecopilot/ui/page/random/RandomPage.kt": "dce09beacf8510287d5a67f23ff0ddce094336dcc811053d6a0184ab61ddb7a3",
+        "composeApp/src/commonMain/kotlin/org/walks/gamecopilot/ui/page/random/RandomPage.kt": "f50d574c1f053b551757144601ce5675a4a01424399c520b74aa4428c945f462",
         "composeApp/src/commonMain/kotlin/org/walks/gamecopilot/ui/page/random/WheelRandomComponent.kt": "c73b2e3d08437b06d898608434a93900a50add16de383d4a1b750d5810ac2945",
         "composeApp/src/commonMain/kotlin/org/walks/gamecopilot/ui/widget/DiceFace.kt": "193f8a46519553a564df4e46f1b66f2e44fae83136bd4566b1334cdf7de2e949",
-        "cross-platform/random-tools.json": "d3c88d134e402ab97f0ece54c9613aaf84b787ea7da100ae06a53a42ee093b12"
+        "cross-platform/random-tools.json": "fc63faa248474488ea4b9cee35a1da055972ed0083bf89104218880d8606aa81"
       },
       "harmony": {
         "entry/src/main/ets/components/RandomToolIcon.ets": "80ac27af7f0be3e543c965e95d495aa03ee2c850649534f7833c5ebdff5681ab",
@@ -23,19 +24,20 @@
         "entry/src/main/ets/pages/random/DiceAnimation.ets": "634ce6fc2e5aae1af911c94d927f45baf6a0adc8f9e99abf6d683b1b63cd2fa3",
         "entry/src/main/ets/pages/random/FingerSpinnerComponent.ets": "1360de800cc0bdee1febeeb4b434ff5d6b2d10e9f640532ea48b6d8aeb55eac8",
         "entry/src/main/ets/pages/random/FlipCardComponent.ets": "c5e3a95df6b919a556b7996a7affb5665b85a56184cb2e4ca0cb1aad131e3e45",
-        "entry/src/main/ets/pages/random/RandomConfigEditor.ets": "1ba341d1d06dc72c40f61f26678f19fa399fe4fdf99ad0537fddd99a9e08c358",
-        "entry/src/main/ets/pages/random/RandomConfigList.ets": "22eb660bdda91911c74e51d56d0e09194e6c3864730f9ea63d809cb00f2572fa",
+        "entry/src/main/ets/pages/random/RandomConfigEditor.ets": "113f08f17a40ba7b7d36ec9911391c739f5df66dd7a88bebf39941acef063657",
+        "entry/src/main/ets/pages/random/RandomConfigList.ets": "e0d58e0d93a335fa24f8f03fbed6ccb37bcdd56184ca89da38896f2a593b8a84",
         "entry/src/main/ets/pages/random/RandomToolChrome.ets": "9959ed70d2f1618777fa077a4ad9e50c5d050413f56dc8feb0b4689e48d9a4f0",
         "entry/src/main/ets/pages/random/RandomToolFaces.ets": "d36d6e143bd4ad1665f069339854b2e60df14578aaa45f64ead857282613cbf9",
         "entry/src/main/ets/pages/random/RollCoinAnimation.ets": "87e766919b7f6ebc11d8c8c3ea43e59fd27f1dea59c78fad3756d46d63794d45",
         "entry/src/main/ets/pages/random/WheelRandomComponent.ets": "c47cfc7e72030bf948461cbe69af554026052ba93c9420863733ede4667bd002",
-        "entry/src/main/ets/pages/RandomPage.ets": "51a67a5f5951fb5d248b2ec1c63b81d6befe9ae7d075e879965781f3835c4745",
-        "entry/src/main/ets/store/RandomStore.ets": "fa4c0460ae241c4a2967135ff2351f248be6fe3837a1ba1d201ac48e02f5bc47"
+        "entry/src/main/ets/pages/RandomPage.ets": "2e4dffc18d33d033c343020c6fb4e0a448a2bd60f0c371e9c31e59273caeb9fc",
+        "entry/src/main/ets/store/RandomStore.ets": "fa4c0460ae241c4a2967135ff2351f248be6fe3837a1ba1d201ac48e02f5bc47",
+        "entry/src/main/ets/theme/RandomToolDesign.ets": "7a9e92f3f76cd6219c74e3664575673f425592578d75519566ce44be533a9c21"
       }
     },
     "status": "reviewed",
-    "note": "2026-09-16: Reviewed paired room UI, compatibility gate, Harmony bodyless HTTP fix and KMP transport recovery. Real cloud six-game 1199 assertions; actual Android/Harmony/Web room UI and QR-to-browser ledger flow. Android Answer Book matches Harmony phases, 119 state checks and emulator visual/interaction evidence. See docs/CLOUD_LIVE_UI_QA.md; public invite/hostview remain unavailable.",
-    "date": "2026-09-16T12:37:08.203238+00:00"
+    "note": "2026-09-22 distribution isolation: four signed Android release APKs and Play AAB, domestic lint 0 errors, production Wasm build; Harmony domestic signed AppGallery and direct device builds; actual Kotlin/ArkTS disabled-session/invitation/route and zero-HTTP checks plus full local Java cloud/offline regression. Android emulator verifies domestic home, four spy identities, local ledger payment and retained full lobby. Harmony UI source paired and compiled; no new Harmony device visual QA. See docs/DISTRIBUTION_QA.md.",
+    "date": "2026-09-22T11:41:00.836859+00:00"
   },
   "ledger": {
     "files": {
@@ -43,7 +45,7 @@
         "composeApp/src/commonMain/kotlin/org/walks/gamecopilot/data/entity/MonopolyEntity.kt": "3068d330f7fcaacfc0bbd2672561adb10349e15d3fd0eed3cb6f3759efcb65e1",
         "composeApp/src/commonMain/kotlin/org/walks/gamecopilot/data/entity/MonopolyLedgerRules.kt": "7b481420efe49aad62dbeaf45306144fa1ebe454e99b3cf5b86db0bdfaa8ad54",
         "composeApp/src/commonMain/kotlin/org/walks/gamecopilot/ui/page/monopoly/LedgerSetupDialogs.kt": "3bbfec2f81c9f0bac7503b856fb8ada952c2c3468a7a17d636b22211e8cfc84e",
-        "composeApp/src/commonMain/kotlin/org/walks/gamecopilot/ui/page/monopoly/MonopolyMoneyPage.kt": "7dfab1da1110761096abb415db2a03cfbf676c647a11cadb67fe0ee490a2eaeb",
+        "composeApp/src/commonMain/kotlin/org/walks/gamecopilot/ui/page/monopoly/MonopolyMoneyPage.kt": "471192724398d6bc899d97f41e403a540d5dc5d93bd8eabaae3552a58faf1b24",
         "composeApp/src/commonMain/kotlin/org/walks/gamecopilot/ui/page/monopoly/RoundTableBoard.kt": "a3b7e07b7246447a7adcc7f5f8b274ead321c058bf036480580a4f3610ae5f26",
         "composeApp/src/commonMain/kotlin/org/walks/gamecopilot/ui/page/monopoly/RoundTableLayout.kt": "a7317061d4bc6928227c5b1a10a9da226509bbee912f435effe32ce1c4fb7241"
       },
@@ -51,7 +53,7 @@
         "entry/src/main/ets/model/entity/MonopolyEntity.ets": "36a197cd7e4382f34fa0e7b9e65ff3c835dd3180f0f8b871505b17411bda7ab3",
         "entry/src/main/ets/model/entity/MonopolyRules.ets": "9083c70f75926e06ac5074676a6f3e9d6630538315dcf3bd2356186fcaa9d637",
         "entry/src/main/ets/pages/monopoly/LedgerLocalDialogs.ets": "0531080e20b6fc5332b69ba11fdf5f59c03d8188c70bece0d38b6c6ddb433fc4",
-        "entry/src/main/ets/pages/monopoly/MonopolyMoneyPage.ets": "0479f7602138e60b9f018886d9e2ceded22b8f1819734aacc5807a19657350dc",
+        "entry/src/main/ets/pages/monopoly/MonopolyMoneyPage.ets": "85886158fb2b3adc4dd115261a356e2a13778ff681da02ccff4eca3c3c291881",
         "entry/src/main/ets/pages/monopoly/MonopolyParticipantSelector.ets": "bc3a7269fe504446e1250282834eebf0b82d59793c65e60f46fd2c4ce065b959",
         "entry/src/main/ets/pages/monopoly/RoundTableBoard.ets": "031d92700631ea0c5293c086ad2804d95dcfe1748780a4a132f4a7f1131e007f",
         "entry/src/main/ets/pages/monopoly/RoundTableLayout.ets": "be456a69ed06413f24f7b9187c95f0c3c0b7192708a0a97fd4a1698e0b5ecfaf",
@@ -60,8 +62,8 @@
       }
     },
     "status": "reviewed",
-    "note": "2026-09-14 Android/Harmony builds; Java 432 Hunt games and ledger boundaries; production-client HTTP with both platform hosts, dropped response recovery and restart; both native local-ledger flows and cross-device grant/payment synchronization. Scope and representative UI evidence: docs/CLOUD_LEDGER_HUNT_QA.md; Hunt uses documented single-role house rules.",
-    "date": "2026-09-14T12:39:22.315515+00:00"
+    "note": "2026-09-22 distribution isolation: four signed Android release APKs and Play AAB, domestic lint 0 errors, production Wasm build; Harmony domestic signed AppGallery and direct device builds; actual Kotlin/ArkTS disabled-session/invitation/route and zero-HTTP checks plus full local Java cloud/offline regression. Android emulator verifies domestic home, four spy identities, local ledger payment and retained full lobby. Harmony UI source paired and compiled; no new Harmony device visual QA. See docs/DISTRIBUTION_QA.md.",
+    "date": "2026-09-22T11:41:00.950203+00:00"
   },
   "spy": {
     "files": {
@@ -86,14 +88,14 @@
         "entry/src/main/ets/pages/localspy/components/LocalSpyIdentityCard.ets": "e1b0e1531645e0505c88d963fd3ffae26361397058ad68889ad32b562b102d07",
         "entry/src/main/ets/pages/localspy/components/WordLibrarySection.ets": "6b265ba1288f7ae0fbcc4d993b75c86e8a8ae76e7161deb1311588866c744ab5",
         "entry/src/main/ets/pages/localspy/components/WordsDialog.ets": "9ab81ee60bffd9e50b13ced38d1b4b2ea2643eb410a29025b32675905ed461c8",
-        "entry/src/main/ets/pages/localspy/LocalSpyGamePage.ets": "7680585312904b94b8eefee5c8c1583956a477c1cbf899548d0ab8afdf85ea0a",
-        "entry/src/main/ets/pages/localspy/LocalSpyGamePlayPage.ets": "46a9344c8a7d029844b459afe1f8f2e639ba73ae7dbd275b8e0bc8cff9f4a5e5",
+        "entry/src/main/ets/pages/localspy/LocalSpyGamePage.ets": "b91d2ac727ed0a204afd4d65b5383441b2343407d199f779525bbb38a5e628af",
+        "entry/src/main/ets/pages/localspy/LocalSpyGamePlayPage.ets": "215221c7a7de6c6f6a63967c52f2264687c098c84a452e9ffc697b57d34fc410",
         "entry/src/main/ets/store/LocalSpyStore.ets": "a82162a03dcaea630137159aed3c52b01115cf23471d722469165603ca90a547"
       }
     },
     "status": "reviewed",
-    "note": "2026-09-11: Android assembleDebug and Harmony assembleHap passed. Java 128630 one-night rule checks/640 complete games plus existing HTTP tests; production Kotlin/ArkTS live room round with retries, restart, stale/illegal actions and abort passed. Offline Kotlin and ArkTS each 640 rounds plus copy/swap/hunter/joint-win, all spy counts, Avalon fifth-round and Hunt tests passed. Native emulator identity/deal/night/day/vote/result/restart evidence and drawing crash regression are in artifacts/one-night-20260910; scope and limitations in docs/ONE_NIGHT_CLOUD_AND_OFFLINE_QA.md. Harmony remains native ArkUI; shared Kotlin rules/DTO prepare future Compose reuse.",
-    "date": "2026-09-10T16:47:52.556921+00:00"
+    "note": "UI refinement: paired source review, Android and Harmony focused native navigation/tool/privacy/theme checks, Android/Web/Harmony builds, offline production rules and generated parity checks. See docs/UI_FLOW_REFINEMENT_QA.md for exact evidence. Web interaction and live multiplayer matches were not rerun. Local Avalon variant and native Harmony implementation remain explicit differences.",
+    "date": "2026-09-17T16:43:06.415307+00:00"
   },
   "avalon": {
     "files": {
@@ -102,14 +104,14 @@
         "composeApp/src/commonMain/kotlin/org/walks/gamecopilot/awalong/AwalongConfig.kt": "77dcd8af62356d4edec0dff6bee42f005b8ab06c1d096e44a353b1fdb2aed4cd",
         "composeApp/src/commonMain/kotlin/org/walks/gamecopilot/awalong/AwalongCustomConfig.kt": "d9c3c6ee384898a06244daff615c8842d9184b914f46406f9f6cdf221e13688e",
         "composeApp/src/commonMain/kotlin/org/walks/gamecopilot/awalong/AwalongCustomConfigScreen.kt": "a738d8d5345865de8d0595cd80c183593a458fd48ed4082641ebe7e76b89357e",
-        "composeApp/src/commonMain/kotlin/org/walks/gamecopilot/awalong/AwalongEntrance.kt": "824d28c198f038adee871ea558180dfa8e1424024d0ef3e666c794466a98b85b",
+        "composeApp/src/commonMain/kotlin/org/walks/gamecopilot/awalong/AwalongEntrance.kt": "c817a4219e43f13635e914e7e08db6b739907be4890fb80d7970f786f0054a6b",
         "composeApp/src/commonMain/kotlin/org/walks/gamecopilot/awalong/AwalongGameLogic.kt": "7ec9c1a99c1e3b9adb837e7ed2078688927fb8827cb7ede5c4d9bcaeb907d6a1",
-        "composeApp/src/commonMain/kotlin/org/walks/gamecopilot/awalong/AwalongGamePageOptimized.kt": "0b342623cfca0cb03d96d4c308ba89f8e9a7df988ea824bb88ce55fcc7fd7d65",
+        "composeApp/src/commonMain/kotlin/org/walks/gamecopilot/awalong/AwalongGamePageOptimized.kt": "bbfad8bc3ca801882772723f636c7eb23d4ae7aa03bd92c37125cb5a8740a2c3",
         "composeApp/src/commonMain/kotlin/org/walks/gamecopilot/awalong/AwalongIntent.kt": "36de9243d2afcc1b4b18b8cd7d3754e6f92f898ea79e8c124e02fbdcf58dc0cf",
         "composeApp/src/commonMain/kotlin/org/walks/gamecopilot/awalong/components/AwalongDayZeroPage.kt": "ddeabbdfba47cb10a6fa2220d7ec39de880575bc877ae0f950500494773fb11e",
         "composeApp/src/commonMain/kotlin/org/walks/gamecopilot/awalong/components/AwalongIdentityCard.kt": "71e81cf74606972153ecb0268140e2571ce9602cfab08799fea6b38e13c376f4",
-        "composeApp/src/commonMain/kotlin/org/walks/gamecopilot/awalong/components/GamePhaseComponents.kt": "d190b68db556b2650f4d1f32f110ec316117a0d8c1c6bb323869262b83fbca3f",
-        "composeApp/src/commonMain/kotlin/org/walks/gamecopilot/awalong/components/GameRulesDialog.kt": "ebaebb7931a5e64e494318acb67afe48463eefab77db2d741a0228f33516e9f1",
+        "composeApp/src/commonMain/kotlin/org/walks/gamecopilot/awalong/components/GamePhaseComponents.kt": "7f4275f78abccf9eff746983a9f2e7054a5842b5b56ace8d4f6b86c0e0404eba",
+        "composeApp/src/commonMain/kotlin/org/walks/gamecopilot/awalong/components/GameRulesDialog.kt": "aa94b82c09cea3840c067e4715bf3ebad0c20369a688457967f3fce19d216388",
         "composeApp/src/commonMain/kotlin/org/walks/gamecopilot/awalong/components/PageDayTaskOptimized.kt": "d0371ec681d7eea9aedc5119322089d81bb6cf6339a410da6b8d0b20985d8a9c",
         "composeApp/src/commonMain/kotlin/org/walks/gamecopilot/awalong/components/PlayerCard.kt": "b85b2ad840c056c9a1090130f0cf6fb3ed554e930fc9e61a46a95dadc738db1e",
         "composeApp/src/commonMain/kotlin/org/walks/gamecopilot/awalong/components/TaskExecutionPhaseOptimized.kt": "9d44debb6e018936f5d2916a8e26bdddae4cf96c528106d6cf4bfbdb23f59f33",
@@ -120,13 +122,13 @@
         "composeApp/src/commonMain/kotlin/org/walks/gamecopilot/awalong/SpecialAbilityDialog.kt": "8c2bac120afa833aeb777379904ffcf236e97d48dd41a44ebc1897ecede1c973"
       },
       "harmony": {
-        "entry/src/main/ets/model/awalong/AwalongConfig.ets": "5405dfb988f53165b7af2a50fa65de3f9ff29754e6c09f820d8ea5270298acb3",
+        "entry/src/main/ets/model/awalong/AwalongConfig.ets": "d527ce1ef495e46c08d08e03fd104001fd87a88d2b4066c2bbfadef25dfc3f4b",
         "entry/src/main/ets/model/awalong/AwalongCustomConfig.ets": "500696ff557e2f84d8900e5d409df77980acd3099dd974cabd8671c43bd1b192",
         "entry/src/main/ets/model/awalong/AwalongGameDayEntity.ets": "2c787044da7c439a6f5013115535d14642e038769c535a0c6daff2ea16512475",
         "entry/src/main/ets/model/awalong/AwalongGameState.ets": "d62857de6100ce6ae550c9a149e35ed7a52ef0b4cc1639fe8b41429e7d3ef808",
         "entry/src/main/ets/model/awalong/AwalongRole.ets": "73305b655cb8e1dd006a444ce8c50c196432345292833a5d7c1c2975ce6e852d",
-        "entry/src/main/ets/pages/awalong/AwalongEntrancePage.ets": "1370360ac260e2209456216dc4fbc53da71ef4c74738eb0dd58cd54f0c997761",
-        "entry/src/main/ets/pages/awalong/AwalongGamePage.ets": "4c6657d0a593b5d34c189cb70694935257b93a42aafb475a52a050cee689cb7c",
+        "entry/src/main/ets/pages/awalong/AwalongEntrancePage.ets": "7dcc7aaf3336f4474f5db308f939e672ce3797b76e72cdc4a5600999d663206e",
+        "entry/src/main/ets/pages/awalong/AwalongGamePage.ets": "dc76691707e3315f0088242fa140b6a9a64e9cd13bf5a43580ed640f9e3099d0",
         "entry/src/main/ets/pages/awalong/components/AwalongIdentityCard.ets": "3e79b13b86f7a77322ea1c4f05e527d16a9e4c6f8eaf1610624c25c51dac815e",
         "entry/src/main/ets/pages/awalong/components/GameRulesDialog.ets": "6ea23e80b29ea4d51b9cc8d1e4a917dedac59e223aa43e95e010f7af9eccf3d1",
         "entry/src/main/ets/pages/awalong/components/PlayerCard.ets": "91d8c7b4ac4b9bdd5256afebb1f738b8de8b023ae3528d9f9db765b0b8f00845",
@@ -135,15 +137,15 @@
       }
     },
     "status": "reviewed",
-    "note": "2026-09-11: Android assembleDebug and Harmony assembleHap passed. Java 128630 one-night rule checks/640 complete games plus existing HTTP tests; production Kotlin/ArkTS live room round with retries, restart, stale/illegal actions and abort passed. Offline Kotlin and ArkTS each 640 rounds plus copy/swap/hunter/joint-win, all spy counts, Avalon fifth-round and Hunt tests passed. Native emulator identity/deal/night/day/vote/result/restart evidence and drawing crash regression are in artifacts/one-night-20260910; scope and limitations in docs/ONE_NIGHT_CLOUD_AND_OFFLINE_QA.md. Harmony remains native ArkUI; shared Kotlin rules/DTO prepare future Compose reuse.",
-    "date": "2026-09-10T16:47:52.603112+00:00"
+    "note": "UI refinement: paired source review, Android and Harmony focused native navigation/tool/privacy/theme checks, Android/Web/Harmony builds, offline production rules and generated parity checks. See docs/UI_FLOW_REFINEMENT_QA.md for exact evidence. Web interaction and live multiplayer matches were not rerun. Local Avalon variant and native Harmony implementation remain explicit differences.",
+    "date": "2026-09-17T16:43:06.442587+00:00"
   },
   "werewolf": {
     "files": {
       "android": {
         "composeApp/src/commonMain/kotlin/org/walks/gamecopilot/werewolf/components/WerewolfIdentityCard.kt": "047c4eeb7bca99cb9c30c4fdad68ced0d724cad3e286b15ab39a938e416afa02",
         "composeApp/src/commonMain/kotlin/org/walks/gamecopilot/werewolf/theme/WerewolfColors.kt": "d19860a05f0dd2f719211b6ccdf84a67ab407fd3889e32995817d6f672ff0e49",
-        "composeApp/src/commonMain/kotlin/org/walks/gamecopilot/werewolf/WerewolfEntrance.kt": "9af86b44c43d3b66c636c53f45e9c2e04311d60c25bf77b4f79208545a0a9798",
+        "composeApp/src/commonMain/kotlin/org/walks/gamecopilot/werewolf/WerewolfEntrance.kt": "c69d629fb051be8fddc4a1c262b579bb5a5bd12224b8efe5c9818a5c0b9c0479",
         "composeApp/src/commonMain/kotlin/org/walks/gamecopilot/werewolf/WerewolfGamePage.kt": "26b14e4f6b2f3acde7073ff956e8cc0057c10348c574cdc8c894fcd1829f1209",
         "composeApp/src/commonMain/kotlin/org/walks/gamecopilot/werewolf/WerewolfIntent.kt": "08cfca852bf0bcb579f5c535f7b879ca5c7beae9fcdc41087f59a19e22a0209c",
         "shared/src/commonMain/kotlin/org/walks/gamecopilot/werewolf/data/WerewolfModels.kt": "ac0a097186ab831d27a1d718f1989fe89ba5940a073438a56dafc4aa82bed74b",
@@ -155,54 +157,59 @@
         "entry/src/main/ets/model/werewolf/WerewolfPreset.ets": "9d174884e100335072e007555af8a3991510c9585d97e496969a06b6b49cc822",
         "entry/src/main/ets/model/werewolf/WerewolfRole.ets": "52ac4be0643959541f718201cb41fc12a56931b53e679b50fc598ac211c5b291",
         "entry/src/main/ets/pages/werewolf/components/WerewolfIdentityCard.ets": "661203d7f1117cfbc50542621e2893466f6d1524765623ba84842a0dd90ac2a5",
-        "entry/src/main/ets/pages/werewolf/WerewolfEntrancePage.ets": "ae926d0f209b724d7673f2a19210f44e245e1cfe6ea0ae0721fc83b93cbd89d9",
+        "entry/src/main/ets/pages/werewolf/WerewolfEntrancePage.ets": "41f0ad9d5c6bbda1b700a28624b4c3f4bf2431335e10c075baf32524d54bd6b5",
         "entry/src/main/ets/pages/werewolf/WerewolfGamePage.ets": "b93207d99db1f4e735f419ddd482145248e5e3a3a23dfd354faaab109fda62f7",
         "entry/src/main/ets/store/WerewolfStore.ets": "2efc6597e8a01109aab16abc51a189e0c4d78b95c48b10d3239a5500cef3b8bc"
       }
     },
     "status": "reviewed",
-    "note": "2026-09-11: final Kotlin/ArkTS rules and explanatory comments aligned. Both platform builds passed; 640 complete rounds per local implementation, deterministic Doppelganger-Robber physical-card swap, hunter and joint victory tested. Native deal/night/vote/result/restart screenshots in artifacts/one-night-20260910. Scope: docs/ONE_NIGHT_CLOUD_AND_OFFLINE_QA.md.",
-    "date": "2026-09-10T16:52:44.918317+00:00"
+    "note": "UI refinement: paired source review, Android and Harmony focused native navigation/tool/privacy/theme checks, Android/Web/Harmony builds, offline production rules and generated parity checks. See docs/UI_FLOW_REFINEMENT_QA.md for exact evidence. Web interaction and live multiplayer matches were not rerun. Local Avalon variant and native Harmony implementation remain explicit differences.",
+    "date": "2026-09-17T16:43:06.463778+00:00"
   },
   "drawing": {
     "files": {
       "android": {
-        "composeApp/src/commonMain/kotlin/org/walks/gamecopilot/ui/page/drawguess/DrawBoardPage.kt": "5b581ec591dfed0fee9513e987de3b2643803323a6c38247f37013b57b47d2a7"
+        "composeApp/src/commonMain/kotlin/org/walks/gamecopilot/data/DrawGuessWordLibrary.kt": "9c03343be1ad98ce4c3d3214a2a32c681e1a1666844fcb981df08f559f2ef690",
+        "composeApp/src/commonMain/kotlin/org/walks/gamecopilot/ui/page/drawguess/DrawBoardPage.kt": "561384138fd43e0d4a1fd3dd9e8c0d6d376da5132313d118e9283deebed9999c",
+        "composeApp/src/commonMain/kotlin/org/walks/gamecopilot/ui/page/home/DrawGuessEntrance.kt": "5b06e0297bbc6975e9059d4cc687bfa3e1295ed5389dedf4efdf2aa51b03046f"
       },
       "harmony": {
-        "entry/src/main/ets/pages/drawguess/DrawBoardPage.ets": "459e035adbd5e7ffb13a1d77f24b554f7caa0fd8f823c78cbcccf5d7f9d77416",
-        "entry/src/main/ets/pages/drawguess/DrawGuessEntrancePage.ets": "1b07a98c875fe9c973beec749f1fe9dc89dc76fa9bb3804bed4d10e946238934"
+        "entry/src/main/ets/data/DrawGuessWordLibrary.ets": "2c91904599fe9d6860a3fd950a1df82ac7820b590f6d281b35b9bc4a47ac9c3b",
+        "entry/src/main/ets/model/entity/PathState.ets": "d3c4cb23776b0e02ecb910da8556eea11eec62c5bc9f94756c8879f44b439e1a",
+        "entry/src/main/ets/pages/drawguess/DrawBoardPage.ets": "d70ecfe0a4b42ee93a95bec8287c2718b92fed5a7e63ea3797ef1ecf7b8bcc3a",
+        "entry/src/main/ets/pages/drawguess/DrawGuessEntrancePage.ets": "7956456bf28a5df9bad535687597fff9d3ab65ac5a136d965c15ff4bd32084bd",
+        "entry/src/main/ets/store/DrawGuessStore.ets": "383a4b4cd5e59a4435019769584a75dba31b6cf28e6113d3acdadda0bcb5289f"
       }
     },
     "status": "reviewed",
-    "note": "2026-09-11: Android assembleDebug and Harmony assembleHap passed. Java 128630 one-night rule checks/640 complete games plus existing HTTP tests; production Kotlin/ArkTS live room round with retries, restart, stale/illegal actions and abort passed. Offline Kotlin and ArkTS each 640 rounds plus copy/swap/hunter/joint-win, all spy counts, Avalon fifth-round and Hunt tests passed. Native emulator identity/deal/night/day/vote/result/restart evidence and drawing crash regression are in artifacts/one-night-20260910; scope and limitations in docs/ONE_NIGHT_CLOUD_AND_OFFLINE_QA.md. Harmony remains native ArkUI; shared Kotlin rules/DTO prepare future Compose reuse.",
-    "date": "2026-09-10T16:47:52.647709+00:00"
+    "note": "UI refinement: paired source review, Android and Harmony focused native navigation/tool/privacy/theme checks, Android/Web/Harmony builds, offline production rules and generated parity checks. See docs/UI_FLOW_REFINEMENT_QA.md for exact evidence. Web interaction and live multiplayer matches were not rerun. Local Avalon variant and native Harmony implementation remain explicit differences.",
+    "date": "2026-09-17T16:43:06.475578+00:00"
   },
   "hunttown": {
     "files": {
       "android": {
-        "composeApp/src/commonMain/kotlin/org/walks/gamecopilot/ui/page/hunttown/HuntTownPage.kt": "48514e7c3f48123c27b809cfb32ded14f32dc77f8be6835af83e85c6c2f71ca6"
+        "composeApp/src/commonMain/kotlin/org/walks/gamecopilot/ui/page/hunttown/HuntTownPage.kt": "f6c7a16ef45a9de89bca3bde58d8aecb3555f1d90739dc8c1177266a9b592026"
       },
       "harmony": {
         "entry/src/main/ets/model/hunttown/HuntPhase.ets": "8eff3b8a600961a6221cec6aa5f328c3a1be1f7ccb9cb22f1c0158dcb4df561b",
         "entry/src/main/ets/model/hunttown/HuntPlayer.ets": "ba0b75140f969581500c0d1d1e50b3f058ba2ec1be8491cd3c2f54398d9a134c",
         "entry/src/main/ets/model/hunttown/HuntRole.ets": "878f3eb80abb508ab7856874a5e619b2e10a6c237caaf61f7e270d1247d1c439",
-        "entry/src/main/ets/pages/hunttown/HuntTownPage.ets": "5f0ed26a14df512565849f3bcb3c8d7f7a69588e2ab7ab4d1c5a0b30acb59c9f",
+        "entry/src/main/ets/pages/hunttown/HuntTownPage.ets": "ffeb984c78bb7ac76add6a82393137f8f980ceed3220df3fa2290d40cf59399e",
         "entry/src/main/ets/store/HuntTownStore.ets": "6628e6bd9f0cd3c216f1a13acb9e6b10dfe15620d44d7e1db022b3ea6d8d06e7"
       }
     },
     "status": "reviewed",
-    "note": "2026-09-11: Android assembleDebug and Harmony assembleHap passed. Java 128630 one-night rule checks/640 complete games plus existing HTTP tests; production Kotlin/ArkTS live room round with retries, restart, stale/illegal actions and abort passed. Offline Kotlin and ArkTS each 640 rounds plus copy/swap/hunter/joint-win, all spy counts, Avalon fifth-round and Hunt tests passed. Native emulator identity/deal/night/day/vote/result/restart evidence and drawing crash regression are in artifacts/one-night-20260910; scope and limitations in docs/ONE_NIGHT_CLOUD_AND_OFFLINE_QA.md. Harmony remains native ArkUI; shared Kotlin rules/DTO prepare future Compose reuse.",
-    "date": "2026-09-10T16:47:52.659449+00:00"
+    "note": "2026-09-22 distribution isolation: four signed Android release APKs and Play AAB, domestic lint 0 errors, production Wasm build; Harmony domestic signed AppGallery and direct device builds; actual Kotlin/ArkTS disabled-session/invitation/route and zero-HTTP checks plus full local Java cloud/offline regression. Android emulator verifies domestic home, four spy identities, local ledger payment and retained full lobby. Harmony UI source paired and compiled; no new Harmony device visual QA. See docs/DISTRIBUTION_QA.md.",
+    "date": "2026-09-22T11:41:01.455453+00:00"
   },
   "lan": {
     "files": {
       "android": {
         "composeApp/src/commonMain/kotlin/org/walks/gamecopilot/ui/page/lan/JoinRoomDialog.kt": "c8815d4b670570e2841a74d0f4df764ff37775550f2a9d178551ea2fb25a8052",
-        "composeApp/src/commonMain/kotlin/org/walks/gamecopilot/ui/page/lan/LANCreateRoomPage.kt": "efe796aef524cc23f9c86379515572bed0740a1a6a960854f7717a7cddb22d27",
+        "composeApp/src/commonMain/kotlin/org/walks/gamecopilot/ui/page/lan/LANCreateRoomPage.kt": "3e19a5307d275c3304cea00f227739672e76aaf3be314f53891e184759f0ce75",
         "composeApp/src/commonMain/kotlin/org/walks/gamecopilot/ui/page/lan/LANEntrancePage.kt": "a4ee5d464855c17240853ed610d74b3a54a418ae3bdbbb7cc91f57522b5dd80b",
-        "composeApp/src/commonMain/kotlin/org/walks/gamecopilot/ui/page/lan/LANRoomDiscoveryPage.kt": "55e73d14edd71c6c52a49bc6827dd0b60a133d8f079abd64a0b8363c72c34019",
-        "composeApp/src/commonMain/kotlin/org/walks/gamecopilot/ui/page/lan/LANRoomLobbyPage.kt": "30506e728421c88bb6da0fae254d5104b0d12765501b092fa5012ca4d8065f8f",
+        "composeApp/src/commonMain/kotlin/org/walks/gamecopilot/ui/page/lan/LANRoomDiscoveryPage.kt": "3307a48635cb9f8da150649320dfe96dd72a4540ed8a3ef27513bfe7248cd561",
+        "composeApp/src/commonMain/kotlin/org/walks/gamecopilot/ui/page/lan/LANRoomLobbyPage.kt": "4c737957a4f3ae14f5481bc3286301e669dd46595b15808a0d06d7defc4e4525",
         "shared/src/commonMain/kotlin/org/walks/gamecopilot/lan/client/LANClient.kt": "af5ff5ff953b0044541e5c2d65271a82c470857cef224520b637c5566f462b79",
         "shared/src/commonMain/kotlin/org/walks/gamecopilot/lan/data/LANModels.kt": "71261e41b430eaf85dadedc5e1fc2faea1d1ad7f42df1f686c3c5816daaa7677",
         "shared/src/commonMain/kotlin/org/walks/gamecopilot/lan/discovery/ServiceDiscovery.kt": "bcb99d279b9ccc9adacc551645c19122198b39e95f8530f436af907ab0e28a00",
@@ -229,92 +236,100 @@
         "entry/src/main/ets/pages/lan/LANRoomLobbyPage.ets": "debe0a35aafd4fffcb4046578553787841d09f0a16ae7266cc53931a0ffdf286"
       }
     },
-    "status": "tracking-started",
-    "note": "Initial change-detection snapshot; existing UI/function differences are not certified.",
-    "date": "2026-09-06T09:11:51.464335+00:00"
+    "status": "reviewed",
+    "note": "UI refinement: paired source review, Android and Harmony focused native navigation/tool/privacy/theme checks, Android/Web/Harmony builds, offline production rules and generated parity checks. See docs/UI_FLOW_REFINEMENT_QA.md for exact evidence. Web interaction and live multiplayer matches were not rerun. Local Avalon variant and native Harmony implementation remain explicit differences.",
+    "date": "2026-09-17T16:43:06.505579+00:00"
   },
   "navigation-and-components": {
     "files": {
       "android": {
-        "composeApp/src/commonMain/kotlin/org/walks/gamecopilot/App.kt": "8286d5143fa512d86e206d918fe3688389cb1a40997a5839bf81ffbe41e53b99",
-        "composeApp/src/commonMain/kotlin/org/walks/gamecopilot/navigation/NaviHost.kt": "c5e436d1dd78f39243dbd0179425ef26abba014f7c263d90d22ad4727ecddc6f",
-        "composeApp/src/commonMain/kotlin/org/walks/gamecopilot/navigation/NaviRoute.kt": "d042e628e9c0fc1a1f4f14a5f3288fff0a09dfb8b63e80d335325dade9235672",
+        "composeApp/src/androidMain/kotlin/org/walks/gamecopilot/theme/PlatformSystemBars.android.kt": "3b1da8b9f090fccfc1bfa6629cbd5ed2bd2a67a7ac18b614baf58189ee5f1f7a",
+        "composeApp/src/commonMain/kotlin/org/walks/gamecopilot/App.kt": "82e06df610205f5f0b9fb2fb60665cefc5367784a2f7b43aa9b7023308a2ba32",
+        "composeApp/src/commonMain/kotlin/org/walks/gamecopilot/data/entity/OperationMode.kt": "ebd042a7201aa54ebd8c764122ac0a9bf50033ddfd937b40bcc8cdda594da7a9",
+        "composeApp/src/commonMain/kotlin/org/walks/gamecopilot/navigation/NaviHost.kt": "be3c1f6c468923f7ea5f19c9b3c17f575fba7c13850dafa0627683dc862461b3",
+        "composeApp/src/commonMain/kotlin/org/walks/gamecopilot/navigation/NaviRoute.kt": "94531cdca04d551aa6b30aec950784a93895c2d0f5f28088364072bd553f87ed",
+        "composeApp/src/commonMain/kotlin/org/walks/gamecopilot/theme/DesignSystem.kt": "7e0871560639a75dccdeb353e1a35d91d4b80387401807341ffdc59cea5f40c7",
+        "composeApp/src/commonMain/kotlin/org/walks/gamecopilot/theme/PlatformSystemBars.kt": "b65fe5dd64b0f1fcf564acf4b5d555c18afe923d886c05aa8863a71f8d4e870b",
+        "composeApp/src/commonMain/kotlin/org/walks/gamecopilot/theme/Theme.kt": "5806d3083d3fb02d0c835ce86ef3d19369e36df25ebbfaaa0320159dc1239f35",
         "composeApp/src/commonMain/kotlin/org/walks/gamecopilot/ui/components/AiMessageBubble.kt": "6af31140c1d84354cd4afae19d6183e0621b70683310008240a984e4e3ba3b04",
-        "composeApp/src/commonMain/kotlin/org/walks/gamecopilot/ui/components/AppChrome.kt": "2356f051835132884af1d584ff1842ac528668fb5fedee11f8e32d5b324225dd",
-        "composeApp/src/commonMain/kotlin/org/walks/gamecopilot/ui/components/AppControls.kt": "7385c89b10849297cc301fec62a4bc184ecb6ef771e15784688f5066c18619a6",
+        "composeApp/src/commonMain/kotlin/org/walks/gamecopilot/ui/components/AppChrome.kt": "51bc7976af9badd64981bb0b24f6ea96e9a821630412edb831422681abae825c",
+        "composeApp/src/commonMain/kotlin/org/walks/gamecopilot/ui/components/AppControls.kt": "851bf4df3f16ae6d615809b80fd50ada8e91e69a8826262b35a4ef90891b200f",
         "composeApp/src/commonMain/kotlin/org/walks/gamecopilot/ui/components/common/GameConfigSection.kt": "585ec5399b009ee791e90ca64732397348034641d38424fe4624193255471613",
         "composeApp/src/commonMain/kotlin/org/walks/gamecopilot/ui/components/common/GameSetupScreen.kt": "2dd7495ee0ff30c949fa5412e515b4ca5a23e12ad2db9b9999a72eb129287b7a",
         "composeApp/src/commonMain/kotlin/org/walks/gamecopilot/ui/components/common/IdentitySelector.kt": "8770c2b1a8192ea4a923b9b405e82ca1c754c0f34f36ce57ab4bec2c95d3a7da",
         "composeApp/src/commonMain/kotlin/org/walks/gamecopilot/ui/components/common/LocalSpyIdentitySelector.kt": "26a59a0a24733e7fb23d0082b25435f4c8cab7c2c2ec6a74b126017876370564",
         "composeApp/src/commonMain/kotlin/org/walks/gamecopilot/ui/components/common/LocalSpySwipeableIdentityCard.kt": "745a125789f3bbc35ce8a7576d56c36cd03c945768b92399576d11d92a8ac7bd",
-        "composeApp/src/commonMain/kotlin/org/walks/gamecopilot/ui/components/common/OfflinePassingGuideCard.kt": "d1e3fa774cbc275c5cc73c9471be99e5f36fee8eca60cf2917ad44a5cb48aa44",
-        "composeApp/src/commonMain/kotlin/org/walks/gamecopilot/ui/components/common/OfflinePassingGuideDialog.kt": "cd1555c90429303304c9923273de0fc0bc84e388e581631210299784078b0344",
+        "composeApp/src/commonMain/kotlin/org/walks/gamecopilot/ui/components/common/OfflinePassingGuideCard.kt": "f4bfbcc3a2d758d3c6b6165dba451e0234913758c75317e9e1b0e1997682c26f",
+        "composeApp/src/commonMain/kotlin/org/walks/gamecopilot/ui/components/common/OfflinePassingGuideDialog.kt": "013414b6ab8e21d21ac6b782a76ee45ae2fb93b524a49a2bf940dc87e5f8fb75",
         "composeApp/src/commonMain/kotlin/org/walks/gamecopilot/ui/components/common/SwipeableIdentityCard.kt": "421ded6801cdf4a82e4def24b298db1c9375e59a702faffb0f7ad37ad0fdf796",
         "composeApp/src/commonMain/kotlin/org/walks/gamecopilot/ui/components/common/WordImportDialog.kt": "976028d56a6146e850622159130888372518b6e22f99d2d9babeb57572f5209b",
-        "composeApp/src/commonMain/kotlin/org/walks/gamecopilot/ui/components/CommonTopBar.kt": "14fb65256a17a5b0535e008bab596f2c875ce2a73814b55b072f4bb5c1ff68fe",
-        "composeApp/src/commonMain/kotlin/org/walks/gamecopilot/ui/page/home/DrawGuessEntrance.kt": "74f5a8cb44ebc02c74ed62795803066ed8e94fd12e9c27d304f65f9402b518bf",
-        "composeApp/src/commonMain/kotlin/org/walks/gamecopilot/ui/page/home/HomePage.kt": "9ca9d47f886391c8fa60eda03f6e51669da8c49fa084dabd662e3de9f6787693",
+        "composeApp/src/commonMain/kotlin/org/walks/gamecopilot/ui/components/CommonTopBar.kt": "478ad136becb2ed64c9e7034b362dc348bcae01ced054aef2e5774ea357e99bd",
+        "composeApp/src/commonMain/kotlin/org/walks/gamecopilot/ui/page/home/DrawGuessEntrance.kt": "5b06e0297bbc6975e9059d4cc687bfa3e1295ed5389dedf4efdf2aa51b03046f",
+        "composeApp/src/commonMain/kotlin/org/walks/gamecopilot/ui/page/home/HomePage.kt": "9f4c12ac2a2e3a785d143e652d47cd9be6a2844bc0d09eb529eb0b42fa5f4480",
         "composeApp/src/commonMain/kotlin/org/walks/gamecopilot/ui/page/home/LocalSpyGame.kt": "4957c326d7124169442f4eb06ee8e345adf53ebb3c2eb4f385689f2ecc4b316f",
         "composeApp/src/commonMain/kotlin/org/walks/gamecopilot/ui/page/home/QuickSetting.kt": "659b19e5d5268a56788b155f1fca071a89369069e71291595c555d6c9d8c48ad",
-        "composeApp/src/commonMain/kotlin/org/walks/gamecopilot/ui/page/home/RoomEntrance.kt": "750bbd62cdf6e0f05f4fe6b25a1d94761cfa9cd9d1fbbf00ad1d9e0945b3f8a6"
+        "composeApp/src/commonMain/kotlin/org/walks/gamecopilot/ui/page/home/RoomEntrance.kt": "750bbd62cdf6e0f05f4fe6b25a1d94761cfa9cd9d1fbbf00ad1d9e0945b3f8a6",
+        "composeApp/src/nativeMain/kotlin/org/walks/gamecopilot/theme/PlatformSystemBars.native.kt": "2defbb94353ae69dc0cbb8aa5e39da578abbad2255136162043b44fac0561359"
       },
       "harmony": {
         "entry/src/main/ets/components/AdaptiveToolViewport.ets": "cf640f76496fd68892b1abf1bf670dc75d53d46b21e87b6bd83d1b0942a6a9b5",
         "entry/src/main/ets/components/AiMessageBubble.ets": "9ad66299757eb10565df41506f8f8351b4441f009a22d23157bddd29f1e1547d",
         "entry/src/main/ets/components/AppDialog.ets": "d830dfab3e372e8007c66fa013e7b2523cd4c8a8bd38633730f6f92767f6934c",
         "entry/src/main/ets/components/Badge.ets": "ab89e5238d051242a11698540c20361f9e341cec2a13ed5dbc784d6c95bc72f4",
-        "entry/src/main/ets/components/CommonButton.ets": "524d35ba6c384edb9c2c38d19ff5ed187ae31b0ea953191a73f0694c2bb47b66",
-        "entry/src/main/ets/components/CommonTopBar.ets": "887fea6590a24430618418fe8e05646382be3e9946f7682a5704b178d53414a3",
-        "entry/src/main/ets/components/FloatingNavBar.ets": "715aa143ddc25c70d77203c2e6783872f28d550e7c5736df9147d215d14dd91b",
-        "entry/src/main/ets/components/GameCard.ets": "c8190b3167e76cfbd4fe1944c4703068c049b7161ccfee59fc4d829fb8d5a3c4",
+        "entry/src/main/ets/components/CommonButton.ets": "8ab66a6a4655aebe290adc500182a15b4d0f1558354a558b0665f6a942e39c4b",
+        "entry/src/main/ets/components/CommonTopBar.ets": "5d5b38c75f070f99ce141efe3c65e043b5a3a6b53855e559ffad04ecc1fc0110",
+        "entry/src/main/ets/components/FloatingNavBar.ets": "5d80548bbe46ee70aebc2cbfc9c35ad7480d32b1486d14e9f319677ddf15585e",
+        "entry/src/main/ets/components/GameCard.ets": "ef52b0c58f795a2c28cc947eb970a2b8d342444ec3b215e8d5820d5fc1fa7c8a",
         "entry/src/main/ets/components/GameModeBadge.ets": "a009aefe68b47bd5491ed3cc8d1345cf1902321eb4462d146410b850d519dcc2",
         "entry/src/main/ets/components/GameTypeIcon.ets": "29347e1b1b0856c68a6a00ec5ebd64d61fcefa065a77195b73503fe210189c7e",
         "entry/src/main/ets/components/IdentitySelector.ets": "e163df1a87eed662d0924b822480ac2de976434100918c78e538954d9b32c352",
         "entry/src/main/ets/components/Loading.ets": "fbb8c95586d195834ca5554550069f2c29a2e2606baa1a414356869d3ad95ad9",
-        "entry/src/main/ets/components/OfflinePassingGuideCard.ets": "906ffc9764f314f5987482fc2090912172b1cae8669fd940d4a88ab8a5efc52b",
-        "entry/src/main/ets/components/OfflinePassingGuideDialog.ets": "1ab7f91f26383d5ae0cbb0b1837e5849b78fcd8ad74a543f2365fb17a2991cf5",
+        "entry/src/main/ets/components/OfflinePassingGuideCard.ets": "d6ce97f1575254710f6588f2c133c2906bbe8c0cee60a68c9170e12a606ec35f",
+        "entry/src/main/ets/components/OfflinePassingGuideDialog.ets": "dc7b3401a4545a2136344fd378c5754895c59b349bfcd99c1911e987d0730681",
         "entry/src/main/ets/components/RandomToolIcon.ets": "80ac27af7f0be3e543c965e95d495aa03ee2c850649534f7833c5ebdff5681ab",
         "entry/src/main/ets/components/RandomToolVisuals.ets": "1a67d5d8c3035183300d1601f86862756f0dc7e95451ee27d59a059b62a1df61",
         "entry/src/main/ets/components/SwipeableIdentityCard.ets": "79886d50754b60801c89c5bbe59b17604cbe56d43c6ecb89c2a0f22f522c61f0",
         "entry/src/main/ets/components/WordImportDialog.ets": "13e9827969455955c3d07439b4fb187093fa1d3afb9bad95d0335efb64ac9700",
-        "entry/src/main/ets/model/enums/OperationMode.ets": "d918e3d53fc13f454737f6dcd7b436ccfa06cbee5fb99021da1e18c2fafbe781",
-        "entry/src/main/ets/pages/HomePage.ets": "6211e18ef92af94b9ca56fa29c38ad171fc3e52039e4be991d82b537a742762f",
-        "entry/src/main/ets/pages/Index.ets": "d0fec4481ab212966bfbc7dfee8368735c4b85319d9fee07b72305cb8c73b2e0"
+        "entry/src/main/ets/model/enums/OperationMode.ets": "5f474a1be02bb7f653979326ae11a0742ed277e0f385b768a526a74d5ff5f786",
+        "entry/src/main/ets/pages/HomePage.ets": "151a31de34c7306338188967deae9fac0dcbcf7342fd07bb8fc32dcff47dadb0",
+        "entry/src/main/ets/pages/Index.ets": "0fded830cf1c0a8729343fb59c81b47cedeb1b94a9fbbec0ae2655461fd88754",
+        "entry/src/main/ets/theme/DesignSystem.ets": "74795af32f25d5f27e15b49553e931a25ffb3026bb2f8e8b1662c29ddb5eb540",
+        "entry/src/main/ets/theme/ThemeColors.ets": "a077ea8e106d1356110bcaac40ebd35ed23625c061bdcb57b6ff53a920daa887"
       }
     },
     "status": "reviewed",
-    "note": "Room invitations and participating host view: Java 207 added checks, Kotlin/Harmony production contracts, full six-game HTTP flows, Android/Harmony QR screenshots decoded and Web joins, three-client wolf result and public mode reminders. Native UI remains ArkUI; no Compose Harmony migration.",
-    "date": "2026-09-15T15:19:18.062954+00:00"
+    "note": "2026-09-22 store preparation: compile SDK 36 and Google Play target SDK 36; release verifier rejects outdated Play targets. Android system bars follow the selected app theme; Harmony Index.ets already updates status/navigation bar background and foreground onThemeChange. iOS and Wasm hooks are no-ops. Google Play APK/AAB and F-Droid APK built and signature checked; Wasm compilation passed. API 36 emulator checked light/dark themes, lobby navigation and back. No new Harmony/iOS device execution or server deployment claimed.",
+    "date": "2026-09-22T14:20:50.200384+00:00"
   },
   "settings-and-stats": {
     "files": {
       "android": {
         "composeApp/src/commonMain/kotlin/org/walks/gamecopilot/data/GameStatsManager.kt": "be83ad3b8a67dcdb3732e3eb6b8b9dd7fd3146a7d448de794dd417d583048b20",
-        "composeApp/src/commonMain/kotlin/org/walks/gamecopilot/ui/page/setting/SettingPage.kt": "f81d6a21e8b21cab3dcfcc765c4eef94e41c9db2031a345b78027734fa81fed4",
+        "composeApp/src/commonMain/kotlin/org/walks/gamecopilot/ui/page/setting/SettingPage.kt": "be37013bb17ca2cc66a586a6f5b2e0c980c152517314aac7cdde03eb61c50198",
         "composeApp/src/commonMain/kotlin/org/walks/gamecopilot/ui/page/stats/StatsPage.kt": "7f9969d22444214cf26bc2cf95ade3d6b0a782116f9b769727e2db53a80d8ff6"
       },
       "harmony": {
         "entry/src/main/ets/data/GameStatsManager.ets": "d55f3f1b4f792476d90bc76a14a8832df34c848387c7705671885320127fb568",
-        "entry/src/main/ets/pages/SettingPage.ets": "fc66cd9c63b33ada79648785c30413d38e8858ba76f350285ab15f00b5dd7101",
+        "entry/src/main/ets/pages/SettingPage.ets": "8666718a672c614124cf24c99964e70734c3b7514a7201102eb0f6d8b3740ebe",
         "entry/src/main/ets/pages/StatsPage.ets": "36bfb2ba4ce0d777d05fdcf7ecdc7234d71a7adfa7e231b09d7facdd719897d0",
         "entry/src/main/ets/store/StatsStore.ets": "cccedc2e7bd1d828b7f6b2b5d5d8bd77d2a06839086753bf7504eb412a5c277c"
       }
     },
     "status": "reviewed",
-    "note": "Roundtable layout and stable colors: 10206 production Kotlin/ArkTS cases; native ledger transaction/history checks and Harmony two-pointer wave/countdown/release frames; Android/Harmony builds and Huawei device debug install. Home subtitles/progress bars, selected-label tabs and wide layouts reviewed. Cloud-rooms change is the Android landing page alignment; prior server/private-identity verification remains in refinement-20260906/VERIFICATION.md.",
-    "date": "2026-09-06T15:47:44.796537+00:00"
+    "note": "2026-09-22 distribution isolation: four signed Android release APKs and Play AAB, domestic lint 0 errors, production Wasm build; Harmony domestic signed AppGallery and direct device builds; actual Kotlin/ArkTS disabled-session/invitation/route and zero-HTTP checks plus full local Java cloud/offline regression. Android emulator verifies domestic home, four spy identities, local ledger payment and retained full lobby. Harmony UI source paired and compiled; no new Harmony device visual QA. See docs/DISTRIBUTION_QA.md.",
+    "date": "2026-09-22T11:41:01.854842+00:00"
   },
   "cloud-rooms": {
     "files": {
       "android": {
-        "composeApp/src/commonMain/kotlin/org/walks/gamecopilot/online/CloudInvitations.kt": "c6007f92fef8cf2762e9c16ab1ee021a9a8770f32646fe8fdd80cc2da4ed18ab",
-        "composeApp/src/commonMain/kotlin/org/walks/gamecopilot/online/CloudRoomClient.kt": "633321b5c4309157a77ba28aa1fc2d5de37e193d876fde29ee66a1290882270c",
+        "composeApp/src/commonMain/kotlin/org/walks/gamecopilot/online/CloudInvitations.kt": "05a9ed6343587b0fe0ecb6546fd228db576683510c4eac61454d74bd5f1a691a",
+        "composeApp/src/commonMain/kotlin/org/walks/gamecopilot/online/CloudRoomClient.kt": "110ca5c2c27f7e2cac7ba76f54180f8b31acfaf224911a0dc8257f99828b9d49",
         "composeApp/src/commonMain/kotlin/org/walks/gamecopilot/ui/page/multiplayer/CloudDrawingPanel.kt": "ebf47bda32a99b144fd8df80ee5d55bed48783b27f4c54249beb2d65b4f3c871",
         "composeApp/src/commonMain/kotlin/org/walks/gamecopilot/ui/page/multiplayer/CloudInvitationDialog.kt": "09f5dd8c97cf9b30b6dccf4180ea6020f7fb42f91c5a76f964390b34bee5132f",
         "composeApp/src/commonMain/kotlin/org/walks/gamecopilot/ui/page/multiplayer/CloudLedgerPanel.kt": "35b81c6c345eb49f1fe5095b26f7ee33c8d9aeb76bbe9c9043a37a0e981a2892",
         "composeApp/src/commonMain/kotlin/org/walks/gamecopilot/ui/page/multiplayer/CloudRoomComponents.kt": "a97f0c9a812b5e60f74239450f00ec770de3e9e14e0c5f7973d7d296e26a3638",
         "composeApp/src/commonMain/kotlin/org/walks/gamecopilot/ui/page/multiplayer/CloudRoomPage.kt": "b80f80c7e94e2c41b9b9e73773c9289f546da1f439b2520df9937071acaf4ad1",
-        "composeApp/src/commonMain/kotlin/org/walks/gamecopilot/ui/page/multiplayer/MultiplayerPage.kt": "7158ed879f321d03e3c30c755a9e4c288aeefd1b8c9dc10b26c31c0edf4dca1c",
+        "composeApp/src/commonMain/kotlin/org/walks/gamecopilot/ui/page/multiplayer/MultiplayerPage.kt": "f3eb118b41fa68f004174a41623c3c755de92a92245e9ef2cd78e801418af394",
         "server/src/main/java/io/nayuki/qrcodegen/BitBuffer.java": "d5496452b435423beead30aa356e10a7c0ba4790b7da37ee4a1b80b4df136447",
         "server/src/main/java/io/nayuki/qrcodegen/DataTooLongException.java": "7661186dde4b27334fd94f4950f58522eaab256274388152e5cb8e35ef463e1a",
         "server/src/main/java/io/nayuki/qrcodegen/QrCode.java": "ab2d9f05bef0c2bedfaa888256f09987b2dbef5a4f432c540b9e549801c030ec",
@@ -340,31 +355,33 @@
       "harmony": {
         "entry/src/main/ets/entryability/EntryAbility.ets": "9056940434943f3f1f08c913d235e3c8617ce4197d0809290149a7f130e76be4",
         "entry/src/main/ets/model/online/CloudRoomModels.ets": "4b210db682ab3eb5cd3311319792f02bd207c01ec9aff21cbf337d03d3bd5788",
-        "entry/src/main/ets/pages/MultiplayerPage.ets": "cfb552cf750f386ae19f7814a23fe7346c94b4120ee3b84a21b2351a1f230278",
+        "entry/src/main/ets/pages/MultiplayerPage.ets": "23375f870a48888b92cdd72d6d95fb3cb768ff401cb074f176c8fbdbdcb0d093",
         "entry/src/main/ets/pages/room/CloudDrawingPanel.ets": "a304228406e708eacd96aa66d3e950c4c05bd85d46d90f2cd3e607f9c630003c",
         "entry/src/main/ets/pages/room/CloudInvitationPanel.ets": "65888ebc68b039ea3f589081e1e25b02f065b75d818ae1a01a9ee91914f5e4a3",
         "entry/src/main/ets/pages/room/CloudLedgerPanel.ets": "5ca0d436c5d5b014877f88f3d819ad5c8d19c6dee22b5f33f00fd004a331952a",
         "entry/src/main/ets/pages/room/CloudRoomEntry.ets": "ce5d57c23d65b416bc027d723b50b2a69d30a0abafd1ddff8c90d1cd0282ae67",
         "entry/src/main/ets/pages/room/LedgerCloudEntryPage.ets": "f490274f1f9f3fcf8a8c832ab53f7589e2290226dd8d5c663994cd59457ea582",
         "entry/src/main/ets/pages/room/RoomPage.ets": "151612201c7b2d813c109d960e4393d7daa92d30630cef81bfc7414cd5babcb4",
-        "entry/src/main/ets/store/CloudRoomStore.ets": "e36238125b05714a8b2e54a50b6cdbaa96603e22b2b3db0810c6145e8332184e"
+        "entry/src/main/ets/store/CloudRoomStore.ets": "1fead5252adb59824bc145499eeae38d292202da3818021e9b31cba53919f9e6"
       }
     },
     "status": "reviewed",
-    "note": "2026-09-16: Reviewed paired room UI, compatibility gate, Harmony bodyless HTTP fix and KMP transport recovery. Real cloud six-game 1199 assertions; actual Android/Harmony/Web room UI and QR-to-browser ledger flow. Android Answer Book matches Harmony phases, 119 state checks and emulator visual/interaction evidence. See docs/CLOUD_LIVE_UI_QA.md; public invite/hostview remain unavailable.",
-    "date": "2026-09-16T12:37:09.791260+00:00"
+    "note": "2026-09-22 distribution isolation: four signed Android release APKs and Play AAB, domestic lint 0 errors, production Wasm build; Harmony domestic signed AppGallery and direct device builds; actual Kotlin/ArkTS disabled-session/invitation/route and zero-HTTP checks plus full local Java cloud/offline regression. Android emulator verifies domestic home, four spy identities, local ledger payment and retained full lobby. Harmony UI source paired and compiled; no new Harmony device visual QA. See docs/DISTRIBUTION_QA.md.",
+    "date": "2026-09-22T11:41:02.349770+00:00"
   },
   "web": {
     "files": {
       "web": {
-        "composeApp/build.gradle.kts": "b3e5ca723c33b7298d1e70ef3f47b06f0ca2f6e3e67e74c88cf1acc72b481237",
+        "composeApp/build.gradle.kts": "974dfde02279df6988379d89f2c2e2317ed7f3cb11f974bac4cd5cf0e5e9018e",
         "composeApp/src/commonMain/composeResources/files/licenses/NotoSansSC-OFL.txt": "6a73f9541c2de74158c0e7cf6b0a58ef774f5a780bf191f2d7ec9cc53efe2bf2",
         "composeApp/src/commonMain/composeResources/font/notosanssc_regular.otf": "faa6c9df652116dde789d351359f3d7e5d2285a2b2a1f04a2d7244df706d5ea9",
-        "composeApp/src/commonMain/kotlin/org/walks/gamecopilot/theme/Theme.kt": "43e6cbdcfe9253ce1bee2dc55b1085272bfa8a44667904f7522c468533a51ae6",
+        "composeApp/src/commonMain/kotlin/org/walks/gamecopilot/theme/Theme.kt": "5806d3083d3fb02d0c835ce86ef3d19369e36df25ebbfaaa0320159dc1239f35",
         "composeApp/src/commonMain/kotlin/org/walks/gamecopilot/theme/Type.kt": "283516c2f75ba7ddd08d73ae1c4d6cd0093dd366bd1f26d35226978e123b0372",
+        "composeApp/src/wasmJsMain/kotlin/org/walks/gamecopilot/distribution/AppDistribution.wasmJs.kt": "c4c8385ae53bd444d0f37f03e8b6a21e70ac0cb873bcaa6a54e0f26a80f17789",
         "composeApp/src/wasmJsMain/kotlin/org/walks/gamecopilot/main.kt": "343e044290a74ba7a1c22a2608c214c8b4d063a4e0f17bc572eb178a57d9d169",
         "composeApp/src/wasmJsMain/kotlin/org/walks/gamecopilot/MultiplatformHelper.wasmJs.kt": "c4697d113b4e6419e2f15d261ea702d59d2c331aef02e6b2b7c84ccece6b4af3",
         "composeApp/src/wasmJsMain/kotlin/org/walks/gamecopilot/PlatformHelper.wasmJs.kt": "e71ea67726fdc4386686dbbb814413cfdffc2bbad0681a0c30938ec64fe1aa6e",
+        "composeApp/src/wasmJsMain/kotlin/org/walks/gamecopilot/theme/PlatformSystemBars.wasm.kt": "2defbb94353ae69dc0cbb8aa5e39da578abbad2255136162043b44fac0561359",
         "composeApp/src/wasmJsMain/resources/favicon.png": "1ddfbbe7d082e73d85e83ebd4bb2f7f7136b85a7c90bb47014e81ba8e0e424ba",
         "composeApp/src/wasmJsMain/resources/index.html": "d2210027f31fe76aca5ab6d038e20b6f7cd920c2fa5c0cd7d8c7069a28fbbe5d",
         "composeApp/src/wasmJsMain/resources/styles.css": "2e40bc181b3fb591f6b65aed2a74083cd6a6fd6c47bfb906ae27eb7d28f475df",
@@ -377,7 +394,38 @@
       }
     },
     "status": "reviewed",
-    "note": "Room invitations and participating host view: Java 207 added checks, Kotlin/Harmony production contracts, full six-game HTTP flows, Android/Harmony QR screenshots decoded and Web joins, three-client wolf result and public mode reminders. Native UI remains ArkUI; no Compose Harmony migration.",
-    "date": "2026-09-15T15:19:18.129822+00:00"
+    "note": "2026-09-22 store preparation: compile SDK 36 and Google Play target SDK 36; release verifier rejects outdated Play targets. Android system bars follow the selected app theme; Harmony Index.ets already updates status/navigation bar background and foreground onThemeChange. iOS and Wasm hooks are no-ops. Google Play APK/AAB and F-Droid APK built and signature checked; Wasm compilation passed. API 36 emulator checked light/dark themes, lobby navigation and back. No new Harmony/iOS device execution or server deployment claimed.",
+    "date": "2026-09-22T14:20:50.284443+00:00"
+  },
+  "distribution-channels": {
+    "files": {
+      "android": {
+        ".github/workflows/release.yml": "c6c3e28034f6b9269fda96f9680bb9680f6e01b8431546746b181855902814f9",
+        "composeApp/build.gradle.kts": "974dfde02279df6988379d89f2c2e2317ed7f3cb11f974bac4cd5cf0e5e9018e",
+        "composeApp/src/androidMain/AndroidManifest.xml": "9ddf15893d9e6f252a3a9f899905c7e00f273ad58184e3f0d692df7c63532b63",
+        "composeApp/src/androidMain/kotlin/org/walks/gamecopilot/distribution/AppDistribution.android.kt": "122b43e10bcbd4e2fbb573a0675e9f7baac3cc8c6cdaba828ac8dca97ed2c5a1",
+        "composeApp/src/commonMain/kotlin/org/walks/gamecopilot/distribution/AppDistribution.kt": "1b6b2ce57e8d774aed1bdcb544b454190a8afb643993d4401b4b76e776d84262",
+        "composeApp/src/commonMain/kotlin/org/walks/gamecopilot/distribution/PlatformDistribution.kt": "a317dedddd189b0c4c4a01050272c393a35e02e9865cfb682e23d62431db7c4c",
+        "composeApp/src/domestic/AndroidManifest.xml": "9497309000d171766b9114d4cfe37c970dc0ca459099641b8ed63a25a431de4d",
+        "composeApp/src/nativeMain/kotlin/org/walks/gamecopilot/distribution/AppDistribution.native.kt": "c4c8385ae53bd444d0f37f03e8b6a21e70ac0cb873bcaa6a54e0f26a80f17789",
+        "gradle/libs.versions.toml": "0db14c222eb2739095b4ce629a917b6efbe600bb942e0c8a1766f299d3524cf5",
+        "gradle.properties": "104469880fc7de8bb3d35c346eb56af00004beb8ba414e5edaf5624f9a383d3d",
+        "scripts/build-harmony-device.py": "b3e80460c6d1bfc76be50ad98639fd71f62e7679d101f0b940ee21c3bfa6d6d9",
+        "scripts/build-harmony-release.py": "e77494f9cb2981e35c6bafb88e98dad49a169e7e94e179b4d3f0dab0794ff0eb",
+        "scripts/ci-android-release.py": "3c4f5b1574408710055a54c363e38a0b94ba6a061676c56edd9f9d0e16e1ea21",
+        "scripts/test-ci-android-release.py": "a717cdbbf1f8a57d274adeab3b8c3791b27b464f58367adca41be01d17295ad9",
+        "scripts/verify-android-release.py": "f7d19b539e44eed234539ffac4bb666d289166d66b1f14cb0a69eb7e55068cd5"
+      },
+      "harmony": {
+        "entry/build-profile.json5": "31332e339f9b39e40830cc821e528219a4249fb090cce8086026246fb8f30dfa",
+        "entry/hvigorfile.ts": "d00808f0ebc852702a85d34e12153e02e0d4b3b3e17e156e296c54644b39bc1a",
+        "entry/src/main/ets/distribution/AppDistribution.ets": "f71b744b1d6c3353034cfe9b9b759146d35bb4a923a0b6e1a7d68e221a7e2883",
+        "entry/src/main/ets/store/GameStore.ets": "93daf8cad1d76122c5c1caab1d8d9e593f09f079e3f35a86c5bed3edfa2819c8",
+        "entry/src/main/ets/store/LanStore.ets": "ddaabe8b41bdef6c55938cdf8a09db81be483ab465dfe7003f02e6d0b6adbf65"
+      }
+    },
+    "status": "reviewed",
+    "note": "2026-09-22 store preparation: compile SDK 36 and Google Play target SDK 36; release verifier rejects outdated Play targets. Android system bars follow the selected app theme; Harmony Index.ets already updates status/navigation bar background and foreground onThemeChange. iOS and Wasm hooks are no-ops. Google Play APK/AAB and F-Droid APK built and signature checked; Wasm compilation passed. API 36 emulator checked light/dark themes, lobby navigation and back. No new Harmony/iOS device execution or server deployment claimed.",
+    "date": "2026-09-22T14:20:49.922572+00:00"
   }
 }

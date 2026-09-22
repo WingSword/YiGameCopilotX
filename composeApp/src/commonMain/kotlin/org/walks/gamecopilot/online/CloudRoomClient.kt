@@ -11,6 +11,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.*
 import org.walks.gamecopilot.mmkv.MMKVUtils
+import org.walks.gamecopilot.distribution.AppDistribution
 import kotlin.random.Random
 import kotlin.time.Duration.Companion.seconds
 import kotlin.time.TimeMark
@@ -24,7 +25,7 @@ import kotlin.time.TimeSource
 object CloudRoomClient {
     const val DEFAULT_SERVER = "http://8.133.216.39:8080"
     private val json = Json { ignoreUnknownKeys = true }
-    private val client = HttpClient { install(HttpTimeout) { requestTimeoutMillis = 12000; connectTimeoutMillis = 8000 } }
+    private val client by lazy { HttpClient { install(HttpTimeout) { requestTimeoutMillis = 12000; connectTimeoutMillis = 8000 } } }
     private val _room = MutableStateFlow<CloudRoom?>(null)
     val room = _room.asStateFlow()
     val compatibilityMessage get() = if (_room.value?.supportsHostView == false) CLOUD_SERVER_UPGRADE_MESSAGE else ""
@@ -58,6 +59,7 @@ object CloudRoomClient {
     val roomKey get() = session?.roomKey.orEmpty()
     fun matchesInvitation(invite: CloudJoinInvitation): Boolean = session?.let { it.server == invite.server && it.roomId == invite.roomId } == true
     fun restore(): Boolean {
+        if (!AppDistribution.roomsEnabled) return false
         if (!loaded) {
             loaded = true
             session = runCatching { json.decodeFromString<CloudSession>(MMKVUtils.getString(SESSION, "")) }.getOrNull()
@@ -76,6 +78,7 @@ object CloudRoomClient {
         return clean
     }
     private suspend fun request(server: String, path: String, method: HttpMethod, body: JsonObject? = null, token: String = ""): String {
+        AppDistribution.requireRooms()
         checkRateLimit()
         val response = client.request(server + "/api/v1/rooms" + path) {
             this.method = method
@@ -101,6 +104,10 @@ object CloudRoomClient {
     suspend fun enter(server: String, nickname: String, code: String, key: String, create: Boolean,
                       maxPlayers: Int, spies: Int, blanks: Int, gameType: String = "spy", roles: List<String> = emptyList(),
                       ledgerPreset: String = "electronic", initialBalance: Long = 1_500_000, witchCount: Int = 1, inviteToken: String = ""): Boolean {
+        if (!AppDistribution.roomsEnabled) {
+            _error.value = AppDistribution.ROOMS_UNAVAILABLE
+            return false
+        }
         restore()
         if (session != null) return false
         if (_busy.value) return false

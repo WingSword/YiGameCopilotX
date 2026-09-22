@@ -12,6 +12,8 @@ import zipfile
 root = Path(__file__).resolve().parents[1]
 parser = argparse.ArgumentParser(description=__doc__)
 parser.add_argument('--output-dir', type=Path, default=root / 'artifacts/internal-test-20260908')
+parser.add_argument('--channel', choices=('domestic',), default='domestic',
+                    help='AppGallery packages always disable rooms; use the device builder for full testing.')
 args = parser.parse_args()
 project = root.parent / 'YiGameCopilotX-Harmony'
 toolchain = project / '.release-tools/command-line-tools'
@@ -28,6 +30,7 @@ version = json.loads((project / 'AppScope/app.json5').read_text(encoding='utf-8'
 node = Path('C:/Program Files/Huawei/DevEco Studio/tools/node/node.exe')
 java = Path('C:/Program Files/Eclipse Adoptium/jdk-21.0.11.10-hotspot/bin/java.exe')
 env = os.environ.copy()
+env['YIGAME_DISTRIBUTION'] = args.channel
 env['DEVECO_SDK_HOME'] = str(toolchain / 'sdk')
 env['NODE_HOME'] = str(node.parent)
 env['JAVA_HOME'] = str(java.parent.parent)
@@ -35,7 +38,9 @@ with (out / 'harmony-release-build.log').open('w', encoding='utf-8') as log:
     subprocess.run([str(node), str(toolchain / 'hvigor/bin/hvigorw.js'), '--mode', 'project',
                     '-p', 'product=default', '-p', 'buildMode=release', 'clean', 'assembleApp', '--no-daemon'],
                    cwd=project, env=env, stdout=log, stderr=subprocess.STDOUT, check=True)
-app = out / f"YiGameCopilotX-Harmony-{version['versionName']}-{version['versionCode']}-appgallery-release.app"
+generated = (project / 'entry/build/default/generated/profile/default/BuildProfile.ets').read_text(encoding='utf-8')
+assert "DISTRIBUTION_CHANNEL = 'domestic'" in generated, 'Refusing to publish a full build to AppGallery'
+app = out / f"YiGameCopilotX-Harmony-{version['versionName']}-{version['versionCode']}-domestic-appgallery-release.app"
 shutil.copy2(project / 'build/outputs/default/YiGameCopilotX-Harmony-default-signed.app', app)
 with zipfile.ZipFile(app) as archive:
     assert archive.testzip() is None
@@ -67,7 +72,7 @@ profile = json.loads(profile) if isinstance(profile, str) else profile
 assert profile['type'] == 'release'
 assert profile['app-distribution-type'] == 'app_gallery'
 digest = hashlib.sha256(app.read_bytes()).hexdigest()
-result = {'bundleName': version['bundleName'], 'versionName': version['versionName'],
+result = {'distributionChannel': args.channel, 'roomsEnabled': False, 'bundleName': version['bundleName'], 'versionName': version['versionName'],
           'versionCode': version['versionCode'], 'appBytes': app.stat().st_size,
           'sdkVersion': metadata['version'], 'apiVersion': api, 'signatureVerified': True,
           'profileType': 'release/app_gallery', 'sha256': digest}

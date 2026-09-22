@@ -13,6 +13,7 @@ import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import org.walks.gamecopilot.MainViewmodel
+import org.walks.gamecopilot.distribution.AppDistribution
 import org.walks.gamecopilot.awalong.AwalongEntrance
 import org.walks.gamecopilot.awalong.AwalongGamePageOptimized
 import org.walks.gamecopilot.event.NavigationEvent
@@ -39,13 +40,25 @@ fun NavigationHost(viewmodel: MainViewmodel, navi: NavHostController) {
     val invitation by CloudInvitations.pending.collectAsState()
     val invitationError by CloudInvitations.error.collectAsState()
     LaunchedEffect(invitation, invitationError) {
-        if(invitation != null || invitationError.isNotEmpty()) navi.navigate(NaviRoute.MULTIPLAYER.route) { launchSingleTop = true }
+        if (AppDistribution.roomsEnabled && (invitation != null || invitationError.isNotEmpty())) {
+            navi.navigate(NaviRoute.MULTIPLAYER.route) { launchSingleTop = true }
+        }
     }
 
     NavHost(navi, startDestination = NaviRoute.HOME.route) {
 
         navEntries.forEach { naviEntry ->
             composable(naviEntry.route) {
+                // Keep destinations registered so restored back stacks can be safely redirected.
+                if (!naviEntry.available) {
+                    LaunchedEffect(Unit) {
+                        navi.navigate(NaviRoute.HOME.route) {
+                            popUpTo(NaviRoute.HOME.route) { inclusive = true }
+                            launchSingleTop = true
+                        }
+                    }
+                    return@composable
+                }
                 when (naviEntry) {
                     NaviRoute.HOME -> HomePage(viewmodel, navi)
                     NaviRoute.MULTIPLAYER -> MultiplayerPage(viewmodel, navi)
@@ -64,7 +77,7 @@ fun NavigationHost(viewmodel: MainViewmodel, navi: NavHostController) {
                     NaviRoute.MONOPOLY -> MonopolyMoneyPage(viewmodel, onCloud = { navi.navigate(NaviRoute.CLOUD_LEDGER.route) }) { navi.popBackStack() }
                     NaviRoute.CLOUD_LEDGER -> org.walks.gamecopilot.ui.page.multiplayer.LedgerCloudEntryPage(onBack = { navi.popBackStack() }) { navi.navigate(NaviRoute.ROOM.route) }
                     NaviRoute.DRAW_GUESS -> org.walks.gamecopilot.ui.page.home.DrawGuessEntrance(
-                        navi
+                        viewmodel, navi
                     )
 
                     NaviRoute.DRAW_BOARD -> DrawBoardPage(viewmodel) { navi.popBackStack() }
@@ -79,6 +92,7 @@ fun NavigationHost(viewmodel: MainViewmodel, navi: NavHostController) {
                         LANRoomDiscoveryPage(
                             onRoomSelected = { room -> selectedRoom = room },
                             onCreateRoom = { navi.navigate(NaviRoute.LAN_CREATE_ROOM.route) },
+                            onBack = { navi.popBackStack() },
                             viewModel = viewmodel
                         )
                         selectedRoom?.let { room ->
@@ -114,6 +128,7 @@ fun NavigationHost(viewmodel: MainViewmodel, navi: NavHostController) {
 
             when (event) {
                 is NavigationEvent.NavigateTo -> {
+                    if (NaviRoute.entries.any { it.route == event.route && !it.available }) return@collect
                     navi.navigate(event.route) {
                         event.popUpToRoute?.let { route ->
                             popUpTo(route) { inclusive = event.inclusive }

@@ -1,4 +1,26 @@
 {
+  "distribution-channels": {
+    "android": [
+      "composeApp/build.gradle.kts",
+      "gradle/libs.versions.toml",
+      "gradle.properties",
+      "composeApp/src/androidMain/AndroidManifest.xml",
+      "composeApp/src/domestic/AndroidManifest.xml",
+      "composeApp/src/commonMain/kotlin/org/walks/gamecopilot/distribution/*.kt",
+      "composeApp/src/androidMain/kotlin/org/walks/gamecopilot/distribution/*.kt",
+      "composeApp/src/nativeMain/kotlin/org/walks/gamecopilot/distribution/*.kt",
+      "scripts/build-harmony-*.py",
+      "scripts/*android-release.py",
+      ".github/workflows/release.yml"
+    ],
+    "harmony": [
+      "entry/hvigorfile.ts",
+      "entry/build-profile.json5",
+      "entry/src/main/ets/distribution/*.ets",
+      "entry/src/main/ets/store/GameStore.ets",
+      "entry/src/main/ets/store/LanStore.ets"
+    ]
+  },
   "random-tools": {
     "android": [
       "composeApp/src/commonMain/kotlin/org/walks/gamecopilot/ui/page/random/**/*.kt",
@@ -7,6 +29,7 @@
       "composeApp/src/commonMain/kotlin/org/walks/gamecopilot/MainViewmodel.kt",
       "composeApp/src/commonMain/kotlin/org/walks/gamecopilot/data/entity/AnswerBookState.kt",
       "composeApp/src/commonMain/kotlin/org/walks/gamecopilot/intent/AnswerBookIntent.kt",
+      "composeApp/src/commonMain/kotlin/org/walks/gamecopilot/theme/RandomToolDesign.kt",
       "composeApp/src/commonMain/composeResources/drawable/answer_book_cover_icon.xml",
       "cross-platform/random-tools.json"
     ],
@@ -14,6 +37,7 @@
       "entry/src/main/ets/pages/random/**/*.ets",
       "entry/src/main/ets/pages/RandomPage.ets",
       "entry/src/main/ets/store/RandomStore.ets",
+      "entry/src/main/ets/theme/RandomToolDesign.ets",
       "entry/src/main/ets/components/RandomToolIcon.ets"
     ]
   },
@@ -62,10 +86,15 @@
   },
   "drawing": {
     "android": [
-      "composeApp/src/commonMain/kotlin/org/walks/gamecopilot/ui/page/drawguess/**/*.kt"
+      "composeApp/src/commonMain/kotlin/org/walks/gamecopilot/ui/page/drawguess/**/*.kt",
+      "composeApp/src/commonMain/kotlin/org/walks/gamecopilot/ui/page/home/DrawGuessEntrance.kt",
+      "composeApp/src/commonMain/kotlin/org/walks/gamecopilot/data/DrawGuessWordLibrary.kt"
     ],
     "harmony": [
-      "entry/src/main/ets/pages/drawguess/**/*.ets"
+      "entry/src/main/ets/pages/drawguess/**/*.ets",
+      "entry/src/main/ets/store/DrawGuessStore.ets",
+      "entry/src/main/ets/data/DrawGuessWordLibrary.ets",
+      "entry/src/main/ets/model/entity/PathState.ets"
     ]
   },
   "hunttown": {
@@ -94,11 +123,19 @@
       "composeApp/src/commonMain/kotlin/org/walks/gamecopilot/App.kt",
       "composeApp/src/commonMain/kotlin/org/walks/gamecopilot/ui/components/**/*.kt",
       "composeApp/src/commonMain/kotlin/org/walks/gamecopilot/navigation/**/*.kt",
-      "composeApp/src/commonMain/kotlin/org/walks/gamecopilot/ui/page/home/**/*.kt"
+      "composeApp/src/commonMain/kotlin/org/walks/gamecopilot/ui/page/home/**/*.kt",
+      "composeApp/src/commonMain/kotlin/org/walks/gamecopilot/data/entity/OperationMode.kt",
+      "composeApp/src/commonMain/kotlin/org/walks/gamecopilot/theme/DesignSystem.kt",
+      "composeApp/src/commonMain/kotlin/org/walks/gamecopilot/theme/Theme.kt",
+      "composeApp/src/commonMain/kotlin/org/walks/gamecopilot/theme/PlatformSystemBars.kt",
+      "composeApp/src/androidMain/kotlin/org/walks/gamecopilot/theme/PlatformSystemBars.android.kt",
+      "composeApp/src/nativeMain/kotlin/org/walks/gamecopilot/theme/PlatformSystemBars.native.kt"
     ],
     "harmony": [
       "entry/src/main/ets/components/**/*.ets",
       "entry/src/main/ets/model/enums/OperationMode.ets",
+      "entry/src/main/ets/theme/DesignSystem.ets",
+      "entry/src/main/ets/theme/ThemeColors.ets",
       "entry/src/main/ets/pages/HomePage.ets",
       "entry/src/main/ets/pages/Index.ets"
     ]

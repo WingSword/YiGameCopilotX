@@ -73,6 +73,46 @@ class SignerOutputTests(unittest.TestCase):
         self.assertNotIn('synthetic-secret-diagnostic', str(raised.exception))
 
 
+class DistributionManifestTests(unittest.TestCase):
+    @staticmethod
+    def manifest(channel):
+        return f"package: name='{release.application_id(channel)}'\ntargetSdkVersion:'36'"
+
+    @staticmethod
+    def tree(channel):
+        return ('E: meta-data (line=2)\n'
+                '  A: android:name(0x01010003)="org.walks.gamecopilot.DISTRIBUTION_CHANNEL"\n'
+                f'  A: android:value(0x01010024)="{channel}"\n'
+                'E: activity (line=3)\n')
+
+    def test_all_channels(self):
+        for channel in release.CHANNELS:
+            release.verify_manifest(self.manifest(channel), self.tree(channel), channel)
+
+    def test_google_play_rejects_old_or_missing_target_sdk(self):
+        for target in ("targetSdkVersion:'35'", ""):
+            with self.assertRaises(ValueError):
+                release.verify_manifest(self.manifest('googlePlay').replace("targetSdkVersion:'36'", target),
+                                        self.tree('googlePlay'), 'googlePlay')
+
+    def test_cross_channel_packages_and_debug_are_rejected(self):
+        for badging, tree in [
+            (self.manifest('direct'), self.tree('domestic')),
+            (self.manifest('domestic'), self.tree('direct')),
+            (self.manifest('domestic') + '\napplication-debuggable', self.tree('domestic')),
+            (self.manifest('domestic'), ''),
+        ]:
+            with self.assertRaises(ValueError): release.verify_manifest(badging, tree, 'domestic')
+
+    def test_store_update_and_domestic_lan_permissions_are_rejected(self):
+        for channel, permissions in [('domestic', ['ACCESS_WIFI_STATE', 'CHANGE_WIFI_MULTICAST_STATE', 'REQUEST_INSTALL_PACKAGES']),
+                                     ('googlePlay', ['REQUEST_INSTALL_PACKAGES']), ('fdroid', ['REQUEST_INSTALL_PACKAGES'])]:
+            for permission in permissions:
+                with self.assertRaises(ValueError):
+                    release.verify_manifest(self.manifest(channel) + '\nuses-permission: android.permission.' + permission,
+                                            self.tree(channel), channel)
+
+
 class RealApkTests(unittest.TestCase):
     def test_old_and_new_sdk_agree_and_tampered_apk_fails(self):
         if REAL is None:

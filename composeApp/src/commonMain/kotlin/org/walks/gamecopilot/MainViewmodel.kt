@@ -1,5 +1,7 @@
 package org.walks.gamecopilot
 
+import org.walks.gamecopilot.distribution.AppDistribution
+
 import org.walks.gamecopilot.theme.RandomToolRules
 
 import androidx.lifecycle.ViewModel
@@ -296,6 +298,7 @@ class MainViewmodel : ViewModel() {
      * @param intent 房间意图（创建、加入、离开、开始游戏等）
      */
     fun handleRoomIntent(intent: GameRoomIntent) {
+        if (!AppDistribution.roomsEnabled) return
         when (intent) {
             is GameRoomIntent.RefreshRoomInfo -> {
             }
@@ -494,7 +497,7 @@ class MainViewmodel : ViewModel() {
     fun handleGameIntent(intent: GameIntent) {
         when (intent) {
             is GameIntent.SwitchOperationMode -> {
-                _operationMode.value = intent.mode
+                _operationMode.value = if (AppDistribution.roomsEnabled) intent.mode else 0
             }
             is GameIntent.SwitchGameMode -> {
                 _startedGameMode.value = intent.mode
@@ -1055,6 +1058,7 @@ class MainViewmodel : ViewModel() {
 
     // 连接管理
     fun connectToServer() {
+        if (!AppDistribution.roomsEnabled) return
         viewModelScope.launch {
             try {
                 roomModule.connect()
@@ -1447,6 +1451,7 @@ class MainViewmodel : ViewModel() {
     }
 
     private fun initLANObservers() {
+        if (!AppDistribution.roomsEnabled) return
         lanRoomManager.discoveredRooms
             .onEach { rooms ->
                 _lanState.update { it.copy(discoveredRooms = rooms) }
@@ -1673,6 +1678,7 @@ class MainViewmodel : ViewModel() {
     }
 
     fun handleLANIntent(intent: LANIntent) {
+        if (!AppDistribution.roomsEnabled) return
         when (intent) {
             is LANIntent.SetPreferredGameType -> {
                 _lanState.update { it.copy(preferredGameType = intent.gameType) }
@@ -1786,7 +1792,7 @@ class MainViewmodel : ViewModel() {
 
     override fun onCleared() {
         super.onCleared()
-        lanRoomManager.dispose()
+        if (AppDistribution.roomsEnabled) lanRoomManager.dispose()
     }
 }
 

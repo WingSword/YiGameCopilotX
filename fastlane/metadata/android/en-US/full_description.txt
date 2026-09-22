@@ -1,0 +1,11 @@
+YiGame is a tabletop companion for friends playing together. The interface is currently in Chinese.
+
+• Pass one phone around to view private roles and follow supported party game rounds, votes and results.
+• Create or join online rooms for supported games and shared virtual ledgers. Room invitations can be shown as QR codes; browser play requires a deployed web client. The host still participates when using the management view, and members see a notice when this view is active.
+• Use wheels, draws, random numbers, coin flips, dice and the answer book. Customize options for your gathering.
+• Track virtual points and game money, review transactions, make batch adjustments and undo entries. This is not a payment service and does not accept deposits or withdrawals of real money.
+• View local game statistics and choose your display theme.
+
+Local play and tools do not require an account. The one-phone witch-hunt flow needs a separate, non-playing moderator. Online rooms require a working room server. Optional DeepSeek hints require your own API key and send the requested game context to that service; local preset hints work without it.
+
+The Google Play and F-Droid editions include room features and use their respective stores for updates. They do not offer APK installation or an in-app self-updater. This companion is not affiliated with the publishers of the referenced tabletop games.

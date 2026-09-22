@@ -1,6 +1,5 @@
 package org.walks.gamecopilot.ui.page.multiplayer
 
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -10,90 +9,87 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.rounded.Login
 import androidx.compose.material.icons.rounded.Add
-import androidx.compose.material.icons.rounded.Cloud
-import androidx.compose.material.icons.rounded.Groups
 import androidx.compose.material.icons.rounded.Search
 import androidx.compose.material.icons.rounded.WifiTethering
 import androidx.compose.material3.Button
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
-import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavHostController
 import org.walks.gamecopilot.MainViewmodel
 import org.walks.gamecopilot.getPlatform
-import org.walks.gamecopilot.intent.GameRoomIntent
 import org.walks.gamecopilot.navigation.NaviRoute
+import org.walks.gamecopilot.online.CloudInvitations
 import org.walks.gamecopilot.theme.LocalAppDesign
 import org.walks.gamecopilot.ui.components.AppCard
+import org.walks.gamecopilot.ui.components.AppScreen
 import org.walks.gamecopilot.ui.components.AppSegmentedControl
 
 @Composable
 fun MultiplayerPage(viewmodel: MainViewmodel, navi: NavHostController) {
     val design = LocalAppDesign.current
     val isWeb = remember { getPlatform().name.startsWith("Web") }
-    var selectedTab by remember { mutableIntStateOf(if (isWeb || viewmodel.operationMode.value == 2) 1 else 0) }
+    var selectedTab by rememberSaveable { mutableIntStateOf(1) }
+    val invitation by CloudInvitations.pending.collectAsState()
+    val invitationError by CloudInvitations.error.collectAsState()
+    LaunchedEffect(invitation, invitationError) {
+        if (invitation != null || invitationError.isNotEmpty()) selectedTab = 1
+    }
 
     Box(Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background), contentAlignment = Alignment.TopCenter) {
-    Column(
-        modifier = Modifier.widthIn(max = 680.dp)
-            .fillMaxSize()
-            .verticalScroll(rememberScrollState())
-            .padding(horizontal = design.spacing.xl, vertical = design.spacing.lg).padding(bottom = 100.dp),
-        verticalArrangement = Arrangement.spacedBy(design.spacing.lg)
-    ) {
-        Text(
-            text = "联机大厅",
-            style = MaterialTheme.typography.headlineMedium,
-            color = MaterialTheme.colorScheme.onBackground,
-            fontWeight = FontWeight.SemiBold
-        )
-
-        Text(if(isWeb) "输入房间号和密钥，即可与手机端一起游玩。请在同一浏览器中返回房间。" else "同一 WiFi 可使用局域网，也可通过网络房间一起游玩。", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-
-        if(!isWeb) AppSegmentedControl(
-            options = listOf("局域网", "网络房间"),
-            selectedIndex = selectedTab,
-            onSelected = { selectedTab = it }
-        )
-
-        if (selectedTab == 0) {
-            LanPanel(navi)
-        } else {
-            CloudRoomEntry(initialGameType = when (viewmodel.startedGameMode.value) {
-                org.walks.gamecopilot.data.entity.GameMode.ONE_NIGHT_WEREWOLF.ordinal -> "werewolf"
-                org.walks.gamecopilot.data.entity.GameMode.HUNT_TOWN.ordinal -> "hunt"
-                org.walks.gamecopilot.data.entity.GameMode.SPY_AWALONG.ordinal -> "avalon"
-                org.walks.gamecopilot.data.entity.GameMode.DRAW_GUESS.ordinal -> "drawing"
-                else -> "spy"
-            }) { navi.navigate(NaviRoute.ROOM.route) }
+        AppScreen(
+            title = "联机大厅",
+            subtitle = if (isWeb) "与手机端一起游玩，请使用同一浏览器返回房间。" else "创建或加入房间，与朋友一起游玩。",
+            modifier = Modifier.widthIn(max = 680.dp),
+            onBack = {
+                if (!navi.popBackStack()) navi.navigate(NaviRoute.HOME.route) { launchSingleTop = true }
+            }
+        ) {
+            if (!isWeb) AppSegmentedControl(
+                options = listOf("局域网", "网络房间"),
+                selectedIndex = selectedTab,
+                onSelected = { selectedTab = it }
+            )
+            Column(
+                modifier = Modifier.fillMaxWidth().weight(1f).verticalScroll(rememberScrollState())
+                    .padding(bottom = design.spacing.lg),
+                verticalArrangement = Arrangement.spacedBy(design.spacing.lg)
+            ) {
+                if (selectedTab == 0) {
+                    LanPanel(navi)
+                } else {
+                    CloudRoomEntry(initialGameType = when (viewmodel.startedGameMode.value) {
+                        org.walks.gamecopilot.data.entity.GameMode.ONE_NIGHT_WEREWOLF.ordinal -> "werewolf"
+                        org.walks.gamecopilot.data.entity.GameMode.HUNT_TOWN.ordinal -> "hunt"
+                        org.walks.gamecopilot.data.entity.GameMode.SPY_AWALONG.ordinal -> "avalon"
+                        org.walks.gamecopilot.data.entity.GameMode.DRAW_GUESS.ordinal -> "drawing"
+                        else -> "spy"
+                    }) { navi.navigate(NaviRoute.ROOM.route) { launchSingleTop = true } }
+                }
+            }
         }
-
     }
-}
-
 }
 
 @Composable

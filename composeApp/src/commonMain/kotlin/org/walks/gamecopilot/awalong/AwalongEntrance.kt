@@ -85,7 +85,7 @@ fun GameRulesDialog(onDismiss: () -> Unit) {
                 RuleSection(
                     title = "游戏目标", content = """
                     蓝方(好人)：完成3次任务成功且梅林未被刺杀
-                    红方(坏人)：完成2次任务失败或成功刺杀梅林
+                    红方(坏人)：完成3次任务失败或成功刺杀梅林
                 """.trimIndent()
                 )
 
@@ -112,9 +112,10 @@ fun GameRulesDialog(onDismiss: () -> Unit) {
 
                 RuleSection(
                     title = "任务失败条件", content = """
-                    • 5-6人场：1张失败卡即任务失败
-                    • 7-9人场：部分任务需要2张失败卡才失败
-                    • 10人场：第4轮需要2张失败卡才失败
+                    当前同机玩法：
+                    • 5-6人场：每轮任务1张失败卡即失败
+                    • 7人场：第4轮需要2张失败卡，其余1张
+                    • 8-10人场：第4、5轮需要2张失败卡，其余1张
                 """.trimIndent()
                 )
             }

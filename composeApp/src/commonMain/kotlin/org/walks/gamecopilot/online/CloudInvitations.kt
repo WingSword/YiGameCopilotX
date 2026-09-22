@@ -6,6 +6,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
 import org.walks.gamecopilot.mmkv.MMKVUtils
+import org.walks.gamecopilot.distribution.AppDistribution
 
 @Serializable data class CloudJoinInvitation(val server: String, val roomId: String, val token: String)
 
@@ -19,10 +20,12 @@ object CloudInvitations {
     var webAddress = ""
         private set
     fun configureWeb(address: String) {
+        if (!AppDistribution.roomsEnabled) return
         webAddress = address
         _pending.value = runCatching { Json.decodeFromString<CloudJoinInvitation>(MMKVUtils.getString(KEY, "")) }.getOrNull()
     }
     fun receive(fragment: String) {
+        if (!AppDistribution.roomsEnabled) return
         if(fragment.isBlank()) return
         _error.value = ""
         try {

@@ -19,7 +19,7 @@ Android 与相邻 Harmony 工程的同步流程、共享工具定义和检查入
 
 - JDK 17+（建议 17 或 21）
 - Android Studio（支持 AGP 9）
-- Android SDK（compileSdk / targetSdk 35）
+- Android SDK 36（Google Play targetSdk 36，其他渠道暂为 35）
 
 ## 快速开始（优先 Web）
 
@@ -29,7 +29,7 @@ Android 与相邻 Harmony 工程的同步流程、共享工具定义和检查入
    `./gradlew :composeApp:wasmJsBrowserDevelopmentRun`
 
 2. 构建 Android Debug 包  
-   `./gradlew :composeApp:assembleDebug`
+   `./gradlew :composeApp:assembleDirectDebug`
 
 3. 检查任务列表  
    `./gradlew tasks`
@@ -53,9 +53,13 @@ Android 与相邻 Harmony 工程的同步流程、共享工具定义和检查入
 
 ## GitHub 签名构建
 
-在仓库 Actions 中选择 **Build & Release APK**，使用 **Run workflow** 并选择需要打包的分支。该手动流程生成 Android 签名 Release APK，产物位于构建记录的 `apk` 附件；只有推送 `v*` 标签才会创建 GitHub Release。
+在仓库 Actions 中选择 **Build & Release Android Channels**，使用 **Run workflow** 并选择需要打包的分支。该手动流程生成四个渠道的签名 Release APK，以及 Google Play AAB；只有推送 `v*` 标签才会创建 GitHub Release。渠道功能及包名见 [发行渠道](docs/DISTRIBUTION_CHANNELS.md)。
 
 仓库需配置 `KEYSTORE_BASE64`、`KEYSTORE_PASSWORD`、`KEY_ALIAS`、`KEY_PASSWORD` 四个 Actions secrets。签名材料由构建环境临时使用，不提交到源码。当前流程仅打包 Android；Harmony 仍使用相邻 ArkUI 工程及本机签名构建，后续统一主线步骤见 [KMP / Harmony 方案](docs/KMP_HARMONY_MAINLINE.md)。
+
+## 许可证
+
+本项目原创代码采用 [Apache License 2.0](LICENSE)。第三方代码、字体及资源保留各自的许可证；本许可证不授予第三方游戏名称、商标或素材的权利。随附的第三方许可证应与对应文件一同保留。
 
 ## 参考文档
 
