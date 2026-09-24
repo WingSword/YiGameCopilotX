@@ -1,53 +1,67 @@
-# F-Droid submission preparation
+# F-Droid inclusion submission
 
-This is preparation for the official F-Droid repository, not a private repository
-and not evidence of acceptance. The `fdroid` APK includes room features; only the
-external APK update shortcut is disabled. The UI is currently Chinese.
+[MR !49945: New app: YiGame Tabletop Companion](https://gitlab.com/fdroid/fdroiddata/-/merge_requests/49945)
+was submitted on 2026-09-24 and is open, pending official build, scanner and
+maintainer review. This is not evidence of acceptance or availability in F-Droid.
 
-The owner selected Apache-2.0 on 2026-09-22. The root `LICENSE` covers original
-project code. Third-party notices, including the Noto Sans SC OFL in Compose
-resources and the server QR encoder MIT license, remain in place. Source/assets
-must still pass F-Droid's scanner and license review.
+The `fdroid` distribution includes optional network rooms and user-configured AI;
+its external APK update shortcut is disabled. The UI is currently Chinese.
+The owner authorized official inclusion and selected Apache-2.0. The root
+`LICENSE` covers original project code; third-party notices, including the Noto
+Sans SC OFL and server QR encoder MIT license, remain in place.
 
-Upstream descriptions and changelogs live under `fastlane/metadata/android/`.
-`org.walks.gamecopilot.yml` is candidate packaging metadata, **not submitted**.
-It explicitly discloses the optional third-party DeepSeek API. A local signed
-APK is only a test artifact; F-Droid builds from public source.
+## Source and metadata
 
-The candidate is pinned to public commit
-`43147662bd8a320fea0df7c7fb12f5b33d9436ee` on
-[`codex/store-publication-20260922`](https://github.com/WingSword/YiGameCopilotX/tree/codex/store-publication-20260922).
-[GitHub Actions run 35742097588](https://github.com/WingSword/YiGameCopilotX/actions/runs/35742097588)
-built and verified all four signed APK channels plus the Play bundle on Ubuntu,
-using JDK 17 and official repositories. This is upstream CI evidence, not an
-official unsigned F-Droid build or scanner result.
+- Application ID: `org.walks.gamecopilot`.
+- Latest version: 1.6, version code 10, tagged `v1.6`.
+- Pinned source: `e5129ab22ed6dc2c7baf7d5fd69225c3557ae4bd` in
+  [WingSword/YiGameCopilotX](https://github.com/WingSword/YiGameCopilotX).
+- Recipe: `org.walks.gamecopilot.yml`; copied to
+  `metadata/org.walks.gamecopilot.yml` in the public fdroiddata fork.
+- Fork branch: `ZephyrSword/fdroiddata:codex/org.walks.gamecopilot`, commit
+  `f8c86651494083ec70f4a1f702071586476856ef`. The MR adds only that metadata file.
+- Build uses `composeApp`, the `fdroid` Gradle flavor and official repositories.
+  Version-tag auto-updates are enabled.
+- English and Chinese Fastlane descriptions, images and changelogs are in
+  `fastlane/metadata/android/`. Optional DeepSeek is disclosed as `NonFreeNet`.
 
-Before opening the inclusion merge request:
+## Validation and next action
 
-1. Finish the privacy policy and production endpoint review. Do not claim that
-   the current default HTTP endpoint encrypts transport.
-2. Assign the final release version/code/changelog and publish a new tag. Existing
-   `v1.5` points to older code. Update the pinned metadata after the final source
-   passes validation; do not move the existing tag.
-3. Test an unsigned `:composeApp:assembleFdroidRelease` with JDK 17+, SDK 36,
-   the pinned Gradle wrapper and official Maven repositories, without local
-   signing files, local Maven artifacts or the developer's Gradle init scripts.
-4. In an fdroiddata checkout, save the candidate as
-   `metadata/org.walks.gamecopilot.yml`, run `fdroid lint`, `fdroid rewritemeta`
-   and the official build/scan checks, then fix every reported issue.
-5. Submit the tested metadata from an authenticated GitLab account. Retain the
-   merge-request URL and record the review outcome. Configure tag updates only
-   once the release/tag pattern has been verified.
+`fdroid rewritemeta` and `fdroid lint` pass with fdroidserver 2.4.5 on Ubuntu WSL.
+Environment warnings concern missing Linux apksigner and mounted public config
+permissions. The APK signatures and alignment were separately checked with
+Android SDK tools.
 
-The current GitLab account has completed login but remains on the mandatory
-welcome form. Country/region is required and the observed option list lacks
-China. Account setup must use truthful information; no inclusion merge request
-has been created. Do not treat this as a missing password or repeat login requests.
+[Upstream CI 35953950348](https://github.com/WingSword/YiGameCopilotX/actions/runs/35953950348)
+built all four signed APK distributions plus the Play bundle using JDK 17 and
+official repositories. This supports the recipe but is not an official unsigned
+F-Droid build/scanner result.
 
-Do not set `Binaries` or `AllowedAPKSigningKeys` unless reproducibility against
-an upstream APK has actually been established. Otherwise F-Droid uses its own
-signing key, so users cannot install that build as an update over a differently
-signed Play/direct installation with the same application ID.
+GitLab registration verification is complete. However, both the initial fork
+pipeline and [MR pipeline 2877473132](https://gitlab.com/ZephyrSword/fdroiddata/-/pipelines/2877473132)
+stopped with zero jobs at a separate CI identity gate. The MR explicitly asks a
+maintainer to trigger FOSS CI, following the official inclusion template. Do not
+repeat account registration, pay for CI, or report a build failure as a metadata
+error without a job report. Address the official build/scanner findings when
+that pipeline can run.
+
+## Reproducibility and distribution limits
+
+Bit-for-bit reproducibility against an upstream **fdroid-flavor** APK has not
+been established. The current public GitHub APK is the **direct** flavor and is
+not a matching binary. Do not set `Binaries` or `AllowedAPKSigningKeys` without
+actual reproducibility evidence. Otherwise F-Droid signs its build with its own
+key, and it cannot update a differently signed Play/direct installation with
+the same application ID.
+
+ABI splitting was evaluated: the 27,592,675-byte test APK contains only 37,392
+compressed bytes of native libraries across all four ABIs (about 0.14%), so the
+size saving would be negligible.
+
+The optional default room server currently uses HTTP. Do not claim encrypted
+transport or apply the domestic offline privacy policy to this distribution.
+Production endpoint and full-channel privacy review remain separate open work.
 
 References: [inclusion policy](https://f-droid.org/docs/Inclusion_Policy/),
-[submission guide](https://f-droid.org/docs/Submitting_to_F-Droid_Quick_Start_Guide/).
+[submission guide](https://f-droid.org/docs/Submitting_to_F-Droid_Quick_Start_Guide/),
+[reproducible builds](https://f-droid.org/docs/Reproducible_Builds/).
