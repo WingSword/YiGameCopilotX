@@ -1,5 +1,7 @@
 package org.walks.gamecopilot.service.ai
 
+import org.walks.gamecopilot.distribution.AppDistribution
+
 /**
  * AI 服务工厂
  * 根据配置创建对应的 AI 服务实例
@@ -13,6 +15,7 @@ object AiServiceFactory {
      * @return 对应的 AI 服务实现
      */
     fun create(config: AiConfig): AiService {
+        if (!AppDistribution.onlineAiEnabled) return FallbackAiService()
         return when (config.provider) {
             AiProvider.DEEP_SEEK -> {
                 if (config.apiKey.isNotBlank() && config.isEnabled) {

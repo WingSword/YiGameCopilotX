@@ -13,6 +13,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -32,6 +33,7 @@ import androidx.compose.material.icons.rounded.SettingsBrightness
 import androidx.compose.material.icons.rounded.Visibility
 import androidx.compose.material.icons.rounded.VisibilityOff
 import androidx.compose.material3.Card
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.CardColors
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -63,6 +65,7 @@ import androidx.compose.ui.unit.sp
 import org.walks.gamecopilot.MainViewmodel
 import org.walks.gamecopilot.PlatformHelper
 import org.walks.gamecopilot.distribution.AppDistribution
+import org.walks.gamecopilot.privacy.DomesticPrivacyPolicy
 import org.walks.gamecopilot.getPlatform
 import androidx.compose.ui.platform.LocalUriHandler
 import org.walks.gamecopilot.intent.AiIntent
@@ -86,6 +89,20 @@ fun SettingPage(viewmodel: MainViewmodel, onOpenMonopolyLedger: () -> Unit = {},
     val currentTheme by viewmodel.themeMode.collectAsState()
     val aiConfig by viewmodel.aiConfig.collectAsState()
     var aiExpanded by remember { mutableStateOf(false) }
+    var showPrivacy by remember { mutableStateOf(false) }
+    if (showPrivacy) {
+        AlertDialog(
+            onDismissRequest = { showPrivacy = false },
+            title = { Text("隐私政策") },
+            text = {
+                androidx.compose.foundation.text.selection.SelectionContainer {
+                    Text(DomesticPrivacyPolicy.BODY,
+                        modifier = Modifier.heightIn(max = 480.dp).verticalScroll(rememberScrollState()))
+                }
+            },
+            confirmButton = { TextButton(onClick = { showPrivacy = false }) { Text("关闭") } }
+        )
+    }
     Box(Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background), contentAlignment = Alignment.TopCenter) {
     Column(Modifier.widthIn(max = 680.dp).fillMaxSize()
         .verticalScroll(rememberScrollState()).padding(horizontal = 20.dp).padding(top = 24.dp, bottom = 110.dp),
@@ -148,7 +165,7 @@ fun SettingPage(viewmodel: MainViewmodel, onOpenMonopolyLedger: () -> Unit = {},
                             tint = MaterialTheme.colorScheme.primary
                         )
                         Spacer(modifier = Modifier.width(8.dp))
-                        Text("启用 AI 助手", color = MaterialTheme.colorScheme.onSurface)
+                        Text("启用对局提示", color = MaterialTheme.colorScheme.onSurface)
                     }
                     Switch(
                         checked = aiConfig.isEnabled,
@@ -169,20 +186,22 @@ fun SettingPage(viewmodel: MainViewmodel, onOpenMonopolyLedger: () -> Unit = {},
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier.padding(bottom = 6.dp)
                 )
-                AppSegmentedControl(
-                    options = AiProvider.entries.map { it.displayName },
-                    selectedIndex = AiProvider.entries.indexOf(aiConfig.provider),
-                    onSelected = { index ->
-                        viewmodel.handleAiIntent(
-                            AiIntent.UpdateProvider(AiProvider.entries[index])
-                        )
-                    }
-                )
+                if (AppDistribution.onlineAiEnabled) {
+                    AppSegmentedControl(
+                        options = AiProvider.entries.map { it.displayName },
+                        selectedIndex = AiProvider.entries.indexOf(aiConfig.provider),
+                        onSelected = { index ->
+                            viewmodel.handleAiIntent(AiIntent.UpdateProvider(AiProvider.entries[index]))
+                        }
+                    )
+                } else {
+                    Text("本地预设 · 无需联网", color = MaterialTheme.colorScheme.onSurfaceVariant)
+                }
 
                 Spacer(modifier = Modifier.height(design.spacing.lg))
 
                 // API Key 输入框（仅 DeepSeek 显示）
-                if (aiConfig.provider == AiProvider.DEEP_SEEK) {
+                if (AppDistribution.onlineAiEnabled && aiConfig.provider == AiProvider.DEEP_SEEK) {
                     Text(
                         text = "API Key",
                         fontSize = 13.sp,
@@ -247,6 +266,7 @@ fun SettingPage(viewmodel: MainViewmodel, onOpenMonopolyLedger: () -> Unit = {},
                 if (aiConfig.isEnabled) {
                     Spacer(modifier = Modifier.height(design.spacing.md))
                     val statusText = when {
+                        !AppDistribution.onlineAiEnabled -> "当前使用本地预设模式"
                         aiConfig.provider == AiProvider.FALLBACK -> "当前使用本地预设模式"
                         aiConfig.apiKey.isBlank() -> "⚠️ API Key 未设置，将使用本地预设"
                         else -> "✅ AI 助手已就绪"
@@ -269,6 +289,9 @@ fun SettingPage(viewmodel: MainViewmodel, onOpenMonopolyLedger: () -> Unit = {},
                     Text("v${PlatformHelper.getInstance().getAppVersionName()}", color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
                 Text(AppDistribution.channel.label, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                if (!AppDistribution.onlineAiEnabled) {
+                    TextButton(onClick = { showPrivacy = true }) { Text("隐私政策") }
+                }
                 if (AppDistribution.externalUpdatesEnabled && getPlatform().name.startsWith("Android")) {
                     TextButton(onClick = { uriHandler.openUri("https://github.com/WingSword/YiGameCopilotX/releases/latest") }) {
                         Text("获取新版")

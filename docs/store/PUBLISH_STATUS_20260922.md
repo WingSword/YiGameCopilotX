@@ -1,5 +1,8 @@
 # Store publication status — 2026-09-22
 
+Historical snapshot. See [2026-09-24 status](PUBLISH_STATUS_20260924.md) for the
+offline 1.6 packages, completed GitLab verification and current publication work.
+
 **No store has accepted or published this version yet.** This document records
 completed preparation, not an approval or a claim of production readiness.
 

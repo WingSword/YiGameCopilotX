@@ -7,6 +7,7 @@
       "composeApp/src/androidMain/AndroidManifest.xml",
       "composeApp/src/domestic/AndroidManifest.xml",
       "composeApp/src/commonMain/kotlin/org/walks/gamecopilot/distribution/*.kt",
+      "composeApp/src/commonMain/kotlin/org/walks/gamecopilot/service/ai/*.kt",
       "composeApp/src/androidMain/kotlin/org/walks/gamecopilot/distribution/*.kt",
       "composeApp/src/nativeMain/kotlin/org/walks/gamecopilot/distribution/*.kt",
       "scripts/build-harmony-*.py",
@@ -15,10 +16,12 @@
     ],
     "harmony": [
       "entry/hvigorfile.ts",
+      "AppScope/app.json5",
       "entry/build-profile.json5",
       "entry/src/main/ets/distribution/*.ets",
       "entry/src/main/ets/store/GameStore.ets",
-      "entry/src/main/ets/store/LanStore.ets"
+      "entry/src/main/ets/store/LanStore.ets",
+      "entry/src/main/ets/store/AiStore.ets"
     ]
   },
   "random-tools": {
@@ -142,11 +145,15 @@
   },
   "settings-and-stats": {
     "android": [
+      "composeApp/src/commonMain/kotlin/org/walks/gamecopilot/privacy/*.kt",
+      "docs/store/vivo/privacy-domestic.txt",
+      "scripts/sync-domestic-privacy.py",
       "composeApp/src/commonMain/kotlin/org/walks/gamecopilot/data/GameStatsManager.kt",
       "composeApp/src/commonMain/kotlin/org/walks/gamecopilot/ui/page/setting/**/*.kt",
       "composeApp/src/commonMain/kotlin/org/walks/gamecopilot/ui/page/stats/**/*.kt"
     ],
     "harmony": [
+      "entry/src/main/ets/privacy/*.ets",
       "entry/src/main/ets/pages/SettingPage.ets",
       "entry/src/main/ets/pages/StatsPage.ets",
       "entry/src/main/ets/data/GameStatsManager.ets",

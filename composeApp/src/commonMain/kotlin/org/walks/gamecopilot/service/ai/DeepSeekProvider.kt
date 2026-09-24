@@ -14,6 +14,7 @@ import io.ktor.serialization.kotlinx.json.json
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
+import org.walks.gamecopilot.distribution.AppDistribution
 
 /**
  * DeepSeek AI 服务提供商
@@ -22,6 +23,10 @@ import kotlinx.serialization.json.Json
  * @param config AI 配置参数
  */
 class DeepSeekProvider(private val config: AiConfig) : AiService {
+
+    init {
+        check(AppDistribution.onlineAiEnabled) { "此发行版本仅使用本地提示" }
+    }
 
     private val json = Json {
         ignoreUnknownKeys = true

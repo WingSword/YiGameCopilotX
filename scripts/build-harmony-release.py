@@ -56,6 +56,8 @@ with zipfile.ZipFile(app) as archive:
                 assert manifest['app']['versionCode'] == version['versionCode']
                 assert manifest['app']['versionName'] == version['versionName']
                 assert not manifest['app'].get('debug', False)
+                permissions = {entry['name'] for entry in manifest['module'].get('requestPermissions', [])}
+                assert not permissions.intersection({'ohos.permission.INTERNET', 'ohos.permission.GET_NETWORK_INFO'}), 'Domestic package must remain offline'
 signer = sdk / 'openharmony/toolchains/lib/hap-sign-tool.jar'
 with (out / 'release-signature-check.log').open('w', encoding='utf-8') as log:
     subprocess.run([str(java), '-jar', str(signer), 'verify-app', '-inFile', str(app), '-inForm', 'zip',

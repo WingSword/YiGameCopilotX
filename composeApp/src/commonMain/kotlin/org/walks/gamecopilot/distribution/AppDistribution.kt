@@ -15,6 +15,7 @@ enum class DistributionChannel(val id: String, val label: String, val roomsEnabl
 object AppDistribution {
     val channel: DistributionChannel = platformDistributionChannel()
     val roomsEnabled: Boolean get() = channel.roomsEnabled
+    val onlineAiEnabled: Boolean get() = channel != DistributionChannel.DOMESTIC
     val externalUpdatesEnabled: Boolean get() = channel == DistributionChannel.DIRECT
     const val ROOMS_UNAVAILABLE = "此发行版本仅支持同机游玩"
 

@@ -28,7 +28,7 @@ def verify_manifest(manifest, tree, channel):
         raise ValueError('Packaged distribution metadata does not match the selected channel.')
     forbidden = ['REQUEST_INSTALL_PACKAGES'] if channel != 'direct' else []
     if channel == 'domestic':
-        forbidden += ['ACCESS_WIFI_STATE', 'CHANGE_WIFI_STATE', 'CHANGE_WIFI_MULTICAST_STATE']
+        forbidden += ['INTERNET', 'ACCESS_NETWORK_STATE', 'ACCESS_WIFI_STATE', 'CHANGE_WIFI_STATE', 'CHANGE_WIFI_MULTICAST_STATE']
     if any('android.permission.' + permission in manifest for permission in forbidden):
         raise ValueError('Unexpected update or LAN permission in the store package.')
     if channel == 'googlePlay':

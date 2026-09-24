@@ -1,0 +1,1 @@
+Improved light and dark system bars and store distribution support. Full editions retain online rooms and optional DeepSeek hints. The domestic edition uses offline hints and includes a local privacy policy.

@@ -105,7 +105,7 @@ class DistributionManifestTests(unittest.TestCase):
             with self.assertRaises(ValueError): release.verify_manifest(badging, tree, 'domestic')
 
     def test_store_update_and_domestic_lan_permissions_are_rejected(self):
-        for channel, permissions in [('domestic', ['ACCESS_WIFI_STATE', 'CHANGE_WIFI_MULTICAST_STATE', 'REQUEST_INSTALL_PACKAGES']),
+        for channel, permissions in [('domestic', ['INTERNET', 'ACCESS_NETWORK_STATE', 'ACCESS_WIFI_STATE', 'CHANGE_WIFI_MULTICAST_STATE', 'REQUEST_INSTALL_PACKAGES']),
                                      ('googlePlay', ['REQUEST_INSTALL_PACKAGES']), ('fdroid', ['REQUEST_INSTALL_PACKAGES'])]:
             for permission in permissions:
                 with self.assertRaises(ValueError):

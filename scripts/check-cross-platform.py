@@ -24,7 +24,7 @@ if not args.harmony.is_dir():
 if args.record_review and not args.note:
     parser.error('--record-review requires --note describing verification or intentional differences')
 
-for script in ['sync-harmony-design.py', 'sync-random-tools.py']:
+for script in ['sync-harmony-design.py', 'sync-random-tools.py', 'sync-domestic-privacy.py']:
     subprocess.run([sys.executable, str(ROOT/'scripts'/script), '--harmony', str(args.harmony)] + ([] if args.sync else ['--check']), check=True)
 environment = os.environ.copy()
 environment['HARMONY_PROJECT'] = str(args.harmony)
