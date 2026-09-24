@@ -96,9 +96,14 @@ supersedes the 2026-09-22 preparation snapshot.
 
 ## Google Play
 
-- API 36 signed AAB is ready locally. Console still shows an expired login
-  session; the owner has been asked to enter the developer console directly.
-- No bundle has been uploaded. Developer-account eligibility, full-channel
-  privacy/Data Safety, production HTTPS and release requirements remain open.
+- API 36 signed AAB is ready locally. Re-entering the official Play Console
+  restored the Google login, but the current account has no completed developer
+  registration. The personal-account requirements page states a USD 25 one-time
+  registration fee and identity, email and phone verification. The owner was
+  asked to choose between registering this account (performing payment and
+  verification personally) and switching to an existing developer account.
+- No account was purchased and no bundle has been uploaded. Developer-account
+  eligibility, full-channel privacy/Data Safety, production HTTPS and release
+  requirements remain open.
 - Do not reuse the domestic offline privacy policy for Play or F-Droid, or claim
   the default HTTP room endpoint provides encrypted transport.
