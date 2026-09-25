@@ -1651,7 +1651,8 @@ class MainViewmodel : ViewModel() {
                 baseUrl = baseUrl,
                 isEnabled = isEnabled,
                 aiStyle = aiStyle,
-                timeoutMs = timeoutMs
+                timeoutMs = timeoutMs,
+                onlineConsent = MMKVUtils.getBoolean(AiConfig.CONSENT_KEY, false)
             )
         } catch (e: Exception) {
             GameLogger.error("加载 AI 配置失败", e)
@@ -1671,6 +1672,7 @@ class MainViewmodel : ViewModel() {
                 put(MMKV_AI_ENABLED_KEY, config.isEnabled)
                 put(MMKV_AI_STYLE_KEY, config.aiStyle.name)
                 put(MMKV_AI_TIMEOUT_KEY, config.timeoutMs)
+                put(AiConfig.CONSENT_KEY, config.onlineConsent)
             }
         } catch (e: Exception) {
             GameLogger.error("保存 AI 配置失败", e)

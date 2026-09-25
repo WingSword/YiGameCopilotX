@@ -18,7 +18,8 @@ object AiServiceFactory {
         if (!AppDistribution.onlineAiEnabled) return FallbackAiService()
         return when (config.provider) {
             AiProvider.DEEP_SEEK -> {
-                if (config.apiKey.isNotBlank() && config.isEnabled) {
+                if (config.apiKey.isNotBlank() && config.isEnabled && config.onlineConsent &&
+                    config.baseUrl.trimEnd('/') == AiProvider.DEEP_SEEK.defaultBaseUrl) {
                     DeepSeekProvider(config)
                 } else {
                     // API Key 为空或未启用时降级为本地预设

@@ -65,7 +65,8 @@ import androidx.compose.ui.unit.sp
 import org.walks.gamecopilot.MainViewmodel
 import org.walks.gamecopilot.PlatformHelper
 import org.walks.gamecopilot.distribution.AppDistribution
-import org.walks.gamecopilot.privacy.DomesticPrivacyPolicy
+import org.walks.gamecopilot.privacy.FullPrivacyPolicy
+import org.walks.gamecopilot.privacy.PrivacyPolicyDialog
 import org.walks.gamecopilot.getPlatform
 import androidx.compose.ui.platform.LocalUriHandler
 import org.walks.gamecopilot.intent.AiIntent
@@ -90,17 +91,26 @@ fun SettingPage(viewmodel: MainViewmodel, onOpenMonopolyLedger: () -> Unit = {},
     val aiConfig by viewmodel.aiConfig.collectAsState()
     var aiExpanded by remember { mutableStateOf(false) }
     var showPrivacy by remember { mutableStateOf(false) }
-    if (showPrivacy) {
+    var showAiConsent by remember { mutableStateOf(false) }
+    if (showPrivacy) PrivacyPolicyDialog { showPrivacy = false }
+    if (showAiConsent) {
         AlertDialog(
-            onDismissRequest = { showPrivacy = false },
-            title = { Text("隐私政策") },
+            onDismissRequest = { showAiConsent = false },
+            title = { Text("启用 DeepSeek 提示") },
             text = {
-                androidx.compose.foundation.text.selection.SelectionContainer {
-                    Text(DomesticPrivacyPolicy.BODY,
-                        modifier = Modifier.heightIn(max = 480.dp).verticalScroll(rememberScrollState()))
+                Column(Modifier.heightIn(max = 440.dp).verticalScroll(rememberScrollState()),
+                    verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                    Text("请求提示时，会将游戏类型、所需对局内容（可能包含玩家代号、身份、词语及投票）和你的 API Key 通过 HTTPS 直接发送给 DeepSeek，用于生成建议。密钥保存在本机。")
+                    Text("DeepSeek 由杭州深度求索人工智能基础技术研究有限公司及其关联公司提供。你可以继续使用本地预设，或随时在这里撤回授权并清除密钥。")
+                    TextButton(onClick = { uriHandler.openUri(FullPrivacyPolicy.AI_POLICY_URL) }) { Text("DeepSeek 隐私政策") }
                 }
             },
-            confirmButton = { TextButton(onClick = { showPrivacy = false }) { Text("关闭") } }
+            confirmButton = { TextButton(onClick = {
+                viewmodel.handleAiIntent(AiIntent.UpdateConfig(aiConfig.copy(
+                    provider = AiProvider.DEEP_SEEK, baseUrl = AiProvider.DEEP_SEEK.defaultBaseUrl, onlineConsent = true)))
+                showAiConsent = false
+            }) { Text("同意并选择 DeepSeek") } },
+            dismissButton = { TextButton(onClick = { showAiConsent = false }) { Text("暂不启用") } }
         )
     }
     Box(Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background), contentAlignment = Alignment.TopCenter) {
@@ -191,7 +201,9 @@ fun SettingPage(viewmodel: MainViewmodel, onOpenMonopolyLedger: () -> Unit = {},
                         options = AiProvider.entries.map { it.displayName },
                         selectedIndex = AiProvider.entries.indexOf(aiConfig.provider),
                         onSelected = { index ->
-                            viewmodel.handleAiIntent(AiIntent.UpdateProvider(AiProvider.entries[index]))
+                            val provider = AiProvider.entries[index]
+                            if (provider == AiProvider.DEEP_SEEK && !aiConfig.onlineConsent) showAiConsent = true
+                            else viewmodel.handleAiIntent(AiIntent.UpdateProvider(provider))
                         }
                     )
                 } else {
@@ -202,6 +214,13 @@ fun SettingPage(viewmodel: MainViewmodel, onOpenMonopolyLedger: () -> Unit = {},
 
                 // API Key 输入框（仅 DeepSeek 显示）
                 if (AppDistribution.onlineAiEnabled && aiConfig.provider == AiProvider.DEEP_SEEK) {
+                    Text(if (aiConfig.onlineConsent) "请求提示时，对局内容会发送至 DeepSeek。" else "尚未确认联网说明，当前使用本地预设。",
+                        style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    TextButton(onClick = {
+                        if (!aiConfig.onlineConsent) showAiConsent = true
+                        else viewmodel.handleAiIntent(AiIntent.UpdateConfig(aiConfig.copy(
+                            provider = AiProvider.FALLBACK, apiKey = "", onlineConsent = false)))
+                    }) { Text(if (aiConfig.onlineConsent) "撤回授权并清除密钥" else "查看并确认联网说明") }
                     Text(
                         text = "API Key",
                         fontSize = 13.sp,
@@ -268,6 +287,7 @@ fun SettingPage(viewmodel: MainViewmodel, onOpenMonopolyLedger: () -> Unit = {},
                     val statusText = when {
                         !AppDistribution.onlineAiEnabled -> "当前使用本地预设模式"
                         aiConfig.provider == AiProvider.FALLBACK -> "当前使用本地预设模式"
+                        !aiConfig.onlineConsent -> "尚未确认联网说明，使用本地预设"
                         aiConfig.apiKey.isBlank() -> "⚠️ API Key 未设置，将使用本地预设"
                         else -> "✅ AI 助手已就绪"
                     }
@@ -289,9 +309,7 @@ fun SettingPage(viewmodel: MainViewmodel, onOpenMonopolyLedger: () -> Unit = {},
                     Text("v${PlatformHelper.getInstance().getAppVersionName()}", color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
                 Text(AppDistribution.channel.label, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                if (!AppDistribution.onlineAiEnabled) {
-                    TextButton(onClick = { showPrivacy = true }) { Text("隐私政策") }
-                }
+                TextButton(onClick = { showPrivacy = true }) { Text("隐私政策") }
                 if (AppDistribution.externalUpdatesEnabled && getPlatform().name.startsWith("Android")) {
                     TextButton(onClick = { uriHandler.openUri("https://github.com/WingSword/YiGameCopilotX/releases/latest") }) {
                         Text("获取新版")

@@ -17,5 +17,10 @@ data class AiConfig(
     val baseUrl: String = AiProvider.DEEP_SEEK.defaultBaseUrl,
     val isEnabled: Boolean = false,
     val aiStyle: AiStyle = AiStyle.HUMOROUS,
-    val timeoutMs: Long = 10000L
-)
+    val timeoutMs: Long = 10000L,
+    val onlineConsent: Boolean = false
+) {
+    companion object {
+        const val CONSENT_KEY = "ai_online_consent_v1"
+    }
+}

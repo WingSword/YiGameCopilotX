@@ -44,11 +44,14 @@ import org.walks.gamecopilot.online.CloudRoom
 import org.walks.gamecopilot.online.CloudInvitations
 import org.walks.gamecopilot.online.forHostView
 import org.walks.gamecopilot.online.LedgerScenes
+import org.walks.gamecopilot.privacy.PrivacyPolicyDialog
 
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
 fun CloudRoomEntry(initialGameType: String = "spy", onEntered: () -> Unit) {
     val design = LocalAppDesign.current
+    var showPrivacy by remember { mutableStateOf(false) }
+    if (showPrivacy) PrivacyPolicyDialog { showPrivacy = false }
     var server by rememberSaveable { mutableStateOf(Cloud.serverAddress) }
     var customServer by rememberSaveable { mutableStateOf(Cloud.serverAddress != Cloud.defaultServer) }
     var nickname by rememberSaveable { mutableStateOf(Cloud.nickname) }
@@ -85,6 +88,7 @@ fun CloudRoomEntry(initialGameType: String = "spy", onEntered: () -> Unit) {
                 TextButton(onClick = { CloudInvitations.clear() }) { Text("忽略这次邀请") }
             }
             AppPrimaryAction("返回已加入的房间", onClick = onEntered)
+            TextButton(onClick = { showPrivacy = true }) { Text("隐私政策") }
         }
         return
     }
@@ -171,6 +175,13 @@ fun CloudRoomEntry(initialGameType: String = "spy", onEntered: () -> Unit) {
         }
         if (!validConfig) Text(if(gameType == "ledger") "请输入有效的起始余额" else "卧底与白板合计需少于人数上限的一半，请增加人数上限或减少特殊身份。", color = MaterialTheme.colorScheme.error)
         if(error.isNotEmpty()) Text(error,color=MaterialTheme.colorScheme.error)
+        Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+            Text("加入后，昵称与本局操作会发送至所选服务器；公开信息对同房成员可见，私密身份按游戏阶段显示。",
+                style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            if (server.trim().startsWith("http://", ignoreCase = true)) Text("当前房间连接未加密，请使用玩家代号和专用房间密钥。",
+                style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            TextButton(onClick = { showPrivacy = true }) { Text("隐私政策与删除方式") }
+        }
         AppPrimaryAction(text = if(busy) "连接中…" else if(create) "创建房间" else "加入房间", onClick={scope.launch {
             if(Cloud.enter(server,nickname,code,key,create,when(gameType) { "werewolf" -> wolfCount; "hunt" -> huntCount; "avalon" -> avalonCount; "drawing" -> drawCount; "ledger" -> 20; else -> capacity },spies,blanks,gameType,
                 if(gameType == "werewolf") WerewolfPresets.getPresetForPlayerCount(wolfCount).roles.map { it.name } else emptyList(), ledgerPreset, initialBalance.toLongOrNull() ?: 0, witches, invitation?.token.orEmpty())) onEntered()

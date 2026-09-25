@@ -147,7 +147,9 @@
     "android": [
       "composeApp/src/commonMain/kotlin/org/walks/gamecopilot/privacy/*.kt",
       "docs/store/vivo/privacy-domestic.txt",
+      "docs/store/privacy-full.txt",
       "scripts/sync-domestic-privacy.py",
+      "scripts/sync-full-privacy.py",
       "composeApp/src/commonMain/kotlin/org/walks/gamecopilot/data/GameStatsManager.kt",
       "composeApp/src/commonMain/kotlin/org/walks/gamecopilot/ui/page/setting/**/*.kt",
       "composeApp/src/commonMain/kotlin/org/walks/gamecopilot/ui/page/stats/**/*.kt"

@@ -5,7 +5,7 @@
         "composeApp/src/commonMain/composeResources/drawable/answer_book_cover_icon.xml": "389029d79a593893b5fc7cc6be9d029179ad5bebd920120f5d839a7298dc5a8b",
         "composeApp/src/commonMain/kotlin/org/walks/gamecopilot/data/entity/AnswerBookState.kt": "40d4d71c4ea5f7d34973160764c8143f513e2b08ae338d91b91eb8d58c8ff70a",
         "composeApp/src/commonMain/kotlin/org/walks/gamecopilot/intent/AnswerBookIntent.kt": "5debecc9fdac267ee7f1e75043c84dd3ad6926966e87e5d930e75783393b7f2a",
-        "composeApp/src/commonMain/kotlin/org/walks/gamecopilot/MainViewmodel.kt": "14de363daea6bcf1d013d205108b386da333a0efa50440af2774ee985e1c8990",
+        "composeApp/src/commonMain/kotlin/org/walks/gamecopilot/MainViewmodel.kt": "dd02934835740ff178fab91b7144d691136a560eacdd520ab5b94b71ed449e81",
         "composeApp/src/commonMain/kotlin/org/walks/gamecopilot/theme/RandomToolDesign.kt": "0bc0056b1dadba996e4404bb75d01b3be2d040079f5088c201fd7c3e9ec31283",
         "composeApp/src/commonMain/kotlin/org/walks/gamecopilot/ui/animation/RollCoinAnimation.kt": "8a1bef9a5a1694944590497f1aa3d4fe9b62f5d3de928ab8ca4c38082c8a4ee7",
         "composeApp/src/commonMain/kotlin/org/walks/gamecopilot/ui/animation/RollDiceAnimation.kt": "c47930a6d0a7dbe46085163987fc8375dc4dc229a3c057103963b2bf92b48adc",
@@ -36,8 +36,8 @@
       }
     },
     "status": "reviewed",
-    "note": "2026-09-22 distribution isolation: four signed Android release APKs and Play AAB, domestic lint 0 errors, production Wasm build; Harmony domestic signed AppGallery and direct device builds; actual Kotlin/ArkTS disabled-session/invitation/route and zero-HTTP checks plus full local Java cloud/offline regression. Android emulator verifies domestic home, four spy identities, local ledger payment and retained full lobby. Harmony UI source paired and compiled; no new Harmony device visual QA. See docs/DISTRIBUTION_QA.md.",
-    "date": "2026-09-22T11:41:00.836859+00:00"
+    "note": "Full privacy copies synchronized across KMP and Harmony; Android/Web compilation and Harmony direct build passed. AI consent/destination/revocation gates tested on all Android channels and Harmony. MainViewmodel change only persists consent; gameplay unchanged. Android offline policy and consent UI checked; production TLS awaits server access.",
+    "date": "2026-09-25T08:05:02.312417+00:00"
   },
   "ledger": {
     "files": {
@@ -306,22 +306,27 @@
       "android": {
         "composeApp/src/commonMain/kotlin/org/walks/gamecopilot/data/GameStatsManager.kt": "be83ad3b8a67dcdb3732e3eb6b8b9dd7fd3146a7d448de794dd417d583048b20",
         "composeApp/src/commonMain/kotlin/org/walks/gamecopilot/privacy/DomesticPrivacyPolicy.kt": "4d2c6827fd466ce6ef74f2531c2c840c01d5b1b96befbb5623204241c6b6e8bd",
-        "composeApp/src/commonMain/kotlin/org/walks/gamecopilot/ui/page/setting/SettingPage.kt": "2f68043b8229ce0cbd15d552159f424c2d661ff0d6b7a6fa98db876c03bf45bc",
+        "composeApp/src/commonMain/kotlin/org/walks/gamecopilot/privacy/FullPrivacyPolicy.kt": "56984695f66b159efebf594a202f9a44a4b325175ae6a86ae2dfebe2e62a29eb",
+        "composeApp/src/commonMain/kotlin/org/walks/gamecopilot/privacy/PrivacyPolicyDialog.kt": "952efc8351a76fe116546aadd29893016ace879d1007816329d25cbff163d550",
+        "composeApp/src/commonMain/kotlin/org/walks/gamecopilot/ui/page/setting/SettingPage.kt": "21f16c09d2df1be2b491ad1c7c8dcb9f16f9e52a19de7d22b07594eb0616ee3b",
         "composeApp/src/commonMain/kotlin/org/walks/gamecopilot/ui/page/stats/StatsPage.kt": "7f9969d22444214cf26bc2cf95ade3d6b0a782116f9b769727e2db53a80d8ff6",
+        "docs/store/privacy-full.txt": "bd2b295bdee758426f8cb4d63a11e3de63c9c23443ea759e24e7ca6e97a1aef1",
         "docs/store/vivo/privacy-domestic.txt": "1d7c4fabb3eb487dfbc0763991336f39a27516ae7af08a2b089b45fc88dc1509",
-        "scripts/sync-domestic-privacy.py": "7c87f875b24fe082fd54a07d28c2baa4912bc776f8355b5c2f345e69dc99322b"
+        "scripts/sync-domestic-privacy.py": "7c87f875b24fe082fd54a07d28c2baa4912bc776f8355b5c2f345e69dc99322b",
+        "scripts/sync-full-privacy.py": "eea9cf79dc5f7112924657055da23fa81a37b0a6f9948f8b8fc2de5a9b59b8f9"
       },
       "harmony": {
         "entry/src/main/ets/data/GameStatsManager.ets": "d55f3f1b4f792476d90bc76a14a8832df34c848387c7705671885320127fb568",
-        "entry/src/main/ets/pages/SettingPage.ets": "acd23087f38fb57cf15b0362be50e2d076ce304db2e1584d51a52e3a3c7dbf45",
+        "entry/src/main/ets/pages/SettingPage.ets": "8b18761563c93b34896eafe29f1653d584a99eccbcc9bc59bb6c5ad9db75bdaa",
         "entry/src/main/ets/pages/StatsPage.ets": "36bfb2ba4ce0d777d05fdcf7ecdc7234d71a7adfa7e231b09d7facdd719897d0",
         "entry/src/main/ets/privacy/DomesticPrivacyPolicy.ets": "93d97b04c2e6ff7151aebf9163bc42fdc4278ad7b9eacc4df56682d8f8940cae",
+        "entry/src/main/ets/privacy/FullPrivacyPolicy.ets": "04ea42ecdacf195b6a7ec1d72c1b8beee1ad04d8d7242ad92bdf6debff1244e7",
         "entry/src/main/ets/store/StatsStore.ets": "cccedc2e7bd1d828b7f6b2b5d5d8bd77d2a06839086753bf7504eb412a5c277c"
       }
     },
     "status": "reviewed",
-    "note": "2026-09-24: domestic online AI disabled at factory/UI and package permissions on Android/Harmony; generated offline privacy policy matches both platforms. Signed domestic/F-Droid APKs, Play AAB, Wasm and Harmony release passed; domestic lint 0 errors. API 36 domestic smoke checks passed for local-only settings, policy open/read/close, home and answer-book interaction. No new Harmony device or full server end-to-end test.",
-    "date": "2026-09-24T04:00:24.720117+00:00"
+    "note": "Full policy generated from one text for KMP/Harmony/public HTML. Final Android and Wasm builds and Harmony direct build pass. Android offline policy, consent rejection, acceptance and revocation UI verified; consent dialog scrolls for small screens. Harmony gates tested; no new Harmony device visual QA. Friend will configure production HTTPS; host retention remains unverified.",
+    "date": "2026-09-25T08:08:45.716322+00:00"
   },
   "cloud-rooms": {
     "files": {
@@ -332,7 +337,7 @@
         "composeApp/src/commonMain/kotlin/org/walks/gamecopilot/ui/page/multiplayer/CloudInvitationDialog.kt": "09f5dd8c97cf9b30b6dccf4180ea6020f7fb42f91c5a76f964390b34bee5132f",
         "composeApp/src/commonMain/kotlin/org/walks/gamecopilot/ui/page/multiplayer/CloudLedgerPanel.kt": "35b81c6c345eb49f1fe5095b26f7ee33c8d9aeb76bbe9c9043a37a0e981a2892",
         "composeApp/src/commonMain/kotlin/org/walks/gamecopilot/ui/page/multiplayer/CloudRoomComponents.kt": "a97f0c9a812b5e60f74239450f00ec770de3e9e14e0c5f7973d7d296e26a3638",
-        "composeApp/src/commonMain/kotlin/org/walks/gamecopilot/ui/page/multiplayer/CloudRoomPage.kt": "b80f80c7e94e2c41b9b9e73773c9289f546da1f439b2520df9937071acaf4ad1",
+        "composeApp/src/commonMain/kotlin/org/walks/gamecopilot/ui/page/multiplayer/CloudRoomPage.kt": "097e385d120779f3caf96f88ed4753b1426b724df653fda7785f49a73259e896",
         "composeApp/src/commonMain/kotlin/org/walks/gamecopilot/ui/page/multiplayer/MultiplayerPage.kt": "f3eb118b41fa68f004174a41623c3c755de92a92245e9ef2cd78e801418af394",
         "server/src/main/java/io/nayuki/qrcodegen/BitBuffer.java": "d5496452b435423beead30aa356e10a7c0ba4790b7da37ee4a1b80b4df136447",
         "server/src/main/java/io/nayuki/qrcodegen/DataTooLongException.java": "7661186dde4b27334fd94f4950f58522eaab256274388152e5cb8e35ef463e1a",
@@ -363,15 +368,15 @@
         "entry/src/main/ets/pages/room/CloudDrawingPanel.ets": "a304228406e708eacd96aa66d3e950c4c05bd85d46d90f2cd3e607f9c630003c",
         "entry/src/main/ets/pages/room/CloudInvitationPanel.ets": "65888ebc68b039ea3f589081e1e25b02f065b75d818ae1a01a9ee91914f5e4a3",
         "entry/src/main/ets/pages/room/CloudLedgerPanel.ets": "5ca0d436c5d5b014877f88f3d819ad5c8d19c6dee22b5f33f00fd004a331952a",
-        "entry/src/main/ets/pages/room/CloudRoomEntry.ets": "ce5d57c23d65b416bc027d723b50b2a69d30a0abafd1ddff8c90d1cd0282ae67",
+        "entry/src/main/ets/pages/room/CloudRoomEntry.ets": "850a33adad2720970dee65630971c8804e4ae8b442468734669313f2805115be",
         "entry/src/main/ets/pages/room/LedgerCloudEntryPage.ets": "f490274f1f9f3fcf8a8c832ab53f7589e2290226dd8d5c663994cd59457ea582",
         "entry/src/main/ets/pages/room/RoomPage.ets": "151612201c7b2d813c109d960e4393d7daa92d30630cef81bfc7414cd5babcb4",
         "entry/src/main/ets/store/CloudRoomStore.ets": "1fead5252adb59824bc145499eeae38d292202da3818021e9b31cba53919f9e6"
       }
     },
     "status": "reviewed",
-    "note": "2026-09-22 distribution isolation: four signed Android release APKs and Play AAB, domestic lint 0 errors, production Wasm build; Harmony domestic signed AppGallery and direct device builds; actual Kotlin/ArkTS disabled-session/invitation/route and zero-HTTP checks plus full local Java cloud/offline regression. Android emulator verifies domestic home, four spy identities, local ledger payment and retained full lobby. Harmony UI source paired and compiled; no new Harmony device visual QA. See docs/DISTRIBUTION_QA.md.",
-    "date": "2026-09-22T11:41:02.349770+00:00"
+    "note": "Full privacy copies synchronized across KMP and Harmony; Android/Web compilation and Harmony direct build passed. AI consent/destination/revocation gates tested on all Android channels and Harmony. MainViewmodel change only persists consent; gameplay unchanged. Android offline policy and consent UI checked; production TLS awaits server access.",
+    "date": "2026-09-25T08:05:02.531969+00:00"
   },
   "web": {
     "files": {
@@ -410,11 +415,11 @@
         "composeApp/src/androidMain/kotlin/org/walks/gamecopilot/distribution/AppDistribution.android.kt": "122b43e10bcbd4e2fbb573a0675e9f7baac3cc8c6cdaba828ac8dca97ed2c5a1",
         "composeApp/src/commonMain/kotlin/org/walks/gamecopilot/distribution/AppDistribution.kt": "193fc8ece09fea2c61019909e06a74d56d8d2281f2f679824d080b015964cfe3",
         "composeApp/src/commonMain/kotlin/org/walks/gamecopilot/distribution/PlatformDistribution.kt": "a317dedddd189b0c4c4a01050272c393a35e02e9865cfb682e23d62431db7c4c",
-        "composeApp/src/commonMain/kotlin/org/walks/gamecopilot/service/ai/AiConfig.kt": "c37926c5c68f75c193d477622d3c5be0ea2cca6252af0e38ae9267b747715100",
+        "composeApp/src/commonMain/kotlin/org/walks/gamecopilot/service/ai/AiConfig.kt": "28d6f452aa15e49b3898aedb5e4cbc14ccd083f4b59684adc246cacac184f36b",
         "composeApp/src/commonMain/kotlin/org/walks/gamecopilot/service/ai/AiProvider.kt": "51c53f51347b63a1da617c0db5cc678df52b1c211d4021198b8994fd76b3b93d",
         "composeApp/src/commonMain/kotlin/org/walks/gamecopilot/service/ai/AiService.kt": "857cac5b2010380846924faa84fdfae39e94e6f65fbb52f6871a7e750fa4cf37",
-        "composeApp/src/commonMain/kotlin/org/walks/gamecopilot/service/ai/AiServiceFactory.kt": "f0e82401289701ae7dbaffbf51a79ff1e652b552b646bf9bd6604feba15ac97c",
-        "composeApp/src/commonMain/kotlin/org/walks/gamecopilot/service/ai/DeepSeekProvider.kt": "bd8ac8dfa45e6d8ee6bcde6e077bb943da7c63620fa9fc3a20ca2145d29d96af",
+        "composeApp/src/commonMain/kotlin/org/walks/gamecopilot/service/ai/AiServiceFactory.kt": "111575a2df39df7190f849e4f4ab131eee8571191c5cf7f27622d689fbeb7ab5",
+        "composeApp/src/commonMain/kotlin/org/walks/gamecopilot/service/ai/DeepSeekProvider.kt": "ccfba32135dcecbb4e67bbb8361900200a8d1171c52cbf3a46af5eebdef0508a",
         "composeApp/src/commonMain/kotlin/org/walks/gamecopilot/service/ai/FallbackAiService.kt": "f1215dbac2d46ec8e5444b5bb55dd45d304939a32eb1268c82f22018fe6b3eb2",
         "composeApp/src/domestic/AndroidManifest.xml": "71eaf06ea1428f5fad8095c76c0dbf1c43a5e7a45046a014c14a8b627ca22bca",
         "composeApp/src/nativeMain/kotlin/org/walks/gamecopilot/distribution/AppDistribution.native.kt": "c4c8385ae53bd444d0f37f03e8b6a21e70ac0cb873bcaa6a54e0f26a80f17789",
@@ -431,13 +436,13 @@
         "entry/build-profile.json5": "31332e339f9b39e40830cc821e528219a4249fb090cce8086026246fb8f30dfa",
         "entry/hvigorfile.ts": "215f7f675051c72c33a9a6cb8eeb2d03805f77eaf41e9d4fe321cc97d3c47a63",
         "entry/src/main/ets/distribution/AppDistribution.ets": "46be42059431b4864c73e89752fbd666dc42906a6b806c43bd32caf72d205bb8",
-        "entry/src/main/ets/store/AiStore.ets": "1e3aa83608ed0031c471dc9f6d78111beb9c749f983305efc1868567600a17d7",
+        "entry/src/main/ets/store/AiStore.ets": "42c5d54533b0873848f892d68fe2a8c51a77af51286406617c49ba937df3605a",
         "entry/src/main/ets/store/GameStore.ets": "93daf8cad1d76122c5c1caab1d8d9e593f09f079e3f35a86c5bed3edfa2819c8",
         "entry/src/main/ets/store/LanStore.ets": "ddaabe8b41bdef6c55938cdf8a09db81be483ab465dfe7003f02e6d0b6adbf65"
       }
     },
     "status": "reviewed",
-    "note": "2026-09-24: domestic online AI disabled at factory/UI and package permissions on Android/Harmony; generated offline privacy policy matches both platforms. Signed domestic/F-Droid APKs, Play AAB, Wasm and Harmony release passed; domestic lint 0 errors. API 36 domestic smoke checks passed for local-only settings, policy open/read/close, home and answer-book interaction. No new Harmony device or full server end-to-end test.",
-    "date": "2026-09-24T04:00:24.621548+00:00"
+    "note": "Full privacy copies synchronized across KMP and Harmony; Android/Web compilation and Harmony direct build passed. AI consent/destination/revocation gates tested on all Android channels and Harmony. MainViewmodel change only persists consent; gameplay unchanged. Android offline policy and consent UI checked; production TLS awaits server access.",
+    "date": "2026-09-25T08:05:02.291669+00:00"
   }
 }

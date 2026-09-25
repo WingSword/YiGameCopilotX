@@ -84,6 +84,7 @@ class DeepSeekProvider(private val config: AiConfig) : AiService {
     )
 
     override suspend fun chat(request: AiRequest): AiResponse {
+        if (!isAvailable()) return AiResponse("", false, "请先在设置中确认联网提示说明")
         return try {
             val messages = buildList {
                 if (request.systemPrompt.isNotBlank()) {
@@ -142,7 +143,8 @@ class DeepSeekProvider(private val config: AiConfig) : AiService {
     }
 
     override fun isAvailable(): Boolean {
-        return config.apiKey.isNotBlank() && config.isEnabled
+        return AppDistribution.onlineAiEnabled && config.apiKey.isNotBlank() && config.isEnabled &&
+            config.onlineConsent && config.baseUrl.trimEnd('/') == AiProvider.DEEP_SEEK.defaultBaseUrl
     }
 
     override fun getProviderName(): String {

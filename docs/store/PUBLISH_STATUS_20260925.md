@@ -70,11 +70,25 @@ changed during this check.
 - No AAB was uploaded, no release was submitted, and no signing key was exported.
   The create form requires policy, Play App Signing terms and export declarations;
   none were accepted on the owner's behalf in this turn.
-- The current full version lacks its own complete public/in-app privacy policy;
-  the domestic offline policy must not be reused. Its default room connection
-  remains HTTP. On request, the owner said the HTTPS endpoint and production
-  log/backup retention settings are unknown. These facts cannot be invented for
-  the policy or Data Safety form.
+- Full-channel privacy text and an offline-readable in-app entry are now
+  implemented for Android/KMP and Harmony, including the Web room entry. The
+  public HTML is generated from the same text. The domestic policy is unchanged.
+  The text explicitly identifies HTTP transport and unknown host log/backup
+  retention; neither is presented as resolved.
+- Optional DeepSeek now requires explicit consent before sending context and
+  credentials. Legacy settings without consent fall back to local hints. Users
+  can revoke consent and clear the key. Both native implementations restrict
+  this consent to the official HTTPS DeepSeek endpoint.
+- The owner will ask the friend to configure HTTPS on the existing Aliyun server.
+  Deployment remains pending the resulting address and actual log/backup
+  retention details. No live server changes or default-address switch occurred.
+  The IP-certificate deployment plan and additive Nginx example are under
+  `server/deploy/`; these files are preparation, not proof of deployment.
+- Android Google Play debug and KMP Web compilation passed; Harmony direct
+  debug packaging passed. AI privacy gates passed for all four Android
+  distributions and Harmony. Policy copies and cross-platform tracking pass.
+  Android emulator checks cover offline policy reading and consent controls.
+  This does not validate production TLS or a newly uploaded Play release.
 - Resolve the full-version privacy disclosure and safe transport using the same
   approved server before submitting policy-compliance declarations. The signing
   terms and export declaration also need the owner's review/confirmation at the

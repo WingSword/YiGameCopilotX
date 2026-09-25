@@ -23,8 +23,15 @@ Required remaining facts and product work:
 - Confirm production logs/backups and deletion periods. Source code expires
   inactive rooms after 12 hours and retains up to 1,000 match summaries; neither
   statement proves the deployed server's logging/backup behavior.
-- Publish a complete, public HTML privacy policy and expose the same policy
-  inside the app. The existing vivo policy is a draft with unresolved items.
+- The full-channel policy is now authored at `privacy-full.txt`, with generated
+  public HTML and identical offline-readable KMP/Harmony copies. Settings and
+  room-entry screens expose it. It explicitly discloses the current HTTP
+  endpoint and unverified host log/backup retention; it is not evidence that
+  these deployment gaps are resolved. The domestic policy remains separate.
+- Full-channel AI now requires an explicit, persisted consent before sending
+  context/API credentials, and provides revocation/key deletion. Previously
+  saved settings without this consent use local hints. Consent covers the
+  official HTTPS DeepSeek endpoint, not an arbitrary saved destination.
 - Complete content rating and target-audience questionnaires from the actual
   features; do not invent an age rating or claim the app is designed for children.
 - Inspect the authenticated Play Console for developer verification, package
