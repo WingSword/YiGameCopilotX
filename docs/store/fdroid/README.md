@@ -4,12 +4,14 @@
 was submitted on 2026-09-24 and is open, pending official build, scanner and
 maintainer review. This is not evidence of acceptance or availability in F-Droid.
 
-**2026-09-25 check:** the maintainer's September 24 APK build stopped at source
-scanning on two JetBrains Compose development repository declarations. The local
-recipe now removes them, and a focused before/after scan reports 2 errors before
-and 0 after. The fix is now in the original MR. Its new fork pipeline is blocked
-before job creation by GitLab's separate CI identity verification; a maintainer
-rerun has been requested. See [current publication status](../PUBLISH_STATUS_20260925.md).
+**2026-09-25 follow-up:** the maintainer reran official CI and the repository
+scanner fix passed. The build then stopped because `gradlew-fdroid` excludes
+release candidates such as the source's Gradle 9.3.0-rc-1 from its supported
+checksum map. The recipe now selects stable 9.3.0; this fix is in the original MR.
+A local unsigned release build from the exact pinned source succeeds. The new
+fork pipeline remains blocked before job creation by GitLab CI identity
+verification; an official rerun is requested. See
+[current publication status](../PUBLISH_STATUS_20260925.md).
 
 The `fdroid` distribution includes optional network rooms and user-configured AI;
 its external APK update shortcut is disabled. The UI is currently Chinese.
@@ -26,7 +28,7 @@ Sans SC OFL and server QR encoder MIT license, remain in place.
 - Recipe: `org.walks.gamecopilot.yml`; copied to
   `metadata/org.walks.gamecopilot.yml` in the public fdroiddata fork.
 - Fork branch: `ZephyrSword/fdroiddata:codex/org.walks.gamecopilot`, commit
-  `56d5c214986f616cf7901150356dfa49c77ff032`. The MR adds only that metadata file.
+  `f8d68d2075eac87ce50c5abc1a18a404b729a6c0`. The MR adds only that metadata file.
 - Build uses `composeApp`, the `fdroid` Gradle flavor and official repositories.
   Version-tag auto-updates are enabled.
 - English and Chinese Fastlane descriptions, images and changelogs are in
@@ -54,8 +56,38 @@ the scanner. The fix was committed to the existing fork branch after login.
 [Fork pipeline 2881427691](https://gitlab.com/ZephyrSword/fdroiddata/-/pipelines/2881427691)
 has zero jobs and requests separate GitLab CI identity verification. A
 [maintainer reply](https://gitlab.com/fdroid/fdroiddata/-/merge_requests/49945#note_3902520403)
-provides the local validation and requests an official rerun. The next official
-build and APK check remain pending; local scanning is not an APK-build result.
+provided the source-scan validation and requested an official rerun.
+
+The maintainer reran [official pipeline 2881660648](https://gitlab.com/fdroid/fdroiddata/-/pipelines/2881660648)
+on September 25 at 16:54 Shanghai time. All seven metadata/source-check jobs
+passed, and source scanning inside the build job also passed. The
+[build log](https://gitlab.com/fdroid/fdroiddata/-/jobs/16730083254#L244) then reports
+`No hash for gradle version 9.3.0-rc-1`. The public `gradlew-fdroid` checksum URL
+matcher accepts numeric stable versions only. The recipe adds one prebuild line
+replacing this release candidate with stable Gradle 9.3.0, retaining the same
+application commit and features. No checksum verification or scanner is bypassed.
+
+Validation of this revision:
+
+- `rewritemeta` and `lint` pass; exact-release source scanning remains at 0 errors
+  with the existing font warning.
+- Gradle 9.3.0's downloaded distribution matches both its official checksum and
+  the F-Droid transparency log:
+  `0d585f69da091fc5b2beced877feab55a3064d43b8a1d46aeb07996b0915e0e0`.
+- An archive of the pinned source, processed with the revised prebuild commands
+  and `fdroidserver.common.remove_signing_keys`, builds successfully using
+  `:composeApp:assembleFdroidRelease` on Windows with JDK 21.0.11 and Gradle 9.3.0.
+  All 77 tasks executed. This is supporting local evidence, not official Linux CI.
+- The unsigned APK's package, version 1.6/code 10, fdroid channel, non-debuggable
+  status and absence of external APK-install permission pass manifest checks.
+  APK SHA-256: `eabb0c218e7aaf26ff94083c68e69cc72ee8d14c42bdd792fcdf022e421a83ae`.
+- Evidence is under `artifacts/store-publish-20260925/gradle-stable-fix/`.
+
+The new [fork pipeline 2881810096](https://gitlab.com/ZephyrSword/fdroiddata/-/pipelines/2881810096)
+has 0 jobs and explicitly requests separate GitLab CI identity verification.
+An official rerun for `f8d68d20`, APK checks and maintainer review remain pending.
+The [maintainer reply](https://gitlab.com/fdroid/fdroiddata/-/merge_requests/49945#note_3903149599)
+reports this fix and the local unsigned build and requests that rerun.
 
 ## Reproducibility and distribution limits
 

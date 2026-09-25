@@ -41,8 +41,32 @@ changed during this check.
   GitLab CI identity verification; this is not a new source/build failure.
 - [A maintainer reply](https://gitlab.com/fdroid/fdroiddata/-/merge_requests/49945#note_3902520403)
   reports the fix, local validation and remaining font warning, and requests a
-  rerun in the official F-Droid project. An official build and APK check for the
-  updated commit, maintainer approval and publication remain pending.
+  rerun in the official F-Droid project.
+- **Later September 25 update:** linsui triggered
+  [official pipeline 2881660648](https://gitlab.com/fdroid/fdroiddata/-/pipelines/2881660648)
+  at 16:54 Shanghai time. All seven metadata/source-check jobs passed. Source
+  scanning in the build job also passed, confirming the first recipe fix.
+  [Build job 16730083254](https://gitlab.com/fdroid/fdroiddata/-/jobs/16730083254#L244)
+  then stopped with `No hash for gradle version 9.3.0-rc-1`; no APK was built.
+- The F-Droid Gradle wrapper filters checksum-map URLs to numeric stable
+  versions. The updated recipe adds one prebuild line selecting stable 9.3.0.
+  It was committed to the same fork branch as
+  `f8d68d2075eac87ce50c5abc1a18a404b729a6c0`. The remote diff is exactly one added
+  line. The pinned source, version and application features are unchanged.
+- The new recipe passes lint, rewritemeta and source scanning (0 errors, existing
+  font warning). A fresh archive of the exact pinned source, with F-Droid's
+  signing-config removal and revised prebuild commands, completed
+  `:composeApp:assembleFdroidRelease`: 77 tasks executed, Gradle 9.3.0/JDK 21.0.11
+  on Windows. The unsigned APK's package, version, fdroid channel and store
+  permission checks pass. This is not an official F-Droid Linux build or a
+  reproducibility claim. Artifacts: `artifacts/store-publish-20260925/gradle-stable-fix/`.
+- [Fork pipeline 2881810096](https://gitlab.com/ZephyrSword/fdroiddata/-/pipelines/2881810096)
+  has 0 jobs and again explicitly requests separate GitLab CI identity
+  verification. A [posted reply](https://gitlab.com/fdroid/fdroiddata/-/merge_requests/49945#note_3903149599)
+  reports the fix/local build and asks the maintainer to rerun official CI for
+  `f8d68d20`.
+  Successful official APK build/checks, maintainer approval and publication are
+  still pending; the app is not yet available from the official F-Droid repository.
 
 ## Default room server
 

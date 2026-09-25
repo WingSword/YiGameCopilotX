@@ -29,6 +29,7 @@ Builds:
         build.gradle.kts
       - sed -i 's|mirrors.huaweicloud.com/gradle|services.gradle.org/distributions|'
         ../gradle/wrapper/gradle-wrapper.properties
+      - sed -i 's/9\.3\.0-rc-1/9.3.0/' ../gradle/wrapper/gradle-wrapper.properties
 
 AutoUpdateMode: Version
 UpdateCheckMode: Tags ^v[0-9]+\.[0-9]+(?:\.[0-9]+)?$
