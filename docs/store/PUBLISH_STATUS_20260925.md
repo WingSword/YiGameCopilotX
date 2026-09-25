@@ -75,6 +75,11 @@ changed during this check.
   public HTML is generated from the same text. The domestic policy is unchanged.
   The text explicitly identifies HTTP transport and unknown host log/backup
   retention; neither is presented as resolved.
+- [The full policy is public](https://wingsword.github.io/YiGameCopilotX/store/privacy-full.html).
+  GitHub Pages built commit `cd649b0`; a fresh HTTPS response returned 200 and
+  matched the local generated HTML exactly. This policy publication is not a
+  new APK/AAB release. Harmony changes are saved in the sibling project and
+  archived under `artifacts/store-publish-20260925/privacy-harmony/`.
 - Optional DeepSeek now requires explicit consent before sending context and
   credentials. Legacy settings without consent fall back to local hints. Users
   can revoke consent and clear the key. Both native implementations restrict
