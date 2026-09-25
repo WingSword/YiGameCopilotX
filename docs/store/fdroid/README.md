@@ -4,11 +4,12 @@
 was submitted on 2026-09-24 and is open, pending official build, scanner and
 maintainer review. This is not evidence of acceptance or availability in F-Droid.
 
-**2026-09-25:** the maintainer ran official CI. The APK build stopped at source
+**2026-09-25 check:** the maintainer's September 24 APK build stopped at source
 scanning on two JetBrains Compose development repository declarations. The local
 recipe now removes them, and a focused before/after scan reports 2 errors before
-and 0 after. Updating the GitLab fork and rerunning official CI remain pending
-login. See [current publication status](../PUBLISH_STATUS_20260925.md).
+and 0 after. The fix is now in the original MR. Its new fork pipeline is blocked
+before job creation by GitLab's separate CI identity verification; a maintainer
+rerun has been requested. See [current publication status](../PUBLISH_STATUS_20260925.md).
 
 The `fdroid` distribution includes optional network rooms and user-configured AI;
 its external APK update shortcut is disabled. The UI is currently Chinese.
@@ -25,7 +26,7 @@ Sans SC OFL and server QR encoder MIT license, remain in place.
 - Recipe: `org.walks.gamecopilot.yml`; copied to
   `metadata/org.walks.gamecopilot.yml` in the public fdroiddata fork.
 - Fork branch: `ZephyrSword/fdroiddata:codex/org.walks.gamecopilot`, commit
-  `f8c86651494083ec70f4a1f702071586476856ef`. The MR adds only that metadata file.
+  `56d5c214986f616cf7901150356dfa49c77ff032`. The MR adds only that metadata file.
 - Build uses `composeApp`, the `fdroid` Gradle flavor and official repositories.
   Version-tag auto-updates are enabled.
 - English and Chinese Fastlane descriptions, images and changelogs are in
@@ -49,9 +50,12 @@ at a separate CI identity gate. Maintainer linsui subsequently triggered
 Its metadata checks passed, but the build job found two unsupported Maven
 repository declarations during source scanning. The revised prebuild recipe
 removes the development repository in both Gradle files without disabling
-the scanner. The available GitLab browser is currently signed out, so the local
-fix has not yet reached the MR. Resume that MR after login and verify the next
-official build and APK check; local scanning is not an APK-build result.
+the scanner. The fix was committed to the existing fork branch after login.
+[Fork pipeline 2881427691](https://gitlab.com/ZephyrSword/fdroiddata/-/pipelines/2881427691)
+has zero jobs and requests separate GitLab CI identity verification. A
+[maintainer reply](https://gitlab.com/fdroid/fdroiddata/-/merge_requests/49945#note_3902520403)
+provides the local validation and requests an official rerun. The next official
+build and APK check remain pending; local scanning is not an APK-build result.
 
 ## Reproducibility and distribution limits
 

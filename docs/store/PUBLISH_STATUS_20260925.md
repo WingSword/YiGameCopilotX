@@ -32,10 +32,17 @@ changed during this check.
   connection timed out. The focused scan above instead used `git archive` of
   the exact local public release commit. It did not scan an arbitrary modified
   working tree or disable signature checks.
-- The fix is prepared in `fdroid/org.walks.gamecopilot.yml`; it has not yet been
-  pushed to the GitLab fork. The available browser is signed out of GitLab,
-  and no alternate Chrome connection is available. Resume the existing MR after
-  login; do not open a second inclusion request.
+- After the owner signed in, the fix was committed to the existing GitLab fork
+  branch as `56d5c214986f616cf7901150356dfa49c77ff032`. The remote diff contains
+  exactly the two intended added lines in the metadata file; no second MR was
+  opened and the pinned application source is unchanged.
+- The new fork [pipeline 2881427691](https://gitlab.com/ZephyrSword/fdroiddata/-/pipelines/2881427691)
+  stopped before creating any jobs. Its page explicitly requires the separate
+  GitLab CI identity verification; this is not a new source/build failure.
+- [A maintainer reply](https://gitlab.com/fdroid/fdroiddata/-/merge_requests/49945#note_3902520403)
+  reports the fix, local validation and remaining font warning, and requests a
+  rerun in the official F-Droid project. An official build and APK check for the
+  updated commit, maintainer approval and publication remain pending.
 
 ## Default room server
 
