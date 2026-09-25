@@ -25,6 +25,8 @@ Builds:
       - fdroid
     prebuild:
       - sed -i '\|maven.aliyun.com/repository/|d' ../settings.gradle.kts
+      - sed -i '\|maven.pkg.jetbrains.space/public/p/compose/dev|d' ../settings.gradle.kts
+        build.gradle.kts
       - sed -i 's|mirrors.huaweicloud.com/gradle|services.gradle.org/distributions|'
         ../gradle/wrapper/gradle-wrapper.properties
 

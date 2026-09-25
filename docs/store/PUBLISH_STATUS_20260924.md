@@ -1,5 +1,8 @@
 # Store publication status — 2026-09-24
 
+For newer F-Droid review results, the live server check and Google Play account
+progress, see [the September 25 update](PUBLISH_STATUS_20260925.md).
+
 F-Droid inclusion MR !49945 has been submitted and is open. No app store has
 accepted or published this version yet. GitHub v1.6 is published. This record
 supersedes the 2026-09-22 preparation snapshot.

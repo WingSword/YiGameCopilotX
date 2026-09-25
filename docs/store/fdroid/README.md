@@ -4,6 +4,12 @@
 was submitted on 2026-09-24 and is open, pending official build, scanner and
 maintainer review. This is not evidence of acceptance or availability in F-Droid.
 
+**2026-09-25:** the maintainer ran official CI. The APK build stopped at source
+scanning on two JetBrains Compose development repository declarations. The local
+recipe now removes them, and a focused before/after scan reports 2 errors before
+and 0 after. Updating the GitLab fork and rerunning official CI remain pending
+login. See [current publication status](../PUBLISH_STATUS_20260925.md).
+
 The `fdroid` distribution includes optional network rooms and user-configured AI;
 its external APK update shortcut is disabled. The UI is currently Chinese.
 The owner authorized official inclusion and selected Apache-2.0. The root
@@ -37,13 +43,15 @@ built all four signed APK distributions plus the Play bundle using JDK 17 and
 official repositories. This supports the recipe but is not an official unsigned
 F-Droid build/scanner result.
 
-GitLab registration verification is complete. However, both the initial fork
-pipeline and [MR pipeline 2877473132](https://gitlab.com/ZephyrSword/fdroiddata/-/pipelines/2877473132)
-stopped with zero jobs at a separate CI identity gate. The MR explicitly asks a
-maintainer to trigger FOSS CI, following the official inclusion template. Do not
-repeat account registration, pay for CI, or report a build failure as a metadata
-error without a job report. Address the official build/scanner findings when
-that pipeline can run.
+GitLab registration verification is complete. The initial fork pipelines stopped
+at a separate CI identity gate. Maintainer linsui subsequently triggered
+[official pipeline 2877814081](https://gitlab.com/fdroid/fdroiddata/-/pipelines/2877814081).
+Its metadata checks passed, but the build job found two unsupported Maven
+repository declarations during source scanning. The revised prebuild recipe
+removes the development repository in both Gradle files without disabling
+the scanner. The available GitLab browser is currently signed out, so the local
+fix has not yet reached the MR. Resume that MR after login and verify the next
+official build and APK check; local scanning is not an APK-build result.
 
 ## Reproducibility and distribution limits
 
