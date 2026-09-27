@@ -1,8 +1,16 @@
 # F-Droid inclusion submission
 
 [MR !49945: New app: YiGame Tabletop Companion](https://gitlab.com/fdroid/fdroiddata/-/merge_requests/49945)
-was submitted on 2026-09-24 and is open, pending official build, scanner and
-maintainer review. This is not evidence of acceptance or availability in F-Droid.
+was submitted on 2026-09-24 and is open, pending maintainer review and merge.
+This is not evidence of acceptance or availability in F-Droid.
+
+**2026-09-27 check:** [official pipeline 2883311450](https://gitlab.com/fdroid/fdroiddata/-/pipelines/2883311450)
+passed all nine jobs, including APK build and APK checks, on September 26 at
+01:07 Shanghai time. The MR is still open and the official package page returns
+404. The report contains 13 findings, including a major cleartext-traffic
+warning, minor INTERNET permission/no-R8 notices and informational metadata.
+The default HTTP room transport has not been fixed by the build-recipe changes.
+See [current publication status](../PUBLISH_STATUS_20260927.md).
 
 **2026-09-25 follow-up:** the maintainer reran official CI and the repository
 scanner fix passed. The build then stopped because `gradlew-fdroid` excludes
@@ -85,7 +93,7 @@ Validation of this revision:
 
 The new [fork pipeline 2881810096](https://gitlab.com/ZephyrSword/fdroiddata/-/pipelines/2881810096)
 has 0 jobs and explicitly requests separate GitLab CI identity verification.
-An official rerun for `f8d68d20`, APK checks and maintainer review remain pending.
+At that point, an official rerun for `f8d68d20`, APK checks and review were pending.
 The [maintainer reply](https://gitlab.com/fdroid/fdroiddata/-/merge_requests/49945#note_3903149599)
 reports this fix and the local unsigned build and requests that rerun.
 

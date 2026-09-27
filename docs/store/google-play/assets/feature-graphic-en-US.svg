@@ -1,0 +1,29 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="500" viewBox="0 0 1024 500">
+  <rect width="1024" height="500" fill="#e5f5ee"/>
+  <circle cx="920" cy="20" r="230" fill="#dbece5"/>
+  <circle cx="16" cy="490" r="170" fill="#edf7f2"/>
+  <g font-family="Segoe UI, Noto Sans, sans-serif" fill="#14261e">
+    <text x="78" y="136" font-size="25" font-weight="700" letter-spacing="2">YiGame</text>
+    <text x="74" y="227" font-size="55" font-weight="700">Bring everyone</text>
+    <text x="74" y="296" font-size="55" font-weight="700">into the game.</text>
+    <text x="78" y="365" font-size="20" fill="#426152">Game guides · Random tools · Scorekeeping</text>
+  </g>
+  <g transform="translate(612 116) rotate(-12 105 130)">
+    <rect x="4" y="10" width="190" height="250" rx="27" fill="#cadae0"/>
+    <rect width="190" height="250" rx="27" fill="#ffffff"/>
+    <rect x="18" y="18" width="154" height="214" rx="18" fill="#ece7ff"/>
+    <path d="M58 154 V94 L78 117 L95 80 L112 117 L134 94 V154 Z" fill="#8868ed"/>
+    <rect x="58" y="166" width="76" height="10" rx="5" fill="#8868ed"/>
+  </g>
+  <g transform="translate(793 224) rotate(12 70 70)">
+    <rect x="4" y="9" width="140" height="140" rx="28" fill="#bcd5c8"/>
+    <rect width="140" height="140" rx="28" fill="#14261e"/>
+    <g fill="#dcf7e8">
+      <circle cx="40" cy="40" r="10"/><circle cx="100" cy="40" r="10"/>
+      <circle cx="70" cy="70" r="10"/>
+      <circle cx="40" cy="100" r="10"/><circle cx="100" cy="100" r="10"/>
+    </g>
+  </g>
+  <circle cx="863" cy="124" r="22" fill="#ffca72"/>
+  <path d="M554 354 v26 M541 367 h26" stroke="#87b29f" stroke-width="7" stroke-linecap="round"/>
+</svg>
