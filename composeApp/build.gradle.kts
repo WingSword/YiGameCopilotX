@@ -158,6 +158,14 @@ android {
         }
     }
 
+    buildTypes {
+        getByName("release") {
+            isMinifyEnabled = true
+            isShrinkResources = true
+            proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
+        }
+    }
+
     val keystorePropertiesFile = rootProject.file("local.properties")
     if (keystorePropertiesFile.exists()) {
         val props = Properties().apply { load(keystorePropertiesFile.inputStream()) }
@@ -176,21 +184,8 @@ android {
             }
             buildTypes {
                 getByName("release") {
-                    isMinifyEnabled = false
                     signingConfig = signingConfigs.getByName("release")
                 }
-            }
-        } else {
-            buildTypes {
-                getByName("release") {
-                    isMinifyEnabled = false
-                }
-            }
-        }
-    } else {
-        buildTypes {
-            getByName("release") {
-                isMinifyEnabled = false
             }
         }
     }

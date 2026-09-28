@@ -30,6 +30,25 @@ Builds:
       - sed -i 's|mirrors.huaweicloud.com/gradle|services.gradle.org/distributions|'
         ../gradle/wrapper/gradle-wrapper.properties
       - sed -i 's/9\.3\.0-rc-1/9.3.0/' ../gradle/wrapper/gradle-wrapper.properties
+      - sed -i 's/isMinifyEnabled = false/isMinifyEnabled = true\n                    isShrinkResources
+        = true\n                    proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"),
+        "proguard-rules.pro")/' build.gradle.kts
+      - printf '%s\n' '-dontwarn io.netty.internal.tcnative.**' '-dontwarn org.apache.log4j.**'
+        '-dontwarn org.apache.logging.log4j.**' '-dontwarn jdk.jfr.**' '-dontwarn
+        java.lang.management.ManagementFactory' '-dontwarn java.lang.management.RuntimeMXBean'
+        >> proguard-rules.pro
+      - echo '-keep,allowoptimization,allowobfuscation class io.netty.channel.socket.nio.NioServerSocketChannel
+        { public <init>(); }' >> proguard-rules.pro
+      - printf '%s\n' '-keepclassmembers class io.netty.buffer.AbstractByteBufAllocator
+        { *** toLeakAwareBuffer(...); }' '-keepclassmembers class io.netty.buffer.AdvancedLeakAwareByteBuf
+        { *** touch(...); *** recordLeakNonRefCountingOperation(...); }' '-keepclassmembers
+        class io.netty.util.ReferenceCountUtil { *** touch(...); }' >> proguard-rules.pro
+      - printf '%s\n' '-keep @interface io.netty.channel.ChannelHandler$Sharable'
+        '-keep,allowshrinking,allowobfuscation,allowoptimization @io.netty.channel.ChannelHandler$Sharable
+        class *' >> proguard-rules.pro
+      - printf '%s\n' '-keepattributes Signature' '-keep,allowshrinking,allowobfuscation
+        class io.netty.handler.codec.MessageToByteEncoder' '-keep,allowshrinking,allowobfuscation
+        class * extends io.netty.handler.codec.MessageToByteEncoder' >> proguard-rules.pro
 
 AutoUpdateMode: Version
 UpdateCheckMode: Tags ^v[0-9]+\.[0-9]+(?:\.[0-9]+)?$

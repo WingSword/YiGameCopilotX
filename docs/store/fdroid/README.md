@@ -4,6 +4,17 @@
 was submitted on 2026-09-24 and is open, pending maintainer review and merge.
 This is not evidence of acceptance or availability in F-Droid.
 
+**2026-09-28 follow-up:** maintainer linsui requested R8. The original MR now
+enables code/resource shrinking and includes the Netty reflection, handler
+annotation and encoder signature rules verified on Android. Recipe head is
+`fa3e3db2806c4bbd8fd4120750dba0ae09b289c7`. Local metadata checks, source scanning
+(0 errors), an unsigned build of the exact pinned release, and three successive
+LAN WebSocket round trips pass. The APK is 12,691,280 bytes (54.1% smaller).
+The latest fork pipeline has zero jobs, so a fresh official CI rerun and review
+are still needed. The earlier nine-job success predates R8. See
+[current publication status](../PUBLISH_STATUS_20260928.md) for evidence and
+the pre-existing LAN creation-screen limitation reproduced in the control.
+
 **2026-09-27 check:** [official pipeline 2883311450](https://gitlab.com/fdroid/fdroiddata/-/pipelines/2883311450)
 passed all nine jobs, including APK build and APK checks, on September 26 at
 01:07 Shanghai time. The MR is still open and the official package page returns
@@ -36,7 +47,7 @@ Sans SC OFL and server QR encoder MIT license, remain in place.
 - Recipe: `org.walks.gamecopilot.yml`; copied to
   `metadata/org.walks.gamecopilot.yml` in the public fdroiddata fork.
 - Fork branch: `ZephyrSword/fdroiddata:codex/org.walks.gamecopilot`, commit
-  `f8d68d2075eac87ce50c5abc1a18a404b729a6c0`. The MR adds only that metadata file.
+  `fa3e3db2806c4bbd8fd4120750dba0ae09b289c7`. The MR adds only that metadata file.
 - Build uses `composeApp`, the `fdroid` Gradle flavor and official repositories.
   Version-tag auto-updates are enabled.
 - English and Chinese Fastlane descriptions, images and changelogs are in
