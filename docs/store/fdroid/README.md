@@ -4,6 +4,14 @@
 was submitted on 2026-09-24 and is open, pending maintainer review and merge.
 This is not evidence of acceptance or availability in F-Droid.
 
+**2026-09-29 check:** [official pipeline 2889952044](https://gitlab.com/fdroid/fdroiddata/-/pipelines/2889952044)
+passed all nine jobs for the current R8 recipe `fa3e3db2`, including APK build
+and APK checks, on September 28 at 22:47 Shanghai time. The requested R8 rerun
+is complete. The MR remains open and the package page returns 404; review,
+merge and repository publication remain pending. A six-hour recurring follow-up
+is now active in the owner's task. See
+[current publication status](../PUBLISH_STATUS_20260929.md).
+
 **2026-09-28 follow-up:** maintainer linsui requested R8. The original MR now
 enables code/resource shrinking and includes the Netty reflection, handler
 annotation and encoder signature rules verified on Android. Recipe head is
