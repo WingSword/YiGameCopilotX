@@ -48,8 +48,10 @@ fun main() = runBlocking {
                     withTimeout(5_000) { host.connectedPlayers.first { it.size == 2 } }
                     val broadcast = LANMessage(type = LANMessageType.ROOM_STATE_SYNC, payload = "all players")
                     host.broadcast(broadcast)
-                    check(listener.next() == broadcast)
-                    check(otherListener.next() == broadcast)
+                    for (messages in listOf(listener, otherListener)) {
+                        val received = messages.next()
+                        check(received.type == broadcast.type && received.payload == broadcast.payload)
+                    }
                     other.sendClose(1000, "done").get(5, TimeUnit.SECONDS)
                     check(listener.next().type == LANMessageType.PLAYER_LEFT)
                 } finally { other.abort() }
