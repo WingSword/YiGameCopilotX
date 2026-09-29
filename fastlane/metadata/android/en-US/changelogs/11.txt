@@ -1,0 +1,3 @@
+Fix LAN room creation getting stuck while the host server is running.
+Reduce release size with code and resource shrinking and verified Netty rules.
+Add the full privacy policy and explicit consent before optional AI requests.

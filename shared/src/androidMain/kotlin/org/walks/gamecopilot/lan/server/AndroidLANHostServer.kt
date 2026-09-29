@@ -13,8 +13,10 @@ import io.ktor.websocket.WebSocketSession
 import io.ktor.websocket.close
 import io.ktor.websocket.readText
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableSharedFlow
@@ -67,7 +69,10 @@ class AndroidLANHostServer : LANHostServer {
             try {
                 _port = port
                 
-                server = embeddedServer(Netty, port = port) {
+                // Ktor's CoroutineScope overload otherwise inherits withContext's job,
+                // making start() wait for the entire server lifetime before returning.
+                val hostScope = CoroutineScope(Dispatchers.IO + SupervisorJob().also { serverJob = it })
+                server = hostScope.embeddedServer(Netty, port = port) {
                     install(WebSockets)
                     
                     routing {
@@ -78,15 +83,22 @@ class AndroidLANHostServer : LANHostServer {
                             handleConnection(playerId, playerName, this)
                         }
                     }
-                }.start(wait = false)
+                }
+                server?.start(wait = false)
                 
                 _isRunning = true
                 
-                startHeartbeatChecker()
+                startHeartbeatChecker(hostScope)
                 
                 GameLogger.info("主机服务器启动成功，端口: $port")
                 true
             } catch (e: Exception) {
+                server?.stop(0, 1000)
+                server = null
+                serverJob?.cancel()
+                serverJob = null
+                _isRunning = false
+                if (e is CancellationException) throw e
                 GameLogger.error("启动主机服务器失败", e)
                 false
             }
@@ -184,6 +196,10 @@ class AndroidLANHostServer : LANHostServer {
         
         server?.stop(1000, 2000)
         server = null
+        serverJob?.cancel()
+        serverJob = null
+        heartbeatJob = null
+        updateConnectedPlayers()
         
         GameLogger.info("主机服务器已停止")
     }
@@ -250,8 +266,8 @@ class AndroidLANHostServer : LANHostServer {
         _connectedPlayers.value = playerSessions.values.toList()
     }
     
-    private fun startHeartbeatChecker() {
-        heartbeatJob = CoroutineScope(Dispatchers.IO).launch {
+    private fun startHeartbeatChecker(hostScope: CoroutineScope) {
+        heartbeatJob = hostScope.launch {
             while (_isRunning) {
                 val now = System.currentTimeMillis()
                 val timeoutPlayers = lastHeartbeat.filter { (_, lastTime) ->

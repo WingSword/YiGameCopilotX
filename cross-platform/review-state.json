@@ -381,7 +381,7 @@
   "web": {
     "files": {
       "web": {
-        "composeApp/build.gradle.kts": "e3a70cf6bb9e54c887d5e22d3537a6dbd1d35ea5aaf1fd0f68c675fdfe0ec4aa",
+        "composeApp/build.gradle.kts": "807bf06aea600d6f8357eea0be4fb989af44c6656e7810098477e0bc15ff22d7",
         "composeApp/src/commonMain/composeResources/files/licenses/NotoSansSC-OFL.txt": "6a73f9541c2de74158c0e7cf6b0a58ef774f5a780bf191f2d7ec9cc53efe2bf2",
         "composeApp/src/commonMain/composeResources/font/notosanssc_regular.otf": "faa6c9df652116dde789d351359f3d7e5d2285a2b2a1f04a2d7244df706d5ea9",
         "composeApp/src/commonMain/kotlin/org/walks/gamecopilot/theme/Theme.kt": "5806d3083d3fb02d0c835ce86ef3d19369e36df25ebbfaaa0320159dc1239f35",
@@ -403,14 +403,14 @@
       }
     },
     "status": "reviewed",
-    "note": "2026-09-24: domestic online AI disabled at factory/UI and package permissions on Android/Harmony; generated offline privacy policy matches both platforms. Signed domestic/F-Droid APKs, Play AAB, Wasm and Harmony release passed; domestic lint 0 errors. API 36 domestic smoke checks passed for local-only settings, policy open/read/close, home and answer-book interaction. No new Harmony device or full server end-to-end test.",
-    "date": "2026-09-24T04:00:24.739681+00:00"
+    "note": "Android-only version bump to 1.6.1/code 11; release R8 settings were already reviewed. No WASM source, dependencies, or web behavior changed.",
+    "date": "2026-09-29T17:41:27.975335+00:00"
   },
   "distribution-channels": {
     "files": {
       "android": {
         ".github/workflows/release.yml": "c6c3e28034f6b9269fda96f9680bb9680f6e01b8431546746b181855902814f9",
-        "composeApp/build.gradle.kts": "e3a70cf6bb9e54c887d5e22d3537a6dbd1d35ea5aaf1fd0f68c675fdfe0ec4aa",
+        "composeApp/build.gradle.kts": "807bf06aea600d6f8357eea0be4fb989af44c6656e7810098477e0bc15ff22d7",
         "composeApp/src/androidMain/AndroidManifest.xml": "9ddf15893d9e6f252a3a9f899905c7e00f273ad58184e3f0d692df7c63532b63",
         "composeApp/src/androidMain/kotlin/org/walks/gamecopilot/distribution/AppDistribution.android.kt": "122b43e10bcbd4e2fbb573a0675e9f7baac3cc8c6cdaba828ac8dca97ed2c5a1",
         "composeApp/src/commonMain/kotlin/org/walks/gamecopilot/distribution/AppDistribution.kt": "193fc8ece09fea2c61019909e06a74d56d8d2281f2f679824d080b015964cfe3",
@@ -442,7 +442,7 @@
       }
     },
     "status": "reviewed",
-    "note": "Full privacy copies synchronized across KMP and Harmony; Android/Web compilation and Harmony direct build passed. AI consent/destination/revocation gates tested on all Android channels and Harmony. MainViewmodel change only persists consent; gameplay unchanged. Android offline policy and consent UI checked; production TLS awaits server access.",
-    "date": "2026-09-25T08:05:02.291669+00:00"
+    "note": "Only Android versionName/code changed to 1.6.1/11. Domestic/full feature flags, package suffix, and Harmony distribution behavior are unchanged; AI privacy checks passed for all four channels.",
+    "date": "2026-09-29T17:43:02.400712+00:00"
   }
 }
