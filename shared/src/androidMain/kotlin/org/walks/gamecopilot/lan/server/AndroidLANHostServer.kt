@@ -206,11 +206,11 @@ class AndroidLANHostServer : LANHostServer {
     
     override suspend fun broadcast(message: LANMessage) {
         val data = json.encodeToString(message)
-        val frame = Frame.Text(data)
         
         connections.values.forEach { session ->
             try {
-                session.send(frame)
+                // Each send consumes its frame buffer; every player needs a fresh frame.
+                session.send(Frame.Text(data))
             } catch (e: Exception) {
                 GameLogger.error("广播消息失败", e)
             }

@@ -1,3 +1,4 @@
 Fix LAN room creation getting stuck while the host server is running.
+Fix empty broadcast messages when multiple players join a LAN room.
 Reduce release size with code and resource shrinking and verified Netty rules.
 Add the full privacy policy and explicit consent before optional AI requests.

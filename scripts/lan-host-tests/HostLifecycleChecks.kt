@@ -39,6 +39,20 @@ fun main() = runBlocking {
             try {
                 check(listener.next().type == LANMessageType.JOIN_RESPONSE)
                 withTimeout(5_000) { host.connectedPlayers.first { it.size == 1 } }
+                val otherListener = Messages()
+                val other = client.newWebSocketBuilder().buildAsync(
+                    URI("ws://127.0.0.1:$port/lan?playerId=other-$round&playerName=Other"), otherListener
+                ).get(5, TimeUnit.SECONDS)
+                try {
+                    check(otherListener.next().type == LANMessageType.JOIN_RESPONSE)
+                    withTimeout(5_000) { host.connectedPlayers.first { it.size == 2 } }
+                    val broadcast = LANMessage(type = LANMessageType.ROOM_STATE_SYNC, payload = "all players")
+                    host.broadcast(broadcast)
+                    check(listener.next() == broadcast)
+                    check(otherListener.next() == broadcast)
+                    other.sendClose(1000, "done").get(5, TimeUnit.SECONDS)
+                    check(listener.next().type == LANMessageType.PLAYER_LEFT)
+                } finally { other.abort() }
                 socket.sendText(Json.encodeToString(LANMessage(type = LANMessageType.HEARTBEAT)), true).join()
                 check(listener.next().type == LANMessageType.HEARTBEAT)
                 socket.sendClose(1000, "done").get(5, TimeUnit.SECONDS)
@@ -54,6 +68,6 @@ fun main() = runBlocking {
         }
         withTimeout(8_000) { check(host.start(port)) }
         withTimeout(8_000) { host.stop() }
-        println("PASS: start returns; welcome/heartbeat; stop/restart; bind failure/retry")
+        println("PASS: start returns; two-client broadcast; welcome/heartbeat; stop/restart; bind failure/retry")
     } finally { host.stop() }
 }
