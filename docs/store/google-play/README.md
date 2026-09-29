@@ -1,8 +1,10 @@
 # Google Play submission preparation
 
-Checked on 2026-09-27. This package is preparation, not a submitted listing or
-an approved release. The developer account is verified; the console currently
-contains another application, while this application's create form is unsubmitted.
+Checked on 2026-09-30. The live console now contains the separate 桌游助手 app
+`4975340793676853600` under developer `5275652110070665181`. Its privacy policy
+URL has been saved; no release or complete review submission is confirmed.
+The dashboard requires the remaining application setup and a 12-person,
+14-day closed test before applying for production access; opted-in testers: 0.
 
 ## Listing
 
@@ -38,12 +40,11 @@ Suggested accessible descriptions:
 
 ## Remaining publication dependencies
 
-The create form is filled with the app name, package, language, application type
-and free pricing. No policy/export checkbox has been accepted and no application
-has been created by this preparation. The visible creation form requires a
-developer-policy declaration and a US export-compliance declaration. The latter
-needs the owner's confirmation at submission time; do not infer it from a request
-to publish or from another application's previous submission.
+The app record already exists. Do not create a duplicate or modify the other
+application in the account. The September 27 creation-form note is historical;
+this check did not create the record or accept policy/export declarations.
+Complete the existing app's store listing and content declarations using verified
+facts. The saved privacy URL still needs to be included in a submitted review.
 
 Production room HTTPS is not working at either the historical port or standard
 HTTPS port in the September 27 check. The HTTP health endpoint responds normally.
@@ -52,10 +53,12 @@ or claim encrypted transmission in the Data Safety form. Obtain the working
 HTTPS address and actual server log/backup retention from the server administrator.
 The [deployment handoff](../../../server/deploy/HTTPS_ROLLOUT.md) is prepared.
 
-After deployment, update both clients and the generated full privacy policy,
-verify room/invitation flows, and build a signed Google Play AAB containing the
-new policy and explicit AI consent. The September 24 version 1.6 AAB predates
-those changes and is not the final candidate for this revised submission.
+The signed 1.6.1 Google Play AAB built successfully in
+[upstream CI 36610289713](https://github.com/WingSword/YiGameCopilotX/actions/runs/36610289713)
+and includes the full policy and explicit AI consent. It is a candidate artifact,
+not a Play submission. The September 24 version 1.6 AAB predates these changes.
+After HTTPS deployment is verified, update both clients and the generated policy,
+verify room/invitation flows, and rebuild if the endpoint or disclosures change.
 
 The [data-safety worksheet](../GOOGLE_PLAY_DATA_SAFETY_DRAFT.md) remains a draft.
 Do not claim no collection, universal encryption, retention periods or completion

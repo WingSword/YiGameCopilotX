@@ -4,6 +4,15 @@
 was submitted on 2026-09-24 and is open, pending maintainer review and merge.
 This is not evidence of acceptance or availability in F-Droid.
 
+**2026-09-30 update:** maintainer feedback has been addressed in the original MR.
+The recipe now selects **1.6.1/code 11**, upstream commit `1ed22875`, tagged
+`v1.6.1`. R8 rules and stable Gradle configuration live upstream; prebuild only
+removes the unused Maven repositories. Recipe head is `737a28b9`. Source scan
+reports 0 errors, local metadata/release checks pass, and the two disclosed LAN
+startup/broadcast defects are fixed and tested with a four-player room. The new
+fork pipeline has zero jobs; a fresh official rerun is needed. See
+[current publication status](../PUBLISH_STATUS_20260930.md).
+
 **2026-09-29 check:** [official pipeline 2889952044](https://gitlab.com/fdroid/fdroiddata/-/pipelines/2889952044)
 passed all nine jobs for the current R8 recipe `fa3e3db2`, including APK build
 and APK checks, on September 28 at 22:47 Shanghai time. The requested R8 rerun
@@ -49,13 +58,13 @@ Sans SC OFL and server QR encoder MIT license, remain in place.
 ## Source and metadata
 
 - Application ID: `org.walks.gamecopilot`.
-- Latest version: 1.6, version code 10, tagged `v1.6`.
-- Pinned source: `e5129ab22ed6dc2c7baf7d5fd69225c3557ae4bd` in
+- Latest submitted version: 1.6.1, version code 11, tagged `v1.6.1`.
+- Pinned source: `1ed22875bfeb8b603ff1fcbfe545239b6f762138` in
   [WingSword/YiGameCopilotX](https://github.com/WingSword/YiGameCopilotX).
 - Recipe: `org.walks.gamecopilot.yml`; copied to
   `metadata/org.walks.gamecopilot.yml` in the public fdroiddata fork.
 - Fork branch: `ZephyrSword/fdroiddata:codex/org.walks.gamecopilot`, commit
-  `fa3e3db2806c4bbd8fd4120750dba0ae09b289c7`. The MR adds only that metadata file.
+  `737a28b9ab8a45dd5417b07716de3398ff51fcea`. The MR adds only that metadata file.
 - Build uses `composeApp`, the `fdroid` Gradle flavor and official repositories.
   Version-tag auto-updates are enabled.
 - English and Chinese Fastlane descriptions, images and changelogs are in

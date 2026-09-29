@@ -17,9 +17,9 @@ RepoType: git
 Repo: https://github.com/WingSword/YiGameCopilotX.git
 
 Builds:
-  - versionName: '1.6'
-    versionCode: 10
-    commit: e5129ab22ed6dc2c7baf7d5fd69225c3557ae4bd
+  - versionName: 1.6.1
+    versionCode: 11
+    commit: 1ed22875bfeb8b603ff1fcbfe545239b6f762138
     subdir: composeApp
     gradle:
       - fdroid
@@ -27,30 +27,8 @@ Builds:
       - sed -i '\|maven.aliyun.com/repository/|d' ../settings.gradle.kts
       - sed -i '\|maven.pkg.jetbrains.space/public/p/compose/dev|d' ../settings.gradle.kts
         build.gradle.kts
-      - sed -i 's|mirrors.huaweicloud.com/gradle|services.gradle.org/distributions|'
-        ../gradle/wrapper/gradle-wrapper.properties
-      - sed -i 's/9\.3\.0-rc-1/9.3.0/' ../gradle/wrapper/gradle-wrapper.properties
-      - sed -i 's/isMinifyEnabled = false/isMinifyEnabled = true\n                    isShrinkResources
-        = true\n                    proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"),
-        "proguard-rules.pro")/' build.gradle.kts
-      - printf '%s\n' '-dontwarn io.netty.internal.tcnative.**' '-dontwarn org.apache.log4j.**'
-        '-dontwarn org.apache.logging.log4j.**' '-dontwarn jdk.jfr.**' '-dontwarn
-        java.lang.management.ManagementFactory' '-dontwarn java.lang.management.RuntimeMXBean'
-        >> proguard-rules.pro
-      - echo '-keep,allowoptimization,allowobfuscation class io.netty.channel.socket.nio.NioServerSocketChannel
-        { public <init>(); }' >> proguard-rules.pro
-      - printf '%s\n' '-keepclassmembers class io.netty.buffer.AbstractByteBufAllocator
-        { *** toLeakAwareBuffer(...); }' '-keepclassmembers class io.netty.buffer.AdvancedLeakAwareByteBuf
-        { *** touch(...); *** recordLeakNonRefCountingOperation(...); }' '-keepclassmembers
-        class io.netty.util.ReferenceCountUtil { *** touch(...); }' >> proguard-rules.pro
-      - printf '%s\n' '-keep @interface io.netty.channel.ChannelHandler$Sharable'
-        '-keep,allowshrinking,allowobfuscation,allowoptimization @io.netty.channel.ChannelHandler$Sharable
-        class *' >> proguard-rules.pro
-      - printf '%s\n' '-keepattributes Signature' '-keep,allowshrinking,allowobfuscation
-        class io.netty.handler.codec.MessageToByteEncoder' '-keep,allowshrinking,allowobfuscation
-        class * extends io.netty.handler.codec.MessageToByteEncoder' >> proguard-rules.pro
 
 AutoUpdateMode: Version
 UpdateCheckMode: Tags ^v[0-9]+\.[0-9]+(?:\.[0-9]+)?$
-CurrentVersion: '1.6'
-CurrentVersionCode: 10
+CurrentVersion: 1.6.1
+CurrentVersionCode: 11
