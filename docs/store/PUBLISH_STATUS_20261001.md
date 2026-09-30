@@ -46,3 +46,25 @@ Evidence: `mr-night.json`, `pipelines-night.json`,
 `artifacts/store-publish-20261001/`. Existing requests remain pending without
 duplicate reminders. The six-hour follow-up continues quietly because no
 material store status change or new owner action was found.
+
+## Morning check — 07:26 Shanghai
+
+Fresh MR and pipeline API reads are unchanged: `opened`, head `737a28b9`,
+13 user notes, last update `2026-09-29T18:24:24.779Z`; no new official run for
+the current head. The old official `2889952044` remains successful and the
+current fork `2894481258` remains failed. The official package page again
+returns HTTP 404. No new review feedback or confirmed installable release was
+found, and no duplicate comment was sent.
+
+After refreshing the live Play dashboard, setup remains **7/11**, with the same
+four unfinished tasks, **0 opted-in testers**, closed testing locked and the
+production application button disabled. The saved app name is still
+**桌游助手**. The vivo domestic draft again redirects to login. Existing
+consent, reviewer-access, tester, server and vivo dependencies remain pending;
+no duplicate owner reminder, agreement acceptance or submission was made.
+The pre-existing uncommitted rename work was left untouched.
+
+Evidence in `artifacts/store-publish-20261001/`: `mr-morning.json`,
+`pipelines-morning.json`, `fdroid-package-morning.html`,
+`play-dashboard-morning.txt` and `vivo-morning.json`. The follow-up remains
+active, with no new actionable change requiring notification.
