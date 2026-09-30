@@ -117,3 +117,54 @@ The recurring six-hour follow-up remains active. Next checks must use the new
 recipe/source and new GitHub run, read fresh maintainer feedback, and distinguish
 passing CI, merge and official repository availability. Do not repeat unchanged
 rerun requests or login/HTTPS reminders.
+
+## Morning follow-up — 07:24–08:10 Shanghai
+
+The public MR API still reports `opened`, recipe head `737a28b9`, 13 user notes,
+and last update `2026-09-29T18:24:24.779Z`, matching the previous review reply.
+The pipeline list contains no new official run for this head. The old official
+run remains green; the current fork run remains failed. The official package
+page again returns HTTP 404, so no official installable release is confirmed.
+No repeated review comment or rerun request was posted.
+
+Google Play application setup advanced from **1/11 to 6/11**, verified on the
+existing application's live dashboard. Saved declarations and settings:
+
+- No advertisements, no advertising ID. Dependency/source/manifest checks
+  found no advertising SDK or advertising-ID permission/API. Advertising ID is
+  a separate content declaration and is not one of the dashboard's eleven tasks.
+- Not developed by or on behalf of a government.
+- No financial products/services; the ledger handles virtual game points only.
+- No health-related functionality.
+- Application category **Entertainment**, with the already authorized public
+  support address `YvesSword@outlook.com`. No personal phone number was published.
+
+Each declaration displayed a saved confirmation. The contact form required one
+retry before its saved confirmation appeared. The dashboard subsequently marked
+category/contact setup complete. These are saved changes, not a submitted or
+approved app release.
+
+The Chinese title, short description and full description from
+`fastlane/metadata/android/zh-CN/` were saved as the default store-listing draft.
+After leaving and reopening it, the console still showed the draft and all
+three text values. Images remain absent: the resource sidebar opened, but its
+Upload action did not expose a usable file picker in this browser session or a
+native file-dialog window. No assets were uploaded or substituted. Prepared
+images remain available locally for continuation.
+
+Five dashboard tasks remain: app access, content rating, target audience, data
+safety, and completing the store listing. The 12-person/14-day closed test still
+has zero opted-in testers. No new tester request was sent, no AI credentials
+were invented, and the unresolved HTTPS/log/backup facts were not declared as
+verified. No bundle upload or release review submission occurred in this run.
+
+The vivo domestic draft still redirects to the official login page. No private
+review state could be read. The existing login/material requirements have not
+been repeated to the owner.
+
+Evidence: `artifacts/store-publish-20260930/mr-morning.json`,
+`pipelines-morning.json`, `fdroid-package-morning.html`,
+`play-declaration-saves.json`, `play-dashboard-morning.txt`,
+`play-dashboard-6of11.png`, `play-listing-draft-morning.txt`, and
+`vivo-morning.txt`. The original MR and Play draft tabs are retained for the next
+follow-up. No new review result or owner action requires an immediate notification.

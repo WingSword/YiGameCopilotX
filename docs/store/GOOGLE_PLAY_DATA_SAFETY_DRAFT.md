@@ -36,9 +36,11 @@ Required remaining facts and product work:
   features; do not invent an age rating or claim the app is designed for children.
 - Inspect the authenticated Play Console for developer verification, package
   name/version availability, signing setup and any testing prerequisites.
-  New personal accounts may require 12 continuously opted-in testers for 14
-  days before applying for production access; no account-specific conclusion
-  is possible until the console is accessible.
+  On September 30 the authenticated dashboard for app `4975340793676853600`
+  explicitly required 12 continuously opted-in testers for 14 days before
+  applying for production access and showed zero opted-in testers. Its setup
+  reached 6/11 tasks, but data safety remains unfinished. Signing and bundle
+  acceptance have not yet been verified in this application's Play Console.
 
 References: [User Data](https://support.google.com/googleplay/android-developer/answer/10144311),
 [Data Safety](https://support.google.com/googleplay/android-developer/answer/10787469),

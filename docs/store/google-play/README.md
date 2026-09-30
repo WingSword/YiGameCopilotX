@@ -3,6 +3,12 @@
 Checked on 2026-09-30. The live console now contains the separate 桌游助手 app
 `4975340793676853600` under developer `5275652110070665181`. Its privacy policy
 URL has been saved; no release or complete review submission is confirmed.
+The September 30 morning follow-up completed **6 of 11** dashboard setup tasks:
+privacy, advertisements, government, financial features, health, and app
+category/contact. The separate advertising-ID declaration is also saved as no.
+The Chinese default listing text is a saved, reopened-and-verified draft; images
+have not been uploaded. App access, content rating, target audience, data safety,
+and the complete listing remain unfinished.
 The dashboard requires the remaining application setup and a 12-person,
 14-day closed test before applying for production access; opted-in testers: 0.
 
@@ -14,6 +20,7 @@ The dashboard requires the remaining application setup and a 12-person,
 | Package | `org.walks.gamecopilot` |
 | Default language | Simplified Chinese (`zh-CN`) |
 | Type and pricing | Application, free |
+| Saved category | Entertainment |
 | Support email | `YvesSword@outlook.com` |
 | Privacy URL | https://wingsword.github.io/YiGameCopilotX/store/privacy-full.html |
 | English title | YiGame Tabletop Companion |
