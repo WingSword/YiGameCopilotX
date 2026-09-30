@@ -168,3 +168,55 @@ Evidence: `artifacts/store-publish-20260930/mr-morning.json`,
 `play-dashboard-6of11.png`, `play-listing-draft-morning.txt`, and
 `vivo-morning.txt`. The original MR and Play draft tabs are retained for the next
 follow-up. No new review result or owner action requires an immediate notification.
+
+## Afternoon follow-up — 13:24–14:01 Shanghai
+
+F-Droid is unchanged: MR `opened`, head `737a28b9`, 13 user notes, last update
+`2026-09-29T18:24:24.779Z`. No new official pipeline appears in the MR pipeline
+list, and the package page returns HTTP 404. No duplicate comment was posted.
+Evidence: `mr-afternoon.json`, `pipelines-afternoon.json`, and
+`fdroid-package-afternoon.html` in the September 30 artifact directory.
+
+Google Play now confirms **7/11 setup tasks complete**. The Chinese default
+listing is saved with status **ready to send for review** (`可以送审`): title,
+short/full description, 512×512 icon, 1024×500 feature graphic, and all three
+1080×1920 phone screenshots. This supersedes the morning image-upload blocker.
+The supported file-chooser event flow successfully uploaded the existing local
+assets; no native-dialog workaround or new asset generation was needed. The
+feature graphic created with assistant-written SVG was marked AI-generated or
+edited in the per-asset declaration. Actual screenshots were not marked as
+synthetic images. Screenshot order currently shown by the console is 3, 1, 2.
+No English locale was added in this run.
+
+The listing is prepared for review, not submitted/approved/published. No AAB was
+uploaded and no app release or closed test was started. Four setup tasks remain:
+app access, content rating, target audience, data safety. The dashboard still
+shows zero opted-in testers and the 12-person/14-day requirement.
+
+New concrete owner actions were requested once:
+
+- The content-rating entry page states that completing the questionnaire means
+  accepting [IARC Terms of Use](https://web.iarcservices.com/terms). Owner consent
+  is pending. No questionnaire was started or rating submitted.
+- The live app-access dialog requires full feature access, in English, and says
+  reviewers will not create an account, use their own account, buy access or
+  start a trial. Optional DeepSeek needs a valid dedicated review key, which is
+  not available. The owner was asked to prepare one and enter it only in the
+  official Console, not in chat or the repository. No credential was invented,
+  read from unrelated stores, or committed. The full-access checkbox was not
+  checked; the exploratory unsaved selection was discarded and re-read as blank.
+
+English review instructions and source-backed rating evidence are prepared in
+`google-play/REVIEW_PREPARATION.md`. The evidence includes Avalon assassination
+text, witch-hunt death results, the Drunk role, wine words, and participant
+drawings/guesses. These are notes for the actual questionnaire, not a completed
+content audit or a guessed age rating.
+
+Browser reconnection was needed after a timeout while discarding the unsaved
+access form. The recovered page confirmed no access declaration had been saved.
+The IARC entry page is retained for follow-up. Evidence includes
+`play-access-requirements.txt`, `play-access-detail-form.txt`,
+`play-iarc-required.txt`, `play-iarc-consent-required.png`,
+`play-dashboard-afternoon.txt`, and `play-dashboard-7of11.png`.
+The existing HTTPS/log-retention, tester, and vivo login/material dependencies
+were not replaced with assumed facts or repeated requests.

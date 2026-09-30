@@ -3,12 +3,13 @@
 Checked on 2026-09-30. The live console now contains the separate 桌游助手 app
 `4975340793676853600` under developer `5275652110070665181`. Its privacy policy
 URL has been saved; no release or complete review submission is confirmed.
-The September 30 morning follow-up completed **6 of 11** dashboard setup tasks:
+The September 30 afternoon follow-up completed **7 of 11** dashboard setup tasks:
 privacy, advertisements, government, financial features, health, and app
-category/contact. The separate advertising-ID declaration is also saved as no.
-The Chinese default listing text is a saved, reopened-and-verified draft; images
-have not been uploaded. App access, content rating, target audience, data safety,
-and the complete listing remain unfinished.
+category/contact, plus the Chinese default store listing. The separate
+advertising-ID declaration is also saved as no. The listing now includes its
+icon, feature graphic and three phone screenshots, and shows ready to send for
+review. App access, content rating, target audience and data safety remain
+unfinished. No complete review or release submission is confirmed.
 The dashboard requires the remaining application setup and a 12-person,
 14-day closed test before applying for production access; opted-in testers: 0.
 
@@ -27,7 +28,7 @@ The dashboard requires the remaining application setup and a 12-person,
 
 The title, short description and full description for each locale are maintained
 under `fastlane/metadata/android/{zh-CN,en-US}/`. English text explicitly states
-that the application interface is currently Chinese. Category, target audience
+that the application interface is currently Chinese. Target audience
 and content-rating answers still need the actual Console questionnaires; no
 age rating has been invented.
 
@@ -39,6 +40,10 @@ Prepared images in each locale's `images/` directory:
   SVG sources are in this directory's `assets/`. Both locales were visually checked.
 - `phoneScreenshots/1.png` through `3.png`: actual full-channel app screenshots,
   1080 × 1920. The English listing uses the actual Chinese interface screenshots.
+
+The Chinese images above are now uploaded and attached to the saved listing.
+Its feature graphic is marked as AI-generated/edited; the actual phone captures
+are not. The English locale remains prepared locally, not submitted in Console.
 
 Suggested accessible descriptions:
 
@@ -52,6 +57,10 @@ application in the account. The September 27 creation-form note is historical;
 this check did not create the record or accept policy/export declarations.
 Complete the existing app's store listing and content declarations using verified
 facts. The saved privacy URL still needs to be included in a submitted review.
+The [review preparation](REVIEW_PREPARATION.md) records English access instructions
+and rating evidence. Consent to IARC terms and a dedicated DeepSeek review key
+have been requested; neither has been provided yet. Do not attest unrestricted
+or complete access without the required setup and valid reviewer credential.
 
 Production room HTTPS is not working at either the historical port or standard
 HTTPS port in the September 27 check. The HTTP health endpoint responds normally.
