@@ -220,3 +220,30 @@ The IARC entry page is retained for follow-up. Evidence includes
 `play-dashboard-afternoon.txt`, and `play-dashboard-7of11.png`.
 The existing HTTPS/log-retention, tester, and vivo login/material dependencies
 were not replaced with assumed facts or repeated requests.
+
+## Evening follow-up — 19:25–19:33 Shanghai
+
+Fresh public API responses and the signed-in original MR discussion agree:
+MR `opened`, head `737a28b9`, 13 user notes, last update
+`2026-09-29T18:24:24.779Z`. The latest comment remains our September 30 02:24
+reply; no new maintainer request needs a response. No comment or rerun request
+was repeated. The pipeline list still has no official run for the current head:
+fork run `2894481258` is failed, while official run `2889952044` passed for the
+older `fa3e3db2` recipe. The official package page again returns HTTP 404; no
+official installable version is confirmed.
+
+Google Play's live dashboard still shows **7/11** setup tasks complete. The
+pending IARC agreement and dedicated DeepSeek reviewer credential have not
+received owner answers. Tester and server facts also remain unresolved. No
+agreement was accepted and no content declaration, bundle, review or release
+was submitted. The vivo domestic draft again redirects to the official account
+login page, so its private review state cannot be verified. The existing owner
+requests were not repeated.
+
+Evidence: `mr-evening.json`, `pipelines-evening.json`,
+`fdroid-package-evening.html`, `mr-comments-evening.txt`, and
+`other-stores-evening.json` under `artifacts/store-publish-20260930/`.
+Play's normal DOM snapshot timed out after navigation; the supported visible
+DOM reader recovered the dashboard's explicit seven-of-eleven progress button.
+The MR and Play tabs are retained for continuation. No new actionable review
+feedback or material publication change requires a notification this time.
