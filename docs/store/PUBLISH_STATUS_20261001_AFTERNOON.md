@@ -27,3 +27,22 @@ Evidence under `artifacts/store-publish-20261001/`: `mr-afternoon.json`,
 `play-dashboard-afternoon.txt`, and `vivo-afternoon.json`.
 No repeated reminder or unchanged-state MR comment was sent. The scheduled
 follow-up continues quietly; no new actionable publication change was found.
+
+## Evening check — 19:28 Shanghai
+
+Fresh MR metadata, pipeline listing and official package lookup remain
+unchanged: `opened`, head `737a28b9`, 13 notes, last update
+`2026-09-29T18:24:24.779Z`, no official current-head run, and package HTTP 404.
+The current fork's pre-job failure and the older official run's success are
+still distinct. No new review request was found and no repeated comment sent.
+
+The refreshed Play dashboard again confirms **7/11**, the same four unfinished
+tasks, **0 opted-in testers** and a disabled production application button.
+The vivo draft again redirects to login. Existing owner requests are still
+pending in this task; no new agreement, declaration, upload, review or release
+was submitted. Pre-existing workspace changes remain untouched.
+
+Evidence in `artifacts/store-publish-20261001/`: `mr-evening.json`,
+`pipelines-evening.json`, `fdroid-package-evening.html`,
+`play-dashboard-evening.txt` and `vivo-evening.json`. No material change calls
+for a notification or another request to the owner.
