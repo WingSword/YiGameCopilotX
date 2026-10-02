@@ -112,3 +112,36 @@ Evidence is retained under `artifacts/store-publish-20261002/`:
 
 The description was validated by exact API readback, all nine official job
 statuses were checked, and the new record was checked for whitespace errors.
+
+## Evening check — 19:31–19:37 Shanghai
+
+Fresh public MR and pipeline APIs, together with the refreshed signed-in
+discussion, show no further review change. The MR remains `opened`, unmerged,
+with head `737a28b9`, labels `New App` / `review-requested`, 16 user notes and
+last update `2026-10-02T05:42:20.689Z` (the description update above). The latest
+maintainer response remains the October 2 10:43 manual-testing queue note.
+There is no new review question to answer, and no duplicate comment or rerun
+request was posted.
+
+The current official pipeline remains `2901381554` / `success`; a fresh jobs
+read confirms all nine jobs still successful. The official package page again
+returns **HTTP 404**. Upstream's latest published release remains **v1.6.1**,
+so no recipe/source update is required for a new release.
+
+The refreshed Google Play dashboard still shows **7/11** setup tasks complete,
+the same four unfinished tasks, **0 opted-in testers**, closed testing locked
+and production access disabled. The vivo domestic draft still redirects to its
+official login page. Existing owner dependencies have no new answers in this
+task; no repeated request, agreement acceptance, bundle upload or submission
+was made.
+
+Additional pre-existing application and Harmony preparation changes were
+present in the shared workspace. They were preserved; this follow-up modifies
+only this publication record. No new runtime or metadata failure justifies
+additional source changes or repeated build/test runs.
+
+Evidence is retained in `artifacts/store-publish-20261002/evening/`: `mr.json`,
+`pipelines.json`, `official-jobs.json`, `mr-comments.txt`, `package.html`,
+`upstream-release.json`, `play-dashboard.txt` and `vivo.txt`. The six-hour
+follow-up remains active. No meaningful state change or new required owner
+action was found, so this check stays quiet.
