@@ -48,3 +48,26 @@ Evidence is retained under `artifacts/store-publish-20261003/night/`:
 `package.html`, `upstream-release.json`, `play-dashboard.txt` and `vivo.txt`.
 The six-hour follow-up remains active. With no material change or new required
 owner action, this check stays quiet.
+
+## Morning check — 07:33–07:37 Shanghai
+
+Fresh MR/pipeline APIs and the refreshed signed-in discussion show no new
+maintainer comment, merge or review change: `opened`, head `737a28b9`,
+`review-requested`, 16 user notes and last update `2026-10-02T05:42:20.689Z`.
+Official pipeline `2901381554` remains successful; a fresh jobs read confirms
+all nine successful jobs. The official package page again returns HTTP 404,
+and upstream's latest published release remains v1.6.1. No repeated comment,
+rerun request or recipe update is needed.
+
+The refreshed Play dashboard remains at 7/11 setup tasks, with the same four
+unfinished items, 0 opted-in testers, closed testing locked and production
+access disabled. The vivo domestic draft again redirects to login. Previously
+requested owner information and confirmations have no new answers in this
+task; no repeated request or store submission was made. Shared uncommitted
+application/Harmony/rename work was preserved.
+
+Evidence is retained in `artifacts/store-publish-20261003/morning/`: `mr.json`,
+`pipelines.json`, `official-jobs.json`, `mr-comments.txt`, `package.html`,
+`upstream-release.json`, `play-dashboard.txt` and `vivo.txt`. Only this record
+is changed by the check. The six-hour follow-up remains active and quiet while
+the review state and existing owner dependencies remain unchanged.
