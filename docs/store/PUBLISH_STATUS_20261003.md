@@ -101,3 +101,29 @@ Evidence is in `artifacts/store-publish-20261003/afternoon/`: `mr.json`,
 `play-dashboard.txt` and `vivo.txt`. Only this record is committed. There is
 no material publication change or new required owner action; follow-up stays
 active and quiet.
+
+## Evening check — 19:34–19:39 Shanghai
+
+Fresh MR/pipeline APIs and the live discussion remain unchanged: open,
+unmerged, recipe `737a28b9`, labels `New App` / `review-requested`, 16 user
+notes and last update `2026-10-02T05:42:20.689Z`. The latest maintainer message
+still places the application in the manual-testing queue. No new question
+requires a reply and no duplicate comment or rerun request was posted.
+
+The job-detail API is available again. Its fresh response confirms all nine
+jobs successful in official pipeline `2901381554` for the current recipe.
+The official package page still returns HTTP 404 and upstream's latest
+published release remains v1.6.1. No recipe update or official publication
+is warranted by these unchanged observations.
+
+The live Play dashboard remains at 7/11 tasks and 0 opted-in testers, with
+closed testing locked and production access disabled. The vivo domestic draft
+still shows its official login page. Existing unanswered owner dependencies
+remain recorded without repeated requests or submissions. Shared uncommitted
+application, rename and Harmony changes were preserved.
+
+Evidence is retained in `artifacts/store-publish-20261003/evening/`: `mr.json`,
+`pipelines.json`, `official-jobs.json`, `mr-comments.txt`, `package.html`,
+`upstream-release.json`, `play-dashboard.txt` and `vivo.txt`. Only this record
+is committed. No material update or new owner action was found; the existing
+six-hour follow-up continues quietly.
