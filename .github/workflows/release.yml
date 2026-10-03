@@ -66,6 +66,11 @@ jobs:
       - name: Verify release signature and manifest
         run: python3 scripts/ci-android-release.py verify --channel '${{ matrix.channel }}'
 
+      - name: Verify release tooling and credential backup exclusions
+        run: |
+          REVIEW_AAPT2="$(find "$ANDROID_HOME/build-tools" -maxdepth 2 -name aapt2 | sort -V | tail -n 1)"
+          python3 scripts/verify-android-review.py --apk "$RELEASE_APK_PATH" --aapt2 "$REVIEW_AAPT2" --output android-review-verification.json
+
       - name: Rename APK
         run: |
           TAG="${GITHUB_REF#refs/tags/}"
@@ -81,6 +86,7 @@ jobs:
           path: |
             YiGameCopilotX-*.apk
             release-verification.json
+            android-review-verification.json
           if-no-files-found: error
 
       - name: Upload Google Play bundle

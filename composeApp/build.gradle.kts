@@ -79,7 +79,6 @@ kotlin {
         androidMain.dependencies {
             implementation(compose.preview)
             implementation(libs.androidx.activity.compose)
-            implementation(compose.uiTooling)
             implementation("io.ktor:ktor-client-okhttp:3.1.1")
         }
         commonMain.dependencies {
@@ -127,8 +126,8 @@ android {
         applicationId = "org.walks.gamecopilot"
         minSdk = libs.versions.android.minSdk.get().toInt()
         targetSdk = libs.versions.android.targetSdk.get().toInt()
-        versionCode = 11
-        versionName = "1.6.1"
+        versionCode = 12
+        versionName = "1.6.2"
     }
 
     flavorDimensions += "distribution"
@@ -199,4 +198,8 @@ android {
         compose = true
         buildConfig = true
     }
+}
+
+dependencies {
+    debugImplementation(compose.uiTooling)
 }

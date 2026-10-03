@@ -28,7 +28,6 @@ import org.walks.gamecopilot.ui.page.lan.LANRoomLobbyPage
 import org.walks.gamecopilot.ui.page.multiplayer.MultiplayerPage
 import org.walks.gamecopilot.ui.page.monopoly.MonopolyMoneyPage
 import org.walks.gamecopilot.ui.page.random.RandomPage
-import org.walks.gamecopilot.ui.page.room.RoomPage
 import org.walks.gamecopilot.ui.page.setting.SettingPage
 import org.walks.gamecopilot.ui.page.stats.StatsPage
 import org.walks.gamecopilot.werewolf.WerewolfEntrance

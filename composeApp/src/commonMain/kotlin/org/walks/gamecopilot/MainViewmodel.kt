@@ -6,7 +6,6 @@ import org.walks.gamecopilot.theme.RandomToolRules
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -16,7 +15,6 @@ import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
 import kotlinx.serialization.json.Json
 import org.walks.gamecopilot.awalong.AwalongConfig
 import org.walks.gamecopilot.awalong.AwalongCustomConfig
@@ -31,18 +29,14 @@ import org.walks.gamecopilot.data.LANState
 import org.walks.gamecopilot.data.RandomItem
 import org.walks.gamecopilot.data.RandomListEntity
 import org.walks.gamecopilot.data.WheelItem
-import org.walks.gamecopilot.data.WsRoomDataEntity
 import org.walks.gamecopilot.data.entity.AnswerBookState
 import org.walks.gamecopilot.data.entity.AnswerBookPhase
 import org.walks.gamecopilot.data.entity.GameEntity
 import org.walks.gamecopilot.data.entity.LocalSpyEntity
 import org.walks.gamecopilot.event.NavigationEvent
-import org.walks.gamecopilot.http.RoomModule
-import org.walks.gamecopilot.http.roomModule
 import org.walks.gamecopilot.intent.AiIntent
 import org.walks.gamecopilot.intent.AnswerBookIntent
 import org.walks.gamecopilot.intent.GameIntent
-import org.walks.gamecopilot.intent.GameRoomIntent
 import org.walks.gamecopilot.intent.LANIntent
 import org.walks.gamecopilot.intent.RandomPageIntent
 import org.walks.gamecopilot.lan.data.LANGameState
@@ -58,13 +52,11 @@ import org.walks.gamecopilot.mmkv.MMKV_RANDOM_CARDS_SETTING_KEY
 import org.walks.gamecopilot.mmkv.MMKV_RANDOM_DEFAULTS_INITIALIZED_KEY
 import org.walks.gamecopilot.mmkv.MMKV_RANDOM_LABEL_NAME_KEY
 import org.walks.gamecopilot.mmkv.MMKV_THEME_MODE_KEY
-import org.walks.gamecopilot.navigation.NaviRoute
 import org.walks.gamecopilot.service.ai.AiConfig
 import org.walks.gamecopilot.service.ai.AiProvider
 import org.walks.gamecopilot.service.ai.AiServiceFactory
 import org.walks.gamecopilot.service.ai.AiStyle
 import org.walks.gamecopilot.service.ai.prompts.GamePromptTemplates
-import org.walks.gamecopilot.utils.DateTimeUtils
 import kotlin.random.Random
 import kotlin.time.Clock
 import kotlin.time.ExperimentalTime
@@ -126,13 +118,6 @@ class MainViewmodel : ViewModel() {
      */
     private val _gameEntity = MutableStateFlow(GameEntity())
     val gameEntity: StateFlow<GameEntity> = _gameEntity
-
-    /**
-     * 房间实体状态
-     * 包含房间ID、用户列表、游戏状态等信息
-     */
-    private val _roomEntityState = MutableStateFlow(WsRoomDataEntity())
-    val roomEntityState: StateFlow<WsRoomDataEntity> = _roomEntityState
 
     /**
      * 导航事件流
@@ -256,8 +241,6 @@ class MainViewmodel : ViewModel() {
     private val _isLoadingAi = MutableStateFlow(false)
     val isLoadingAi: StateFlow<Boolean> = _isLoadingAi
 
-    private var userId = ""
-
     fun prepareOneNightWerewolfGame(playerCount: Int, nicknames: List<String>) {
         val safeCount = playerCount.coerceIn(3, 10)
         _oneNightWerewolfPlayerCount.value = safeCount
@@ -270,74 +253,6 @@ class MainViewmodel : ViewModel() {
         initLANObservers()
         initDefaultRandomConfigs()
         loadAiConfig()
-        
-        roomModule.connectionState
-            .onEach { state ->
-                when (state) {
-                    RoomModule.ConnectionState.CONNECTED -> GameLogger.debug("已连接")
-                    RoomModule.ConnectionState.DISCONNECTED -> GameLogger.debug("已断开")
-                    RoomModule.ConnectionState.CONNECTING -> GameLogger.debug("连接中")
-                }
-            }
-            .launchIn(viewModelScope)
-
-        roomModule.messages
-            .onEach { rawMessage ->
-                try {
-                    val message = Json.decodeFromString<WsRoomDataEntity>(rawMessage)
-                    handleWsData(message)
-                } catch (e: Exception) {
-                    GameLogger.error("消息解析失败", e)
-                }
-            }
-            .launchIn(viewModelScope)
-    }
-
-    /**
-     * 处理房间相关意图
-     * @param intent 房间意图（创建、加入、离开、开始游戏等）
-     */
-    fun handleRoomIntent(intent: GameRoomIntent) {
-        if (!AppDistribution.roomsEnabled) return
-        when (intent) {
-            is GameRoomIntent.RefreshRoomInfo -> {
-            }
-
-            is GameRoomIntent.CreateAGameRoom -> {
-                enterGameRoom(intent.roomId, intent.roomKey, true)
-            }
-
-            is GameRoomIntent.JoinToAGameRoom -> {
-                enterGameRoom(intent.roomId, intent.roomKey, false)
-            }
-
-            GameRoomIntent.LeaveGameRoom -> {
-                viewModelScope.launch {
-                    roomModule.leaveRoom(
-                        roomEntityState.value.roomId,
-                        roomEntityState.value.roomKey
-                    )
-                }
-            }
-
-            GameRoomIntent.StartGame -> {
-                viewModelScope.launch {
-                    roomModule.startGame(
-                        roomEntityState.value.roomId,
-                        roomEntityState.value.roomKey
-                    )
-                }
-            }
-
-            GameRoomIntent.DeleteGameRoom -> {
-                viewModelScope.launch {
-                    roomModule.deleteRoom(
-                        roomEntityState.value.roomId,
-                        roomEntityState.value.roomKey
-                    )
-                }
-            }
-        }
     }
 
     /**
@@ -1051,86 +966,6 @@ class MainViewmodel : ViewModel() {
         }
     }
 
-    private suspend fun emitNavigationEvent(event: NavigationEvent) {
-        _navigationEvents.emit(event)
-    }
-
-
-    // 连接管理
-    fun connectToServer() {
-        if (!AppDistribution.roomsEnabled) return
-        viewModelScope.launch {
-            try {
-                roomModule.connect()
-            } catch (e: Exception) {
-            }
-        }
-    }
-
-    private fun enterGameRoom(roomId: String, roomKey: String, asOwner: Boolean = false) {
-        viewModelScope.launch {
-            // 串行执行连接和创建房间
-            val roomReady = withContext(Dispatchers.Default) {
-                // 先连接
-                val connected = roomModule.connect()
-                if (!connected) return@withContext false
-
-                if (asOwner) {
-                    roomModule.createRoom(roomId, roomKey)
-                } else {
-                    roomModule.joinRoom(roomId, roomKey)
-                }
-            }
-
-            // 处理创建结果
-            if (roomReady) {
-                _roomEntityState.update {
-                    it.copy(
-                        roomId = roomId,
-                        roomKey = roomKey,
-                        isRoomOwner = asOwner
-                    )
-                }
-                GameLogger.debug("房间创建成功: $roomId")
-                emitNavigationEvent(NavigationEvent.NavigateTo(NaviRoute.ROOM.route))
-            } else {
-                GameLogger.error("房间创建失败")
-                clearRoomState()
-                _topTipState.emit("网络房间连接失败，请检查网络或稍后重试")
-            }
-        }
-    }
-
-    // 处理业务消息
-    private fun handleWsData(data: WsRoomDataEntity) {
-        GameLogger.debug(data.toString())
-        _roomEntityState.update {
-            data.copy(
-                updateTime = DateTimeUtils.getTimeNow(),
-                roomFinished = 1,
-                startedGameMode = 1,
-                isRoomOwner = it.isRoomOwner,
-                roomKey = it.roomKey
-            )
-        }
-    }
-
-
-    private fun clearRoomState() = _roomEntityState.update {
-        it.copy(
-            roomId = "",
-            roomKey = "",
-            roomFinished = 0,
-            index = "",
-            usersNumber = 0,
-            startedGameMode = startedGameMode.value
-        )
-    }
-
-
-
-
-    // 在 common 代码中调用
     fun vibrateLong() = PlatformHelper.getInstance().vibrateLongMethod()
 
     fun vibrite() {

@@ -1,0 +1,1 @@
+Keep Compose debug tooling out of release builds. Exclude Android preferences containing AI keys and room sessions from system backup and device transfer. Remove the retired room client and its unused server addresses.
