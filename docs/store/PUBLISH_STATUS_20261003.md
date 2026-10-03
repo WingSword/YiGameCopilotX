@@ -71,3 +71,33 @@ Evidence is retained in `artifacts/store-publish-20261003/morning/`: `mr.json`,
 `upstream-release.json`, `play-dashboard.txt` and `vivo.txt`. Only this record
 is changed by the check. The six-hour follow-up remains active and quiet while
 the review state and existing owner dependencies remain unchanged.
+
+## Afternoon check — 13:34–13:41 Shanghai
+
+Fresh MR and pipeline-list APIs plus the live discussion confirm no new review
+change: `opened`, unmerged, head `737a28b9`, `review-requested`, 16 user notes
+and last update `2026-10-02T05:42:20.689Z`. The latest maintainer response is
+still the manual-testing queue note. Current official pipeline `2901381554`
+remains `success` for the same head, with no newer run. The package page again
+returns HTTP 404 and upstream's latest published release remains v1.6.1.
+No comment, rerun request or recipe update was needed.
+
+The pipeline-list request had a connection timeout, then succeeded on one
+retry. The separate job-detail request timed out on both attempts; its most
+recent complete nine-job confirmation is this morning's saved response.
+This check establishes current pipeline success from fresh MR and pipeline-list
+responses, and does not claim a new successful job-detail fetch. An empty or
+incomplete `official-jobs.json` from those failed requests is not evidence.
+
+The live Play dashboard remains at 7/11 setup tasks, with 0 opted-in testers,
+closed testing locked and production access disabled. The optional Console
+survey was not accepted or submitted. The vivo domestic draft still shows
+the official login page. Existing owner dependencies remain unanswered; no
+duplicate reminder or store submission was made. Shared uncommitted code,
+rename and Harmony work was preserved.
+
+Evidence is in `artifacts/store-publish-20261003/afternoon/`: `mr.json`,
+`pipelines.json`, `mr-comments.txt`, `package.html`, `upstream-release.json`,
+`play-dashboard.txt` and `vivo.txt`. Only this record is committed. There is
+no material publication change or new required owner action; follow-up stays
+active and quiet.
