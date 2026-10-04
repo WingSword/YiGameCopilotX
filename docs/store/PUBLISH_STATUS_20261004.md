@@ -138,3 +138,40 @@ Detailed evidence and all four local APKs plus the AAB are retained under
 temporary checkout's needed artifacts were preserved before archiving it.
 The existing six-hour heartbeat is updated to follow the new recipe and reply,
 without repeatedly requesting CI or resubmitting the application.
+
+## Afternoon check — 13:37–13:43 Shanghai
+
+Fresh public MR/pipeline APIs and the live signed-in discussion show no change
+since the morning reply and description update. MR !49945 remains open and
+unmerged at recipe `93f4d59eb808ec5a9d9207603eb8ec67b7cf4e8c`, with `New App` /
+`review-requested`, 18 user notes and last update `2026-10-04T00:22:51.519Z`.
+The latest discussion events are still our reply `note_3950227457` and
+description update `note_3950239203`. There is no new maintainer question or
+testing result to answer.
+
+No official pipeline for the current 1.6.2 recipe has appeared. The current
+personal-fork pipeline remains 2909966368, failed with zero jobs, confirmed by
+a fresh job-list response. The prior official success 2901381554 belongs to
+the previous recipe and v1.6.1. The official package page still returns HTTP
+404, with no formal installable version confirmed. GitHub's latest public
+release remains v1.6.2 at source 871edea. No recipe update, repeated CI request,
+duplicate submission or new build/test run is warranted by this unchanged
+state.
+
+The live Google Play dashboard still has 7/11 completed setup tasks and zero
+opted-in testers. App access, content rating, target audience and data safety
+remain unfinished; closed testing remains locked and production access is
+disabled. The vivo domestic draft again redirects to the official login form,
+so its private review state is unavailable. Existing unanswered owner
+dependencies are unchanged. No repeated login, terms, reviewer-access, tester,
+HTTPS/retention or materials reminder was sent, and no store submission or
+bundle upload was made.
+
+Evidence is saved in `artifacts/store-publish-20261004/afternoon/`: `mr.json`,
+`pipelines.json`, `fork-jobs.json`, `mr-comments.txt`, `package.html`,
+`upstream-release.json`, `play-dashboard.txt` and `vivo.txt`. The public notes
+endpoint requires authentication (HTTP 401), so new comments were checked in
+the existing signed-in browser instead. Only this daily record is changed by
+the afternoon follow-up; shared pending application, rename and Harmony work
+is preserved. The existing six-hour follow-up remains active. No important
+change or new owner action arose, so this check stays quiet.
