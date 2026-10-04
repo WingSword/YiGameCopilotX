@@ -17,9 +17,9 @@ RepoType: git
 Repo: https://github.com/WingSword/YiGameCopilotX.git
 
 Builds:
-  - versionName: 1.6.1
-    versionCode: 11
-    commit: 1ed22875bfeb8b603ff1fcbfe545239b6f762138
+  - versionName: 1.6.2
+    versionCode: 12
+    commit: 871edeab020ca1dd5399f92af3a42621db62f0a9
     subdir: composeApp
     gradle:
       - fdroid
@@ -30,5 +30,5 @@ Builds:
 
 AutoUpdateMode: Version
 UpdateCheckMode: Tags ^v[0-9]+\.[0-9]+(?:\.[0-9]+)?$
-CurrentVersion: 1.6.1
-CurrentVersionCode: 11
+CurrentVersion: 1.6.2
+CurrentVersionCode: 12
