@@ -175,3 +175,35 @@ the existing signed-in browser instead. Only this daily record is changed by
 the afternoon follow-up; shared pending application, rename and Harmony work
 is preserved. The existing six-hour follow-up remains active. No important
 change or new owner action arose, so this check stays quiet.
+
+## Evening check — 19:39–19:44 Shanghai
+
+Fresh public API responses and the refreshed signed-in MR discussion confirm
+the morning baseline remains current: MR !49945 is open and unmerged at
+`93f4d59eb808ec5a9d9207603eb8ec67b7cf4e8c`, with `New App` /
+`review-requested`, 18 user notes and last update `2026-10-04T00:22:51.519Z`.
+Our repair reply `note_3950227457` and description update `note_3950239203`
+remain the latest events. No new review question or manual-test result has
+appeared.
+
+The current recipe still has only personal-fork pipeline 2909966368, failed
+with zero jobs confirmed by a fresh job-list response. No official run for
+1.6.2 is listed; the older official success remains associated with 1.6.1.
+The formal package page again returns HTTP 404, so no installable F-Droid
+version is confirmed. GitHub's latest public release remains v1.6.2. No
+repeated rerun request, additional application, metadata change or repeat build
+was made.
+
+The refreshed Google Play dashboard is unchanged at 7/11 setup tasks and zero
+opted-in testers, with closed testing locked and production unavailable.
+The vivo domestic draft still redirects to login; its private review status
+cannot be read. Previously recorded owner dependencies have no new answers.
+No repeated login, materials, agreement, reviewer-access, tester or server
+information request was sent. No store submission or upload occurred.
+
+Evidence is retained in `artifacts/store-publish-20261004/evening/`: `mr.json`,
+`pipelines.json`, `fork-jobs.json`, `mr-comments.txt`, `package.html`,
+`upstream-release.json`, `play-dashboard.txt` and `vivo.txt`. Only this daily
+record changes; shared pending application, rename and Harmony work remains
+untouched. The six-hour follow-up stays active, and this unchanged check
+produces no notification.
